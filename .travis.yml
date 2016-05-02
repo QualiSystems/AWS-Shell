@@ -4,21 +4,21 @@
 language: python
 python:
     - "2.7"
-# command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
-install: 
-	#- pip install -r package/requirements.txt --extra-index-url https://testpypi.python.org/pypi
-    #- pip install cloudshell-shell-core --extra-index-url https://testpypi.python.org/pypi
-    #- pip install -r test_requirements.txt
-    #- pip install coveralls
-	
+#command to install dependencies, e.g. pip install -r requirements.txt --use-mirrors
+#install:
+#  - pip install -r package/requirements.txt --extra-index-url https://testpypi.python.org/pypi
+#  - pip install cloudshell-shell-core --extra-index-url https://testpypi.python.org/pypi
+#  - pip install -r test_requirements.txt
+#  - pip install coveralls
+
 script:
     #- pushd package
     #- python setup.py develop
     #- popd
     #- python runtests.py --with-coverage  --cover-package=package --exclude-dir=integration
 
-after_success:
-    coveralls
+#after_success:
+#    coveralls
     
-notifications:
-    #webhools: https://qualisystems.getbadges.io/api/app/webhook/{will be added later}
+#notifications:
+# webhools: https://qualisystems.getbadges.io/api/app/webhook/{will be added later}
