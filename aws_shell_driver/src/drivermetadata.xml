@@ -1,0 +1,7 @@
+<Driver Description="{{cookiecutter.project_short_description}}" MainClass="driver.{{cookiecutter.project_camel_name}}Driver" Name="{{cookiecutter.project_camel_name}}" Version="1.0.0">
+    <Layout>
+        <Category Name="{{cookiecutter.category}}">
+            <Command Description="" DisplayName="Method One" Name="method_one" />
+        </Category>
+    </Layout>
+</Driver>
