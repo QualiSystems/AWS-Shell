@@ -1,0 +1,15 @@
+{
+	"full_name": "cloudshell-cp-aws",
+	"author": "Quali",
+	"email": "support@qualisystems.com",
+	"category" : "App Management",
+	"project_name": "AWS Shell",
+	"project_camel_name" : "AWSShell",
+	"project_slug": "aws_shell",
+	"project_short_description": "A repository for projects providing out of the box capabilities within CloudShell to define AWS instances in CloudShell and leverage Amazon Cloud Computing capabilities to deploy and connect apps in CloudShell sandboxes.",
+	"release_date": "2016-6-30",
+	"pypi_username": "quali",
+	"year": "2016",
+	"version": "0.1.0",
+	"use_pypi_deployment_with_travis": "y"
+}
