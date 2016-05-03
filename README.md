@@ -2,3 +2,4 @@ Waffle Board: [![Stories in Backlog](https://badge.waffle.io/QualiSystems/AWS-Sh
 
 # AWS-Shell
 A CloudShell 'Shell' that allows integrating AWS as an app's deployment option.
+
