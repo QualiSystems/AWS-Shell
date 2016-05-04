@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ShellsConfiguration
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="http://schemas.qualisystems.com/ResourceManagement/ShellsConfigurationSchema.xsd">
+    <ResourceTemplates>
+        <ResourceTemplate Name="AWS EC2" Model="AWS EC2" Driver="AWS Shell Driver">
+            <Description>AWS EC2 template will create a AWS EC2 resource in CloudShell. Once the AWS EC2 is modeled correctly in CloudShell it will be possible to deploy Apps on this AWS EC2.</Description>
+            <AutoLoad Enable="true">
+                <Description>Checks that the inputs are valid for the target AWS EC2</Description>
+            </AutoLoad>
+            <Attributes>
+                <Attribute Name="Region" Value="" />
+                <Attribute Name="Management VPC CIDR" Value="" />
+                <Attribute Name="Management SG ID" Value="" />
+                <Attribute Name="AWS Key" Value="" />
+                <Attribute Name="Keypairs Location" Value="" />
+                <Attribute Name="Storage Size" Value="30" />
+                <Attribute Name="Storage IOPS" Value="1500" />
+                <Attribute Name="Max Storage Size" Value="30" />
+                <Attribute Name="Max Storage IOPS" Value="1500" />
+            </Attributes>
+        </ResourceTemplate>
+    </ResourceTemplates>
+</ShellsConfiguration>

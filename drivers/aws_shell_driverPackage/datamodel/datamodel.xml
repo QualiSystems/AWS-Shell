@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DataModelInfo xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns="http://schemas.qualisystems.com/ResourceManagement/DataModelSchema.xsd">
+  <Attributes>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Region" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management VPC CIDR" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management SG ID" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS Key" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Keypairs Location" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="30" Description="" IsReadOnly="false" Name="Storage Size" Type="Numeric">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Storage IOPS" Type="Numeric">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Max Storage IOPS" Type="Numeric">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="30" Description="" IsReadOnly="false" Name="Max Storage Size" Type="Numeric">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS EC2" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS AMI Id" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+  </Attributes>
+  <ResourceFamilies>
+    <ResourceFamily Description="" IsAdminOnly="true" IsSearchable="true" Name="Cloud Provider">
+      <AttachedAttributes />
+      <AttributeValues />
+      <Models>
+        <ResourceModel Description="" ImagePath="AWS.png" Name="AWS EC2" SupportsConcurrentCommands="true">
+          <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
+              <AllowedValues>
+                <AllowedValue>US East (N. Virginia)</AllowedValue>
+                <AllowedValue>US West (N. California)</AllowedValue>
+                <AllowedValue>US West (Oregon)</AllowedValue>
+                <AllowedValue>EU (Ireland)</AllowedValue>
+                <AllowedValue>EU (Frankfurt)</AllowedValue>
+                <AllowedValue>Asia Pacific (Tokyo)</AllowedValue>
+                <AllowedValue>Asia Pacific (Seoul)</AllowedValue>
+                <AllowedValue>Asia Pacific (Singapore)</AllowedValue>
+                <AllowedValue>Asia Pacific (Sydney)</AllowedValue>
+                <AllowedValue>South America (São Paulo)</AllowedValue>
+              </AllowedValues>
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC CIDR">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management SG ID">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Key">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Keypairs Location">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage IOPS">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Max Storage Size">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Max Storage IOPS">
+              <AllowedValues />
+            </AttachedAttribute>
+          </AttachedAttributes>
+          <ParentModels />
+          <Drivers>
+            <DriverName>AWS Shell Driver</DriverName>
+          </Drivers>
+          <Scripts>
+          </Scripts>
+        </ResourceModel>
+      </Models>
+      <Categories />
+    </ResourceFamily>
+    <ResourceFamily Description="" IsSearchable="true" Name="Generic App Family" ResourceType="Application" IsLockedByDefault="true">
+      <AttachedAttributes>
+      </AttachedAttributes>
+      <AttributeValues>
+      </AttributeValues>
+      <Models>
+        <ResourceModel Description="" Name="Generic App Model" SupportsConcurrentCommands="false">
+          <AttachedAttributes />
+          <AttributeValues>
+          </AttributeValues>
+          <ParentModels />
+          <Drivers>
+          </Drivers>
+          <Scripts>
+          </Scripts>
+        </ResourceModel>
+      </Models>
+      <Categories />
+    </ResourceFamily>
+    <ResourceFamily Description="" IsService="true" Name="Installation Options" ServiceType="Installation">
+      <AttachedAttributes />
+      <AttributeValues />
+      <Models>
+        <ResourceModel Description="" Name="Generic Installation Option" SupportsConcurrentCommands="false">
+          <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Generic Input" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+          </AttachedAttributes>
+          <AttributeValues>
+            <AttributeValue Name="Generic Input" Value="" />
+          </AttributeValues>
+          <ParentModels />
+          <Drivers>
+            <DriverName>Generic Driver</DriverName>
+          </Drivers>
+          <Scripts />
+        </ResourceModel>
+      </Models>
+      <Categories>
+      </Categories>
+    </ResourceFamily>
+    <ResourceFamily Description="" IsService="true" Name="Deployment Options" ServiceType="Deployment">
+      <AttachedAttributes />
+      <AttributeValues />
+      <Models>
+        <ResourceModel Description="" Name="AWS EC2 Instance" SupportsConcurrentCommands="false">
+          <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS EC2" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage IOPS" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+          </AttachedAttributes>
+          <ParentModels />
+          <Drivers>
+            <DriverName>Deploy AWS EC2 AMI Instance</DriverName>
+          </Drivers>
+        </ResourceModel>
+      </Models>
+      <Categories>
+      </Categories>
+    </ResourceFamily>
+  </ResourceFamilies>
+  <DriverDescriptors>
+      <DriverDescriptor Name="AWS Shell Driver" DriverType="PythonDriver" />
+  </DriverDescriptors>
+</DataModelInfo>
