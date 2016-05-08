@@ -1,4 +1,6 @@
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
+from cloudshell.cp.aws.aws_shell import AWSShell
+from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
 
 class AWSShellDriver(ResourceDriverInterface):
@@ -9,12 +11,14 @@ class AWSShellDriver(ResourceDriverInterface):
         """
         ctor must be without arguments, it is created with reflection at run time
         """
+        self.aws_shell = AWSShell()
         pass
 
     def initialize(self, context):
         pass
 
-    def deploy_ami(self, context, ports, request):
+    def deploy_ami(self, context, request):
+        self.aws_shell.deploy_ami(context.resource, request)
         pass
 
     def PowerOn(self, context, ports):

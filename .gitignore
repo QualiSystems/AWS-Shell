@@ -65,6 +65,7 @@ package/cloudshell/tests/config.ini
 *.cache
 *.whl
 *.tar.gz
+/package/cloudshell/cp/aws/test_cred.ini
 *.orig
 *.zip
 debug.txt

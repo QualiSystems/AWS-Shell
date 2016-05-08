@@ -4,3 +4,13 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.aws_ami_id = ''
         self.storage_size = ''
         self.storage_iops = ''
+        # the storage type can be one of these: 'standard'|'io1'|'gp2'|'sc1'|'st1'
+        self.storage_type = ''  # type: str
+        self.min_count = 0  # type: int
+        self.max_count = 0  # type: int
+        self.instance_type = ''  # type: str
+        self.aws_key = ''  # type: str
+        self.security_group_ids = None  # type: str
+        self.private_ip_address = ''  # type: str
+        self.device_name = ''  # type: str
+        self.delete_on_termination = ''  # type: str
