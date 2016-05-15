@@ -18,7 +18,8 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def deploy_ami(self, context, request):
-        self.aws_shell.deploy_ami(context.resource, request)
+        #context.resource
+        self.aws_shell.deploy_ami(request)
         pass
 
     def PowerOn(self, context, ports):

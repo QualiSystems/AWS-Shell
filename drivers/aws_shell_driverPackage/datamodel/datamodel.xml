@@ -197,5 +197,6 @@
   </ResourceFamilies>
   <DriverDescriptors>
       <DriverDescriptor Name="AWS Shell Driver" DriverType="PythonDriver" />
+      <DriverDescriptor Name="Deploy AWS EC2 AMI Instance" DriverType="PythonDriver" />
   </DriverDescriptors>
 </DataModelInfo>
