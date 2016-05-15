@@ -2,13 +2,16 @@ import jsonpickle
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
+from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.common.model_factory import ResourceModelParser
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 
 
 class DeployAWSEC2AMIInstance(ResourceDriverInterface):
     def __init__(self):
+        #Todo remove this to a commin place outside the package
         self.resource_model_parser = ResourceModelParser()
+        self.cs_helper = CloudshellDriverHelper()
 
     def cleanup(self):
         pass
