@@ -18,4 +18,5 @@ class AWSEc2CloudProviderResourceModel(object):
         self.device_name = ''  # type: str
         self.delete_on_termination = ''  # type: str   <- deployment option
         # "the volume can be one of these: 'standard'|'io1'|'gp2'|'sc1'|'st1'
+        self.region = ''  # type : str
         self.storage_type = ''  # type: str

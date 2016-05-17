@@ -52,7 +52,7 @@ class DeployAMIOperation(object):
             {
                 'DeviceName': ami_rm.device_name if  ami_rm.device_name else aws_ec2_rm.device_name,
                 'Ebs': {
-                    'VolumeSize': ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.storage_size,
+                    'VolumeSize':int( ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.storage_size),
                     'DeleteOnTermination': ami_rm.delete_on_termination if ami_rm.delete_on_termination else aws_ec2_rm.delete_on_termination,
                     'VolumeType': ami_rm.storage_type if ami_rm.storage_type else aws_ec2_rm.storage_type
                 }

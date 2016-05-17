@@ -1,16 +1,15 @@
 import jsonpickle
+from cloudshell.api.cloudshell_api import InputNameValue
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 
-from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
-from cloudshell.cp.aws.common.model_factory import ResourceModelParser
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 
 
 class DeployAWSEC2AMIInstance(ResourceDriverInterface):
     def __init__(self):
-        #Todo remove this to a commin place outside the package
-        self.resource_model_parser = ResourceModelParser()
+        # Todo remove this to a common place outside the package
         self.cs_helper = CloudshellDriverHelper()
 
     def cleanup(self):
@@ -26,28 +25,30 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
                                              context.reservation.domain)
 
         # create deployment resource model and serialize it to json
-        ## TODO Move this class to the core project  #
-        ## TODO  Currently its duplicated in vcenter and in aws ##
-        aws_ami_deployment_resource_model = \
-            self.resource_model_parser.convert_to_resource_model(context.resource,
-                                                                 DeployAWSEc2AMIInstanceResourceModel)
+        aws_ami_deployment_resource_model = self._convert_context_to_deployment_resource_model(context.resource)
 
         ami_res_name = aws_ami_deployment_resource_model.device_name
 
-        if not Name:
-            Name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
-
-        deployment_info = self._get_deployment_info(aws_ami_deployment_resource_model, Name)
+        deployment_info = self._get_deployment_info(aws_ami_deployment_resource_model, ami_res_name)
 
         # call command on the AWS cloud privider
         result = session.ExecuteCommand(context.reservation.reservation_id,
-                                        ami_res_name,
+                                        aws_ami_deployment_resource_model.aws_ec2 ,
                                         "Resource",
                                         "deploy_ami",
                                         self._get_command_inputs_list(deployment_info),
                                         False)
         return result.Output
 
+    # todo: remove this to a common place
+    def _convert_context_to_deployment_resource_model(self, resource):
+        deployedResource = DeployAWSEc2AMIInstanceResourceModel()
+        deployedResource.aws_ami_id = resource.attributes['AWS AMI Id']
+        deployedResource.aws_ec2 = resource.attributes['AWS EC2']
+        deployedResource.storage_iops = resource.attributes['Storage IOPS']
+        deployedResource.storage_size = resource.attributes['Storage Size']
+        deployedResource.device_name = jsonpickle.decode(resource.app_context.app_request_json)['name']
+        return deployedResource
 
     def _get_deployment_info(self, image_model, name):
         """
@@ -57,3 +58,6 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         return DeployDataHolder({'app_name': name,
                                  'image_params': image_model
                                  })
+
+    def _get_command_inputs_list(self, data_holder):
+        return [InputNameValue('request', jsonpickle.encode(data_holder, unpicklable=False))]
