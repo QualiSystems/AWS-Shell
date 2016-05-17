@@ -29,7 +29,7 @@ class AWSShellDriver(ResourceDriverInterface):
     def PowerCycle(self, context, ports, delay):
         pass
 
-    def refresh_ip(self, context, ports, cancellation_context):
+    def remote_refresh_ip(self, context, ports, cancellation_context):
         pass
 
     def delete(self, context, ports):

@@ -1,7 +1,7 @@
 class DeployResult(object):
     # def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, ip_regex, refresh_ip_timeout, auto_power_on,
     #              auto_power_off, wait_for_ip, auto_delete, autoload):
-    def __init__(self, vm_name, cloud_provider_resource_name):
+    def __init__(self, vm_name,vm_uuid, cloud_provider_resource_name):
         """
         :param str vm_name: The name of the virtual machine
         :param uuid uuid: The UUID
@@ -16,7 +16,7 @@ class DeployResult(object):
         :return:
         """
         self.vm_name = vm_name
-        # self.vm_uuid = vm_uuid
+        self.vm_uuid = vm_uuid
         self.cloud_provider_resource_name = cloud_provider_resource_name
         # self.ip_regex = ip_regex
         # self.refresh_ip_timeout = float(refresh_ip_timeout)

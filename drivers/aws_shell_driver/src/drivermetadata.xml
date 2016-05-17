@@ -4,7 +4,7 @@
             <Command Description="" DisplayName="Deploy From AMI" Name="deploy_ami" Tags="allow_unreserved" />
         </Category>
         <Category Name="Connectivity">
-            <Command Description="" DisplayName="Refresh IP" EnableCancellation="true" Name="refresh_ip" Tags="remote_connectivity,allow_shared" />
+            <Command Description="" DisplayName="Refresh IP" EnableCancellation="true" Name="remote_refresh_ip" Tags="remote_connectivity,allow_shared" />
             <Command Description="" DisplayName="Apply Connectivity Changes" Name="ApplyConnectivityChanges" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Apply Connectivity Changes" Name="PrepareConnectivityChanges" Tags="allow_unreserved" />
         </Category>

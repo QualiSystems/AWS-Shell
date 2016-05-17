@@ -33,17 +33,29 @@ class AWSShell(object):
         ec2_session = self.aws_api.create_ec2_session(access_key_id, secret_access_key, region)
         result,name = self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_resource_model)
 
-        return DeployResult(vm_name=name,
-                    # vm_uuid=vm.config.uuid,
+        deploy_data= DeployResult(vm_name=name,
+                    vm_uuid=result.instance_id,
                     cloud_provider_resource_name=aws_ami_deployment_resource_model.aws_ec2,
-                    # ip_regex=data_holder.image_params.ip_regex,
-                    # refresh_ip_timeout=data_holder.image_params.refresh_ip_timeout,
                     # auto_power_on=data_holder.image_params.auto_power_on,
                     # auto_power_off=data_holder.image_params.auto_power_off,
                     # wait_for_ip=data_holder.image_params.wait_for_ip,
                     # auto_delete=data_holder.image_params.auto_delete,
                     # autoload=data_holder.image_params.autoload)
                     )
+        return self._set_command_result(deploy_data)
+
+    def _set_command_result(self,result, unpicklable=False):
+        """
+        Serializes output as JSON and writes it to console output wrapped with special prefix and suffix
+        :param result: Result to return
+        :param unpicklable: If True adds JSON can be deserialized as real object.
+                            When False will be deserialized as dictionary
+        """
+        json = jsonpickle.encode(result, unpicklable=unpicklable)
+        result_for_output = str(json)
+        print result_for_output
+        return result_for_output
+
 
 
     def convert_to_aws_resource_model(self, command_context):
