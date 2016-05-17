@@ -32,10 +32,11 @@ class AWSApi(object):
             SecurityGroupIds=ami_deployment_info.security_group_ids,
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
-        self.set_instance_name(ec2_session, instance, name)
+        new_name = name + instance.instance_id
+        self.set_instance_name(ec2_session, instance, new_name)
 
         instance = self.wait_for_instance_running(instance)
-        return instance
+        return instance,new_name
 
     @staticmethod
     def _create_session(aws_access_key_id, aws_secret_access_key, region_name):

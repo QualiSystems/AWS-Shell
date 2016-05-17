@@ -43,6 +43,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Instance Type" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Max Storage IOPS" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
@@ -179,6 +185,9 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Instance Type" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage IOPS" UserInput="false">

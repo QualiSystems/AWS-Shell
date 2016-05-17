@@ -26,14 +26,17 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
 
         # create deployment resource model and serialize it to json
         aws_ami_deployment_resource_model = self._convert_context_to_deployment_resource_model(context.resource)
+        aws_ami_deployment_resource_model.device_name = "/dev/sda1"
+        aws_ami_deployment_resource_model.aws_key= "aws_testing_key_pair"
 
-        ami_res_name = aws_ami_deployment_resource_model.device_name
+
+        ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
 
         deployment_info = self._get_deployment_info(aws_ami_deployment_resource_model, ami_res_name)
 
         # call command on the AWS cloud privider
         result = session.ExecuteCommand(context.reservation.reservation_id,
-                                        aws_ami_deployment_resource_model.aws_ec2 ,
+                                        aws_ami_deployment_resource_model.aws_ec2,
                                         "Resource",
                                         "deploy_ami",
                                         self._get_command_inputs_list(deployment_info),
@@ -47,7 +50,9 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.aws_ec2 = resource.attributes['AWS EC2']
         deployedResource.storage_iops = resource.attributes['Storage IOPS']
         deployedResource.storage_size = resource.attributes['Storage Size']
-        deployedResource.device_name = jsonpickle.decode(resource.app_context.app_request_json)['name']
+        deployedResource.instance_type = resource.attributes['Instance Type']
+
+
         return deployedResource
 
     def _get_deployment_info(self, image_model, name):

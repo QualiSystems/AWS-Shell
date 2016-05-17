@@ -6,6 +6,7 @@ from cloudshell.cp.aws.domain.ami_managment.operations.deploy_operation import D
 from cloudshell.cp.aws.domain.common.aws_session_manager import AWSSessionManager
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class AWSShell(object):
@@ -30,7 +31,20 @@ class AWSShell(object):
 
         user, access_key_id, pwd, secret_access_key, region = self.credentials_manager.get_credentials()
         ec2_session = self.aws_api.create_ec2_session(access_key_id, secret_access_key, region)
-        self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_resource_model)
+        result,name = self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_resource_model)
+
+        return DeployResult(vm_name=name,
+                    # vm_uuid=vm.config.uuid,
+                    cloud_provider_resource_name=aws_ami_deployment_resource_model.aws_ec2,
+                    # ip_regex=data_holder.image_params.ip_regex,
+                    # refresh_ip_timeout=data_holder.image_params.refresh_ip_timeout,
+                    # auto_power_on=data_holder.image_params.auto_power_on,
+                    # auto_power_off=data_holder.image_params.auto_power_off,
+                    # wait_for_ip=data_holder.image_params.wait_for_ip,
+                    # auto_delete=data_holder.image_params.auto_delete,
+                    # autoload=data_holder.image_params.autoload)
+                    )
+
 
     def convert_to_aws_resource_model(self, command_context):
         resource_context = command_context.resource.attributes

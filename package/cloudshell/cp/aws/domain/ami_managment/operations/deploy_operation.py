@@ -1,4 +1,5 @@
 from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
+from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
@@ -24,7 +25,10 @@ class DeployAMIOperation(object):
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_resource_model)
 
-        self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
+        return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
+
+
+
 
     def _create_deployment_parameters(self, aws_ec2_rm, ami_rm):
         """
@@ -43,6 +47,7 @@ class DeployAMIOperation(object):
         aws_model.instance_type = ami_rm.instance_type if ami_rm.instance_type else aws_ec2_rm.instance_type
         aws_model.private_ip_address = ami_rm.private_ip_address if ami_rm.private_ip_address else None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_rm, aws_ec2_rm)
+        aws_model.aws_key = ami_rm.aws_key
 
         return aws_model
 
