@@ -25,23 +25,28 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
                                              context.reservation.domain)
 
         # create deployment resource model and serialize it to json
-        aws_ami_deployment_resource_model = self._convert_context_to_deployment_resource_model(context.resource)
-        aws_ami_deployment_resource_model.device_name = "/dev/sda1"
-        aws_ami_deployment_resource_model.aws_key= "aws_testing_key_pair"
+        aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource)
 
+        aws_ami_deployment_model.aws_key = "aws_testing_key_pair"  # we will create it on the run if needed
 
         ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
 
-        deployment_info = self._get_deployment_info(aws_ami_deployment_resource_model, ami_res_name)
+        deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
 
-        # call command on the AWS cloud privider
+        self.vaidate_deployment_ami_model(aws_ami_deployment_model)
+
+        # Calls command on the AWS cloud provider
         result = session.ExecuteCommand(context.reservation.reservation_id,
-                                        aws_ami_deployment_resource_model.aws_ec2,
+                                        aws_ami_deployment_model.aws_ec2,
                                         "Resource",
                                         "deploy_ami",
                                         self._get_command_inputs_list(deployment_info),
                                         False)
         return result.Output
+
+    def vaidate_deployment_ami_model(self, aws_ami_deployment_model):
+        if (aws_ami_deployment_model.aws_ec2 == ''):
+            raise Exception("The name of the AWS EC2 resource is empty.")
 
     # todo: remove this to a common place
     def _convert_context_to_deployment_resource_model(self, resource):
@@ -52,7 +57,11 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.storage_size = resource.attributes['Storage Size']
         deployedResource.instance_type = resource.attributes['Instance Type']
 
-
+        deployedResource.auto_power_on = resource.attributes['Auto Power On']
+        deployedResource.auto_power_off = resource.attributes['Auto Power Off']
+        deployedResource.wait_for_ip = resource.attributes['Wait for IP']
+        deployedResource.auto_delete = resource.attributes['Auto Delete']
+        deployedResource.autoload = resource.attributes['Autoload']
         return deployedResource
 
     def _get_deployment_info(self, image_model, name):
@@ -61,7 +70,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         """
 
         return DeployDataHolder({'app_name': name,
-                                 'image_params': image_model
+                                 'ami_params': image_model
                                  })
 
     def _get_command_inputs_list(self, data_holder):

@@ -32,14 +32,17 @@ class AWSApi(object):
             SecurityGroupIds=ami_deployment_info.security_group_ids,
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
-        new_name = name + instance.instance_id
-        self.set_instance_name(ec2_session, instance, new_name)
+        new_name = name + ' ' + instance.instance_id
+        self.set_instance_name_and_createdby(ec2_session, instance, new_name)
 
         instance = self.wait_for_instance_running(instance)
-        return instance,new_name
+        return instance, new_name
 
     @staticmethod
     def _create_session(aws_access_key_id, aws_secret_access_key, region_name):
+        if not aws_access_key_id or not aws_secret_access_key:
+            return boto3.Session(region_name=region_name)
+
         return boto3.Session(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
@@ -47,6 +50,7 @@ class AWSApi(object):
 
     @staticmethod
     def wait_for_instance_running(instance):
+        # Note: pulling every 15 sec
         instance.wait_until_running()
 
         # Reload the instance attributes
@@ -57,14 +61,20 @@ class AWSApi(object):
     def get_instance_by_id(ec2_session, id):
         return ec2_session.Instance(id=id)
 
-    def set_instance_name(self, ec2_session, instance, name):
-        return self.set_instance_tag(ec2_session, instance, key='Name', value=name)
+    def set_instance_name_and_createdby(self, ec2_session, instance, name):
+        return self.set_instance_tag(ec2_session, instance, [self._get_kvp("Name", name),
+                                                             self._get_created_by_kvp()])
 
     @staticmethod
     def create_key_pair(ec2_session, key_name):
         return ec2_session.create_key_pair(KeyName=key_name)
 
     @staticmethod
-    def set_instance_tag(ec2_session, instance, key, value):
-        return ec2_session.create_tags(Resources=[instance.id],
-                                       Tags=[{'Key': key, 'Value': value}])
+    def set_instance_tag(ec2_session, instance, tags):
+        return ec2_session.create_tags(Resources=[instance.id], Tags=tags)
+
+    def _get_created_by_kvp(self):
+        return self._get_kvp('CreatedBy', 'Quali')
+
+    def _get_kvp(self, key, value):
+        return {'Key': key, 'Value': value}

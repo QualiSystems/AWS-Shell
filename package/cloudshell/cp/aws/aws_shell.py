@@ -20,28 +20,27 @@ class AWSShell(object):
         Will deploy Amazon Image on the cloud provider
         :param name: The name of the instance
         :type name: str
-        :param aws_ami_deployment_resource_model: The resource model of the AMI deployment option
-        :type aws_ami_deployment_resource_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
+        :param aws_ami_deployment_model: The resource model of the AMI deployment option
+        :type aws_ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
         :param aws_ec2_resource_model: The resource model on which the AMI will be deployed on
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         """
 
-        aws_ami_deployment_resource_model,name= self._convert_to_deployment_resource_model(deployment_request)
+        aws_ami_deployment_model, name= self._convert_to_deployment_resource_model(deployment_request)
         aws_ec2_resource_model = self.convert_to_aws_resource_model(command_context)
 
-        user, access_key_id, pwd, secret_access_key, region = self.credentials_manager.get_credentials()
-        ec2_session = self.aws_api.create_ec2_session(access_key_id, secret_access_key, region)
-        result,name = self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_resource_model)
+        access_key_id, secret_access_key = self.credentials_manager.get_credentials()
+        ec2_session = self.aws_api.create_ec2_session(access_key_id, secret_access_key, aws_ec2_resource_model.region)
+        result, name = self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_model)
 
         deploy_data= DeployResult(vm_name=name,
                     vm_uuid=result.instance_id,
-                    cloud_provider_resource_name=aws_ami_deployment_resource_model.aws_ec2,
-                    # auto_power_on=data_holder.image_params.auto_power_on,
-                    # auto_power_off=data_holder.image_params.auto_power_off,
-                    # wait_for_ip=data_holder.image_params.wait_for_ip,
-                    # auto_delete=data_holder.image_params.auto_delete,
-                    # autoload=data_holder.image_params.autoload)
-                    )
+                    cloud_provider_resource_name=aws_ami_deployment_model.aws_ec2,
+                    auto_power_on=aws_ami_deployment_model.auto_power_on,
+                    auto_power_off=aws_ami_deployment_model.auto_power_off,
+                    wait_for_ip=aws_ami_deployment_model.wait_for_ip,
+                    auto_delete=aws_ami_deployment_model.auto_delete,
+                    autoload=aws_ami_deployment_model.autoload)
         return self._set_command_result(deploy_data)
 
     def _set_command_result(self,result, unpicklable=False):
@@ -63,7 +62,8 @@ class AWSShell(object):
         aws_ec2_resource_model = AWSEc2CloudProviderResourceModel()
         aws_ec2_resource_model.storage_size = resource_context['Storage Size']
         aws_ec2_resource_model.storage_iops = resource_context['Storage IOPS']
-        aws_ec2_resource_model.region = resource_context['Region']
+        aws_ec2_resource_model.region= self.get_region_code_from_name(resource_context['Region'])
+        aws_ec2_resource_model.device_name= resource_context['Device Name']
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
         return aws_ec2_resource_model
@@ -72,20 +72,29 @@ class AWSShell(object):
         data = jsonpickle.decode(deployment_request)
         data_holder = DeployDataHolder(data)
         deployment_resource_model=DeployAWSEc2AMIInstanceResourceModel()
-        deployment_resource_model.aws_ec2 = data_holder.image_params.aws_ec2
-        deployment_resource_model.aws_ami_id = data_holder.image_params.aws_ami_id
-        deployment_resource_model.storage_size = data_holder.image_params.storage_size
-        deployment_resource_model.storage_iops = data_holder.image_params.storage_iops
-        deployment_resource_model.storage_type = data_holder.image_params.storage_type
-        deployment_resource_model.min_count = int( data_holder.image_params.min_count)
-        deployment_resource_model.max_count = int(data_holder.image_params.max_count)
-        deployment_resource_model.instance_type = data_holder.image_params.instance_type
-        deployment_resource_model.aws_key = data_holder.image_params.aws_key
-        deployment_resource_model.security_group_ids = data_holder.image_params.security_group_ids
-        deployment_resource_model.private_ip_address = data_holder.image_params.private_ip_address
-        deployment_resource_model.device_name = data_holder.image_params.device_name
-        deployment_resource_model.delete_on_termination = bool(data_holder.image_params.delete_on_termination)
-        return deployment_resource_model,data_holder.app_name
+        deployment_resource_model.aws_ec2 = data_holder.ami_params.aws_ec2
+        deployment_resource_model.aws_ami_id = data_holder.ami_params.aws_ami_id
+        deployment_resource_model.storage_size = data_holder.ami_params.storage_size
+        deployment_resource_model.storage_iops = data_holder.ami_params.storage_iops
+        deployment_resource_model.storage_type = data_holder.ami_params.storage_type
+        deployment_resource_model.min_count = int( data_holder.ami_params.min_count)
+        deployment_resource_model.max_count = int(data_holder.ami_params.max_count)
+        deployment_resource_model.instance_type = data_holder.ami_params.instance_type
+        deployment_resource_model.aws_key = data_holder.ami_params.aws_key
+        deployment_resource_model.security_group_ids = data_holder.ami_params.security_group_ids
+        deployment_resource_model.private_ip_address = data_holder.ami_params.private_ip_address
+        deployment_resource_model.device_name = data_holder.ami_params.device_name
+        deployment_resource_model.delete_on_termination = bool(data_holder.ami_params.delete_on_termination)
+        deployment_resource_model.auto_power_on = bool(data_holder.ami_params.auto_power_on)
+        deployment_resource_model.auto_power_off = bool(data_holder.ami_params.auto_power_off)
+        deployment_resource_model.wait_for_ip = bool(data_holder.ami_params.wait_for_ip)
+        deployment_resource_model.auto_delete = bool(data_holder.ami_params.auto_delete)
+        deployment_resource_model.autoload = bool(data_holder.ami_params.autoload)
+        return deployment_resource_model, data_holder.app_name
+
+    def get_region_code_from_name(self, region):
+        return "eu-central-1"
+
 
 
 

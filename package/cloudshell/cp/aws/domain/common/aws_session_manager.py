@@ -16,8 +16,4 @@ class AWSSessionManager(object):
         config = ConfigParser.ConfigParser()
         config_path = self.test_cred_path
         config.readfp(open(config_path))
-        return config.get('Credentials', 'User'), \
-               config.get('Credentials', 'Access Key ID'), \
-               config.get('Credentials', 'Pwd'), \
-               config.get('Credentials', 'Secret Access Key'), \
-               config.get('Credentials', 'Region')
+        return config.get('Credentials', 'Access Key ID'),config.get('Credentials', 'Secret Access Key')
