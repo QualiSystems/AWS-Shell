@@ -65,6 +65,7 @@ package/cloudshell/tests/config.ini
 *.cache
 *.whl
 *.tar.gz
+/package/cloudshell/cp/aws/test_cred.ini
 *.orig
 *.zip
 debug.txt
@@ -77,3 +78,5 @@ deployment
 
 #Misc
 .imdone
+package/cloudshell/cp/aws/domain/common/test_cred.ini
+package/cloudshell/cp/aws/domain/common/test_cred.ini
