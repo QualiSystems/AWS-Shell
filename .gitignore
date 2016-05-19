@@ -80,3 +80,9 @@ deployment
 .imdone
 package/cloudshell/cp/aws/domain/common/test_cred.ini
 package/cloudshell/cp/aws/domain/common/test_cred.ini
+drivers/aws_shell_driver/src/debug.xml
+drivers/aws_shell_driver/src/debug_info.txt
+drivers/deployment_drivers/aws_ec2_ami_instance/debug.xml
+drivers/deployment_drivers/aws_ec2_ami_instance/debug_info.txt
+package/cloudshell/cp/aws/domain/common/test_cred.ini
+package/cloudshell/cp/aws/domain/common/test_cred.ini
