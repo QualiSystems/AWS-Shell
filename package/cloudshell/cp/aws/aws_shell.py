@@ -33,7 +33,7 @@ class AWSShell(object):
         ec2_session = self.aws_api.create_ec2_session(access_key_id, secret_access_key, aws_ec2_resource_model.region)
         result, name = self.deploy_ami_operation.deploy(ec2_session, name, aws_ec2_resource_model, aws_ami_deployment_model)
 
-        deploy_data= DeployResult(vm_name=name,
+        deploy_data = DeployResult(vm_name=name,
                     vm_uuid=result.instance_id,
                     cloud_provider_resource_name=aws_ami_deployment_model.aws_ec2,
                     auto_power_on=aws_ami_deployment_model.auto_power_on,
@@ -41,6 +41,7 @@ class AWSShell(object):
                     wait_for_ip=aws_ami_deployment_model.wait_for_ip,
                     auto_delete=aws_ami_deployment_model.auto_delete,
                     autoload=aws_ami_deployment_model.autoload)
+
         return self._set_command_result(deploy_data)
 
     def _set_command_result(self,result, unpicklable=False):
