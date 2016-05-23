@@ -37,12 +37,19 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-
-
-
-
-
     <AttributeInfo DefaultValue="false" Description="" IsReadOnly="false" Name="Auto Power On"   Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo  Description="" IsReadOnly="false" Name="Inbound Ports"  Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo  Description="" IsReadOnly="false" Name="Outbound Ports"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -71,15 +78,7 @@
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
-    </AttributeInfo>
-
-
-
-
-
-
-
-    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false"  Name="Storage IOPS"    Type="Numeric">
+    </AttributeInfo>    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false"  Name="Storage IOPS"    Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -152,13 +151,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size">
               <AllowedValues />
             </AttachedAttribute>
-
-
-
-
-
-
-
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage IOPS">
               <AllowedValues />
             </AttachedAttribute>
@@ -245,8 +237,12 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage IOPS" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
-
-
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Inbound Ports" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Outbound Ports" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power On" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -262,9 +258,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Autoload" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
-
-
-
           </AttachedAttributes>
           <ParentModels />
           <Drivers>
