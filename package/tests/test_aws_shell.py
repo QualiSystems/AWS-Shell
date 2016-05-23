@@ -16,39 +16,34 @@ class TestAWSShell(TestCase):
         result = Mock()
         result.instance_id = 'my instance id'
 
+        deploymock = DeployAWSEc2AMIInstanceResourceModel()
+        deploymock.auto_power_on = "True"
+        deploymock.auto_power_off = "True"
+        deploymock.wait_for_ip = "True"
+        deploymock.auto_delete = "True"
+        deploymock.autoload = "True"
+        deploymock.aws_ec2 = "some_name"
+
         self.aws_shell_api._convert_to_deployment_resource_model = \
-            Mock(return_value=((DeployAWSEc2AMIInstanceResourceModel()), name))
+            Mock(return_value=(deploymock, name))
         self.aws_shell_api.convert_to_aws_resource_model = \
             Mock(return_value=(AWSEc2CloudProviderResourceModel()))
 
         self.aws_shell_api.aws_api.create_ec2_session = Mock(return_value=Mock())
         self.aws_shell_api.deploy_ami_operation.deploy = Mock(return_value=(result, name))
 
-        deploy = DeployAWSEc2AMIInstanceResourceModel()
         aws_cloud_provider = AWSEc2CloudProviderResourceModel()
-        res = self.aws_shell_api.deploy_ami(deploy, aws_cloud_provider)
+        res = self.aws_shell_api.deploy_ami(deploymock, aws_cloud_provider)
 
         ami_res_name = jsonpickle.decode(res)['vm_name']
         instance_id = jsonpickle.decode(res)['vm_uuid']
 
         self.assertEqual(ami_res_name, name)
         self.assertEqual(instance_id, result.instance_id)
-
-    def test_aws_deploy_ami(self):
-        aws_ec2_cp = AWSEc2CloudProviderResourceModel()
-        aws_ec2_cp.instance_type = 't2.nano'
-        aws_ec2_cp.aws_key = 'aws_testing_key_pair'
-        aws_ec2_cp.min_count = 1
-        aws_ec2_cp.max_count = 1
-
-        # Block device mappings settings
-        aws_ec2_cp.device_name = '/dev/sda1'
-        aws_ec2_cp.storage_size = 30
-        aws_ec2_cp.delete_on_termination = True
-        aws_ec2_cp.storage_type = 'gp2'
-        aws_ec2_cp.security_group_ids = 'sg-66ea1b0e'
-
-        ami_model = DeployAWSEc2AMIInstanceResourceModel()
-        ami_model.aws_ami_id = 'ami-3acf2f55'
-
-        self.aws_shell_api.deploy_ami(aws_ec2_cp, ami_model)
+        self.assertEqual(instance_id, result.instance_id)
+        self.assertEqual(jsonpickle.decode(res)['auto_power_on'], deploymock.auto_power_on)
+        self.assertEqual(jsonpickle.decode(res)['auto_power_off'], deploymock.auto_power_off)
+        self.assertEqual(jsonpickle.decode(res)['wait_for_ip'], deploymock.wait_for_ip)
+        self.assertEqual(jsonpickle.decode(res)['auto_delete'], deploymock.auto_delete)
+        self.assertEqual(jsonpickle.decode(res)['autoload'], deploymock.autoload)
+        self.assertEqual(jsonpickle.decode(res)['cloud_provider_resource_name'],deploymock.aws_ec2)
