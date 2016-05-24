@@ -22,13 +22,19 @@ class DeployAMIOperation(object):
         :return:
         """
 
+        inbound_ports = self._parse_port_group_attribute(ami_deployment_model.inbound_ports)
+        outbound_ports = self._parse_port_group_attribute(ami_deployment_model.outbound_ports)
+
+        # if the deployment model contains inbound / outbound ports
+        if inbound_ports or outbound_ports:
+            # create a new security port group based on the attributes
+            self._create_security_group(inbound_ports, outbound_ports)
+            # in the end create a tag "CreatedBy : Quali"
+
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model)
 
         return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
-
-
-
 
     def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model):
         """
@@ -55,11 +61,42 @@ class DeployAMIOperation(object):
     def _get_block_device_mappings(ami_rm, aws_ec2_rm):
         block_device_mappings = [
             {
-                'DeviceName': ami_rm.device_name if  ami_rm.device_name else aws_ec2_rm.device_name,
+                'DeviceName': ami_rm.device_name if ami_rm.device_name else aws_ec2_rm.device_name,
                 'Ebs': {
-                    'VolumeSize':int( ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.storage_size),
+                    'VolumeSize': int(ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.storage_size),
                     'DeleteOnTermination': ami_rm.delete_on_termination if ami_rm.delete_on_termination else aws_ec2_rm.delete_on_termination,
                     'VolumeType': ami_rm.storage_type if ami_rm.storage_type else aws_ec2_rm.storage_type
                 }
             }]
         return block_device_mappings
+
+    @staticmethod
+    # todo: this is a MOCK
+    def _parse_port_group_attribute(ports_attribute):
+        if ports_attribute:
+            port = 0
+            protocol = "UDP"
+            destination = "0.0.0.0"
+            return PortData(port, protocol, destination)
+        return None
+
+    def _create_security_group(self, inbound_ports, outbound_ports):
+         return self.aws_api.create_security_group()
+        pass
+
+
+class PortData(object):
+    def __init__(self, port, protocol, destination):
+        """
+
+        :param port: port-can be single port or range like : 0-65535
+        :type port: str
+        :param protocol: protocol-can be UDP or TCP
+        :type port: str
+        :param destination: Determines the traffic that can leave your instance, and where it can go.
+        :type port: str
+        :return:
+        """
+        self.port = port
+        self.protocol = protocol
+        self.destination = destination

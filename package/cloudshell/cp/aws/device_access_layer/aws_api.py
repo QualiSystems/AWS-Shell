@@ -78,3 +78,8 @@ class AWSApi(object):
 
     def _get_kvp(self, key, value):
         return {'Key': key, 'Value': value}
+
+    def create_security_group(self,ec2_session,group_name):
+       # ec2_session.create_security_group(GroupName=group_name,)
+        pass
+
