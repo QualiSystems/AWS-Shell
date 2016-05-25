@@ -1,5 +1,7 @@
 import uuid
 
+import re
+
 from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
@@ -35,7 +37,8 @@ class DeployAMIOperation(object):
             security_group = self._create_security_group_with_port_group(ec2_session,
                                                                          inbound_ports,
                                                                          outbound_ports,
-                                                                         "vpc-5c2ec835")
+                                                                         aws_ec2_cp_resource_model.vpc)
+                                                                         #"vpc-5c2ec835")
             security_group_name = security_group.group_name
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
@@ -83,15 +86,43 @@ class DeployAMIOperation(object):
         return block_device_mappings
 
     @staticmethod
-    # todo: this is a MOCK
     def _parse_port_group_attribute(ports_attribute):
+
         if ports_attribute:
+            return DeployAMIOperation._single_port_parse(ports_attribute)
+        return None
+
+    @staticmethod
+    def _single_port_parse(ports_attribute):
+        from_to_protocol_match = re.match(r"((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp|http)))",
+                                          ports_attribute)
+        from__protocol_match = re.match(r"((?P<from_port>\d+):(?P<protocol>(udp|tcp|http)))", ports_attribute)
+        protocol_match = re.match(r"((?P<protocol>(udp|tcp|http)))", ports_attribute)
+        destination = "0.0.0.0/0"
+        port_data = None
+
+        # 80-50000:udp
+        if from_to_protocol_match:
+            from_port = from_to_protocol_match.group('from_port')
+            to_port = from_to_protocol_match.group('to_port')
+            protocol = from_to_protocol_match.group('protocol')
+            port_data = PortData(from_port, to_port, protocol, destination)
+
+        # 80:udp
+        if from__protocol_match:
+            from_port = from__protocol_match.group('from_port')
+            to_port = from_port
+            protocol = from_to_protocol_match.group('protocol')
+            port_data = PortData(from_port, to_port, protocol, destination)
+
+        # udp
+        if protocol_match:
             from_port = 80
             to_port = 80
-            protocol = "udp"
-            destination = "0.0.0.0/0"
-            return PortData(from_port, to_port, protocol, destination)
-        return None
+            protocol = protocol_match.group('protocol')
+            port_data = PortData(from_port, to_port, protocol, destination)
+
+        return port_data
 
     def _create_security_group_with_port_group(self, ec2_session, inbound_ports, outbound_ports, vpc):
 
@@ -104,31 +135,27 @@ class DeployAMIOperation(object):
                                                             vpc)
         # adding inbound port rules
         if inbound_ports:
-            security_group.authorize_ingress(IpPermissions=[{
-                'IpProtocol': inbound_ports.protocol,
-                'FromPort': inbound_ports.from_port,
-                'ToPort': inbound_ports.to_port,
-                'IpRanges': [
-                    {
-                        'CidrIp': inbound_ports.destination
-                    }
-                ]}])
+            security_group.authorize_ingress(IpPermissions=[self._get_ip_permission_object(inbound_ports)])
 
         if outbound_ports:
-            security_group.authorize_egress(IpPermissions=[{
-                'IpProtocol': outbound_ports.protocol,
-                'FromPort': outbound_ports.from_port,
-                'ToPort': outbound_ports.to_port,
-                'IpRanges': [
-                    {
-                        'CidrIp': outbound_ports.destination
-                    }
-                ]}])
+            security_group.authorize_egress(IpPermissions=[self._get_ip_permission_object(outbound_ports)])
 
         # setting tags on the created security group
         self.aws_api.set_security_group_tags(security_group, security_group_name)
 
         return security_group
+
+    @staticmethod
+    def _get_ip_permission_object(port_data):
+        return {
+            'IpProtocol': port_data.protocol,
+            'FromPort': int(port_data.from_port),
+            'ToPort': int(port_data.to_port),
+            'IpRanges': [
+                {
+                    'CidrIp': port_data.destination
+                }
+            ]}
 
 
 class PortData(object):
@@ -136,9 +163,9 @@ class PortData(object):
         """ec2_session
 
         :param port: to_port-start port
-        :type port: str
+        :type port: int
         :param port: from_port-end port
-        :type port: str
+        :type port: int
         :param protocol: protocol-can be UDP or TCP
         :type port: str
         :param destination: Determines the traffic that can leave your instance, and where it can go.

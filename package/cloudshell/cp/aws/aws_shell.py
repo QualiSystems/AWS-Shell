@@ -66,6 +66,7 @@ class AWSShell(object):
         aws_ec2_resource_model.device_name = resource_context['Device Name']
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
+        aws_ec2_resource_model.vpc = resource_context['VPC']
         return aws_ec2_resource_model
 
     def _convert_to_deployment_resource_model(self, deployment_request):
