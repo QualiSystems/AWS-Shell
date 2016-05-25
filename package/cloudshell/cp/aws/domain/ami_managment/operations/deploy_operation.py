@@ -1,3 +1,5 @@
+import uuid
+
 from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
@@ -24,24 +26,32 @@ class DeployAMIOperation(object):
 
         inbound_ports = self._parse_port_group_attribute(ami_deployment_model.inbound_ports)
         outbound_ports = self._parse_port_group_attribute(ami_deployment_model.outbound_ports)
+        security_group_name = None
 
         # if the deployment model contains inbound / outbound ports
         if inbound_ports or outbound_ports:
             # create a new security port group based on the attributes
-            self._create_security_group(inbound_ports, outbound_ports)
-            # in the end create a tag "CreatedBy : Quali"
+            # in the end creates a tag "CreatedBy : Quali"
+            security_group = self._create_security_group_with_port_group(ec2_session,
+                                                                         inbound_ports,
+                                                                         outbound_ports,
+                                                                         "vpc-5c2ec835")
+            security_group_name = security_group.group_name
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
-                                                                 ami_deployment_model)
+                                                                 ami_deployment_model,
+                                                                 security_group_name)
 
         return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
 
-    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model):
+    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group_name):
         """
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
+        :param security_group_name : The security group of the AMI
+        :type security_group_name : str
         """
         aws_model = AMIDeploymentModel()
         if not ami_deployment_model.aws_ami_id:
@@ -55,6 +65,8 @@ class DeployAMIOperation(object):
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = ami_deployment_model.aws_key
 
+        if security_group_name != '' and security_group_name is not None:
+            aws_model.security_group_ids.append(security_group_name)
         return aws_model
 
     @staticmethod
@@ -74,22 +86,58 @@ class DeployAMIOperation(object):
     # todo: this is a MOCK
     def _parse_port_group_attribute(ports_attribute):
         if ports_attribute:
-            port = 0
-            protocol = "UDP"
-            destination = "0.0.0.0"
-            return PortData(port, protocol, destination)
+            from_port = 80
+            to_port = 80
+            protocol = "udp"
+            destination = "0.0.0.0/0"
+            return PortData(from_port, to_port, protocol, destination)
         return None
 
-    def _create_security_group(self, inbound_ports, outbound_ports):
-         return self.aws_api.create_security_group()
-        pass
+    def _create_security_group_with_port_group(self, ec2_session, inbound_ports, outbound_ports, vpc):
+
+        security_group_name = "Quali_security_group " + str(uuid.uuid4())
+        # creating the security group
+        description = "Quali Security Group"
+        security_group = self.aws_api.create_security_group(ec2_session,
+                                                            security_group_name,
+                                                            description,
+                                                            vpc)
+        # adding inbound port rules
+        if inbound_ports:
+            security_group.authorize_ingress(IpPermissions=[{
+                'IpProtocol': inbound_ports.protocol,
+                'FromPort': inbound_ports.from_port,
+                'ToPort': inbound_ports.to_port,
+                'IpRanges': [
+                    {
+                        'CidrIp': inbound_ports.destination
+                    }
+                ]}])
+
+        if outbound_ports:
+            security_group.authorize_egress(IpPermissions=[{
+                'IpProtocol': outbound_ports.protocol,
+                'FromPort': outbound_ports.from_port,
+                'ToPort': outbound_ports.to_port,
+                'IpRanges': [
+                    {
+                        'CidrIp': outbound_ports.destination
+                    }
+                ]}])
+
+        # setting tags on the created security group
+        self.aws_api.set_security_group_tags(security_group, security_group_name)
+
+        return security_group
 
 
 class PortData(object):
-    def __init__(self, port, protocol, destination):
-        """
+    def __init__(self, from_port, to_port, protocol, destination):
+        """ec2_session
 
-        :param port: port-can be single port or range like : 0-65535
+        :param port: to_port-start port
+        :type port: str
+        :param port: from_port-end port
         :type port: str
         :param protocol: protocol-can be UDP or TCP
         :type port: str
@@ -97,6 +145,7 @@ class PortData(object):
         :type port: str
         :return:
         """
-        self.port = port
+        self.from_port = from_port
+        self.to_port = to_port
         self.protocol = protocol
         self.destination = destination
