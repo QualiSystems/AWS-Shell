@@ -28,7 +28,7 @@ class DeployAMIOperation(object):
 
         inbound_ports = self._parse_port_group_attribute(ami_deployment_model.inbound_ports)
         outbound_ports = self._parse_port_group_attribute(ami_deployment_model.outbound_ports)
-        security_group_name = None
+        security_group_id = None
 
         # if the deployment model contains inbound / outbound ports
         if inbound_ports or outbound_ports:
@@ -38,22 +38,22 @@ class DeployAMIOperation(object):
                                                                          inbound_ports,
                                                                          outbound_ports,
                                                                          aws_ec2_cp_resource_model.vpc)
-            security_group_name = security_group.group_name
+            security_group_id = security_group.group_id
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                 security_group_name)
+                                                                 security_group_id)
 
         return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
 
-    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group_name):
+    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group_id):
         """
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
-        :param security_group_name : The security group of the AMI
-        :type security_group_name : str
+        :param security_group_id : The security group of the AMI
+        :type security_group_id : str
         """
         aws_model = AMIDeploymentModel()
         if not ami_deployment_model.aws_ami_id:
@@ -66,9 +66,10 @@ class DeployAMIOperation(object):
         aws_model.private_ip_address = ami_deployment_model.private_ip_address if ami_deployment_model.private_ip_address else None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = ami_deployment_model.aws_key
+        aws_model.subnet_id = aws_ec2_resource_model.subnet
 
-        if security_group_name != '' and security_group_name is not None:
-            aws_model.security_group_ids.append(security_group_name)
+        if security_group_id != '' and security_group_id is not None:
+            aws_model.security_group_ids.append(security_group_id)
         return aws_model
 
     @staticmethod
@@ -95,10 +96,13 @@ class DeployAMIOperation(object):
 
     @staticmethod
     def _single_port_parse(ports_attribute):
-        from_to_protocol_match = re.match(r"((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp|http)))",
-                                          ports_attribute)
+        from_to_protocol_match = re.match(r"((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp|http)))",ports_attribute)
         from_protocol_match = re.match(r"((?P<from_port>\d+):(?P<protocol>(udp|tcp|http)))", ports_attribute)
-        protocol_match = re.match(r"((?P<protocol>(udp|tcp|http)))", ports_attribute)
+
+        from_to_match = re.match(r"((?P<from_port>\d+)-(?P<to_port>\d+))",ports_attribute)
+
+        port_match = re.match(r"((?P<from_port>\d+))", ports_attribute)
+
         destination = "0.0.0.0/0"
         port_data = None
 
@@ -107,21 +111,28 @@ class DeployAMIOperation(object):
             from_port = from_to_protocol_match.group('from_port')
             to_port = from_to_protocol_match.group('to_port')
             protocol = from_to_protocol_match.group('protocol')
-            port_data = PortData(from_port, to_port, protocol, destination)
+            return PortData(from_port, to_port, protocol, destination)
 
         # 80:udp
         if from_protocol_match:
             from_port = from_protocol_match.group('from_port')
             to_port = from_port
             protocol = from_protocol_match.group('protocol')
-            port_data = PortData(from_port, to_port, protocol, destination)
+            return PortData(from_port, to_port, protocol, destination)
 
-        # udp
-        if protocol_match:
-            from_port = 80
-            to_port = 80
-            protocol = protocol_match.group('protocol')
-            port_data = PortData(from_port, to_port, protocol, destination)
+        # 20-80
+        if from_to_match:
+            from_port = from_to_match.group('from_port')
+            to_port = from_to_match.group('to_port')
+            protocol = 'tcp'
+            return PortData(from_port, to_port, protocol, destination)
+
+        # 80
+        if port_match:
+            from_port = port_match.group('from_port')
+            to_port = from_port
+            protocol = 'tcp'
+            return PortData(from_port, to_port, protocol, destination)
 
         return port_data
 

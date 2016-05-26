@@ -67,6 +67,7 @@ class AWSShell(object):
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
         aws_ec2_resource_model.vpc = resource_context['VPC']
+        aws_ec2_resource_model.subnet = resource_context['Subnet']
         return aws_ec2_resource_model
 
     def _convert_to_deployment_resource_model(self, deployment_request):

@@ -10,3 +10,4 @@ class AMIDeploymentModel(object):
         self.private_ip_address = ''  # type: str
         self.security_group_ids = []  # type: list[str]
         self.block_device_mappings = []  # type: list[dict]
+        self.subnet_id = ''  # type: str

@@ -21,3 +21,4 @@ class AWSEc2CloudProviderResourceModel(object):
         self.region = ''  # type : str
         self.storage_type = ''  # type: str
         self.vpc = ''  # type: str
+        self.subnet = ''  # type: str

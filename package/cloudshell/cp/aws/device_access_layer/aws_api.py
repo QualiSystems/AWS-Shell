@@ -29,7 +29,13 @@ class AWSApi(object):
             InstanceType=ami_deployment_info.instance_type,
             KeyName=ami_deployment_info.aws_key,
             BlockDeviceMappings=ami_deployment_info.block_device_mappings,
-            SecurityGroupIds=ami_deployment_info.security_group_ids,
+            # SecurityGroupIds=ami_deployment_info.security_group_ids,
+            NetworkInterfaces=[
+                {
+                    'SubnetId': ami_deployment_info.subnet_id,
+                    'DeviceIndex': 0,
+                    'Groups': ami_deployment_info.security_group_ids
+                }]
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
         new_name = name + ' ' + instance.instance_id
@@ -64,7 +70,6 @@ class AWSApi(object):
     def set_instance_name_and_createdby(self, ec2_session, instance, name):
         return self.set_instance_tag(ec2_session, instance, self.get_default_tags(name))
 
-
     def get_default_tags(self, name):
         return [self._get_kvp("Name", name),
                 self._get_created_by_kvp()]
@@ -77,7 +82,7 @@ class AWSApi(object):
     def set_instance_tag(ec2_session, instance, tags):
         return ec2_session.create_tags(Resources=[instance.id], Tags=tags)
 
-    def set_security_group_tags(self,security_group, name):
+    def set_security_group_tags(self, security_group, name):
         return security_group.create_tags(Tags=self.get_default_tags(name))
 
     def _get_created_by_kvp(self):
