@@ -56,12 +56,14 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.storage_iops = resource.attributes['Storage IOPS']
         deployedResource.storage_size = resource.attributes['Storage Size']
         deployedResource.instance_type = resource.attributes['Instance Type']
-
         deployedResource.auto_power_on = resource.attributes['Auto Power On']
         deployedResource.auto_power_off = resource.attributes['Auto Power Off']
         deployedResource.wait_for_ip = resource.attributes['Wait for IP']
         deployedResource.auto_delete = resource.attributes['Auto Delete']
         deployedResource.autoload = resource.attributes['Autoload']
+        deployedResource.inbound_ports = resource.attributes['Inbound Ports']
+        deployedResource.outbound_ports = resource.attributes['Outbound Ports']
+
         return deployedResource
 
     def _get_deployment_info(self, image_model, name):

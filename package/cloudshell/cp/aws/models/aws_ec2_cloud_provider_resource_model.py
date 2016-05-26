@@ -20,3 +20,5 @@ class AWSEc2CloudProviderResourceModel(object):
         # "the volume can be one of these: 'standard'|'io1'|'gp2'|'sc1'|'st1'
         self.region = ''  # type : str
         self.storage_type = ''  # type: str
+        self.vpc = ''  # type: str
+        self.subnet = ''  # type: str
