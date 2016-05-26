@@ -38,7 +38,6 @@ class DeployAMIOperation(object):
                                                                          inbound_ports,
                                                                          outbound_ports,
                                                                          aws_ec2_cp_resource_model.vpc)
-                                                                         #"vpc-5c2ec835")
             security_group_name = security_group.group_name
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
@@ -89,14 +88,16 @@ class DeployAMIOperation(object):
     def _parse_port_group_attribute(ports_attribute):
 
         if ports_attribute:
-            return DeployAMIOperation._single_port_parse(ports_attribute)
+            splited_ports = ports_attribute.split(';')
+            port_data_array = [DeployAMIOperation._single_port_parse(port) for port in splited_ports]
+            return port_data_array
         return None
 
     @staticmethod
     def _single_port_parse(ports_attribute):
         from_to_protocol_match = re.match(r"((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp|http)))",
                                           ports_attribute)
-        from__protocol_match = re.match(r"((?P<from_port>\d+):(?P<protocol>(udp|tcp|http)))", ports_attribute)
+        from_protocol_match = re.match(r"((?P<from_port>\d+):(?P<protocol>(udp|tcp|http)))", ports_attribute)
         protocol_match = re.match(r"((?P<protocol>(udp|tcp|http)))", ports_attribute)
         destination = "0.0.0.0/0"
         port_data = None
@@ -109,10 +110,10 @@ class DeployAMIOperation(object):
             port_data = PortData(from_port, to_port, protocol, destination)
 
         # 80:udp
-        if from__protocol_match:
-            from_port = from__protocol_match.group('from_port')
+        if from_protocol_match:
+            from_port = from_protocol_match.group('from_port')
             to_port = from_port
-            protocol = from_to_protocol_match.group('protocol')
+            protocol = from_protocol_match.group('protocol')
             port_data = PortData(from_port, to_port, protocol, destination)
 
         # udp
@@ -135,10 +136,12 @@ class DeployAMIOperation(object):
                                                             vpc)
         # adding inbound port rules
         if inbound_ports:
-            security_group.authorize_ingress(IpPermissions=[self._get_ip_permission_object(inbound_ports)])
+            ip_permissions = [self._get_ip_permission_object(port) for port in inbound_ports if port is not None]
+            security_group.authorize_ingress(IpPermissions=ip_permissions)
 
         if outbound_ports:
-            security_group.authorize_egress(IpPermissions=[self._get_ip_permission_object(outbound_ports)])
+            ip_permissions = [self._get_ip_permission_object(port) for port in outbound_ports if port is not None]
+            security_group.authorize_egress(IpPermissions=ip_permissions)
 
         # setting tags on the created security group
         self.aws_api.set_security_group_tags(security_group, security_group_name)
