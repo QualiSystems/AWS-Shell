@@ -7,10 +7,6 @@ class AWSApi(object):
     def __init__(self):
         pass
 
-    def create_ec2_session(self, aws_access_key_id, aws_secret_access_key, region_name):
-        session = self._create_session(aws_access_key_id, aws_secret_access_key, region_name)
-        return session.resource(EC2)
-
     def create_instance(self, ec2_session, name, ami_deployment_info):
         """
         Deploys an AMI
@@ -43,16 +39,6 @@ class AWSApi(object):
 
         instance = self.wait_for_instance_running(instance)
         return instance, new_name
-
-    @staticmethod
-    def _create_session(aws_access_key_id, aws_secret_access_key, region_name):
-        if not aws_access_key_id or not aws_secret_access_key:
-            return boto3.Session(region_name=region_name)
-
-        return boto3.Session(
-            aws_access_key_id=aws_access_key_id,
-            aws_secret_access_key=aws_secret_access_key,
-            region_name=region_name)
 
     @staticmethod
     def wait_for_instance_running(instance):

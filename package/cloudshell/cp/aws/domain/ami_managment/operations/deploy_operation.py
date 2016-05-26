@@ -62,7 +62,7 @@ class DeployAMIOperation(object):
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.min_count = 1
         aws_model.max_count = 1
-        aws_model.instance_type = ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
+        aws_model.instance_type = ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.default_instance_type
         aws_model.private_ip_address = ami_deployment_model.private_ip_address if ami_deployment_model.private_ip_address else None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = ami_deployment_model.aws_key
@@ -78,9 +78,9 @@ class DeployAMIOperation(object):
             {
                 'DeviceName': ami_rm.device_name if ami_rm.device_name else aws_ec2_rm.device_name,
                 'Ebs': {
-                    'VolumeSize': int(ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.storage_size),
+                    'VolumeSize': int(ami_rm.storage_size if ami_rm.storage_size else aws_ec2_rm.default_storage_size),
                     'DeleteOnTermination': ami_rm.delete_on_termination if ami_rm.delete_on_termination else aws_ec2_rm.delete_on_termination,
-                    'VolumeType': ami_rm.storage_type if ami_rm.storage_type else aws_ec2_rm.storage_type
+                    'VolumeType': ami_rm.storage_type if ami_rm.storage_type else aws_ec2_rm.default_storage_type
                 }
             }]
         return block_device_mappings
