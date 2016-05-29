@@ -7,6 +7,9 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Generic Input" Type="String">
+      <Rules/>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS Access Key ID" Type="Password">
       <Rules>
         <Rule Name="Configuration" />
