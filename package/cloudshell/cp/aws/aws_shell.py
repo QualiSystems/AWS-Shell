@@ -23,6 +23,7 @@ class AWSShell(object):
     def deploy_ami(self, command_context, deployment_request):
         """
         Will deploy Amazon Image on the cloud provider
+        :param command_context:
         :param deployment_request:
         """
         aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
