@@ -5,7 +5,7 @@ from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.ami_managment.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
-from cloudshell.cp.aws.domain.services.security_groups_service.aws_security_group_service import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 

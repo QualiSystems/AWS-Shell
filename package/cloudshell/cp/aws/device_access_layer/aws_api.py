@@ -1,4 +1,4 @@
-from cloudshell.cp.aws.domain.services.security_groups_service.aws_security_group_service import TagManagerService
+from cloudshell.cp.aws.domain.services.ec2_services.tag_manager_service import TagManagerService
 
 EC2 = 'ec2'
 

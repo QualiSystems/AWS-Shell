@@ -1,6 +1,10 @@
+import uuid
+
 from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
-from cloudshell.cp.aws.domain.services.security_groups_service.aws_security_group_service import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import \
+    AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2_services.tag_manager_service import TagManagerService
 
 
 class DeployAMIOperation(object):
@@ -26,15 +30,29 @@ class DeployAMIOperation(object):
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
         :return:
         """
-
-        security_group_id = self.security_group_service.create_security_group(ami_deployment_model,
-                                                                              aws_ec2_cp_resource_model, ec2_session)
+        security_group = self._create_security_group_for_instance(ami_deployment_model, aws_ec2_cp_resource_model,
+                                                                  ec2_session)
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                 security_group_id)
+                                                                 security_group.group_id)
 
         return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
+
+    def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session):
+
+        security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
+
+        security_group = self.security_group_service.create_security_group(self.aws_api,
+                                                                           ec2_session,
+                                                                           aws_ec2_cp_resource_model.vpc,
+                                                                           security_group_name)
+
+        TagManagerService.set_security_group_tags(security_group, security_group_name)
+
+        self.security_group_service.set_security_group_rules(ami_deployment_model, security_group)
+
+        return security_group
 
     def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group_id):
         """
