@@ -33,7 +33,7 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def delete(self, context, ports):
-        pass
+        return self.aws_shell.delete_ami(context)
 
     def ApplyConnectivityChanges(self, context, ports, request):
         pass
