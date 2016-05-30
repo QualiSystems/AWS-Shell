@@ -21,10 +21,10 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.deploy_ami(context,request)
 
     def PowerOn(self, context, ports):
-        pass
+        return self.aws_shell.power_on_ami(context)
 
     def PowerOff(self, context, ports):
-        pass
+        return self.aws_shell.power_off_ami(context)
 
     def PowerCycle(self, context, ports, delay):
         pass
