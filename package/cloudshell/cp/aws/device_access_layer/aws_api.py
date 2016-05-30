@@ -1,4 +1,4 @@
-import boto3
+from cloudshell.cp.aws.domain.services.security_groups_service.aws_security_group_service import TagManagerService
 
 EC2 = 'ec2'
 
@@ -37,7 +37,7 @@ class AWSApi(object):
         )[0]
         new_name = name + ' ' + instance.instance_id
 
-        TagManager.set_ami_instance_tag(ec2_session, instance, new_name)
+        TagManagerService.set_ami_instance_tag(ec2_session, instance, new_name)
 
         # Note: checks every 15 sec
         instance.wait_until_running()
@@ -61,20 +61,3 @@ class AWSApi(object):
         return ec2_session.create_key_pair(KeyName=key_name)
 
 
-class TagManager(object):
-    @staticmethod
-    def set_ami_instance_tag(ec2_session, instance, tags):
-        return ec2_session.create_tags(Resources=[instance.id], Tags=tags)
-
-    def set_security_group_tags(self, security_group, name):
-        return security_group.create_tags(Tags=self.get_default_tags(name))
-
-    def get_default_tags(self, name):
-        return [self._get_kvp("Name", name),
-                self._get_created_by_kvp()]
-
-    def _get_created_by_kvp(self):
-        return self._get_kvp('CreatedBy', 'Quali')
-
-    def _get_kvp(self, key, value):
-        return {'Key': key, 'Value': value}
