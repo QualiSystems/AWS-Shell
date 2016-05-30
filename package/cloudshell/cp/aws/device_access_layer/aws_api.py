@@ -37,17 +37,12 @@ class AWSApi(object):
         new_name = name + ' ' + instance.instance_id
         self.set_instance_name_and_createdby(ec2_session, instance, new_name)
 
-        instance = self.wait_for_instance_running(instance)
-        return instance, new_name
-
-    @staticmethod
-    def wait_for_instance_running(instance):
         # Note: pulling every 15 sec
         instance.wait_until_running()
 
         # Reload the instance attributes
         instance.load()
-        return instance
+        return instance, new_name
 
     @staticmethod
     def get_instance_by_id(ec2_session, id):
