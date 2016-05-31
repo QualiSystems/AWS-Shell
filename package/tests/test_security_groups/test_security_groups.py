@@ -15,7 +15,7 @@ class TestSecurityGroups(TestCase):
         permission_object = AWSSecurityGroupService.get_ip_permission_object(self.port_data)
         self.assertEquals(str(permission_object['FromPort']), self.port_data.from_port)
         self.assertEquals(str(permission_object['ToPort']), self.port_data.to_port)
-        self.assertEquals(permission_object['IpRanges'][0]['CidrIp'], self.port_data.protocol)
+        self.assertEquals(permission_object['IpRanges'][0]['CidrIp'], self.port_data.destination)
         self.assertEquals(permission_object['IpProtocol'], self.port_data.protocol)
 
     def test_port_group_parser(self):

@@ -6,7 +6,7 @@ class DeleteAMIOperation(object):
         :param ec2_api:
         :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
         :type ec2_storage_service: cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service.EC2StorageService
-        :type security_group_service: cloudshell.cp.aws.domain.services.security_group_services.security_group_service.SecurityGroupService
+        :type security_group_service: from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service.AWSSecurityGroupService
         """
         self.ec2_api = ec2_api
         self.instance_waiter = instance_waiter

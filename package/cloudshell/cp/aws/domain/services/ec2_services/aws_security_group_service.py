@@ -6,6 +6,17 @@ class AWSSecurityGroupService(object):
     QUALI_SECURITY_GROUP_DESCRIPTION = "Quali Security Group"
 
     @staticmethod
+    def delete_security_group(security_group):
+        try:
+            security_group.delete()
+        except Exception:
+            raise
+
+    def delete_all_security_groups_of_instance(self, instance):
+        for security_group in instance.security_groups:
+            self.delete_security_group(security_group)
+
+    @staticmethod
     def create_security_group(aws_session, ec2_session, vpc, security_group_name):
         # creating the security group
         security_group = aws_session.create_security_group(ec2_session,

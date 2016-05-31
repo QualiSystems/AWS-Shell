@@ -7,7 +7,6 @@ from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
-from cloudshell.cp.aws.domain.services.security_group_services.security_group_service import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
@@ -20,7 +19,6 @@ class AWSShell(object):
         self.aws_api = AWSApi()
         self.ec2_instance_waiter = EC2InstanceWaiter()
         self.ec2_storage_service = EC2StorageService()
-        self.security_group_service = SecurityGroupService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
@@ -30,7 +28,7 @@ class AWSShell(object):
         self.delete_ami_operation = DeleteAMIOperation(self.aws_api,
                                                        self.ec2_instance_waiter,
                                                        self.ec2_storage_service,
-                                                       self.security_group_service)
+                                                       aws_security_group_service)
 
     def deploy_ami(self, command_context, deployment_request):
         """
