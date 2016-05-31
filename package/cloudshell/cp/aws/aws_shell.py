@@ -7,7 +7,7 @@ from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
-from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.security_group_services.security_group_service import SecurityGroupService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
 from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
@@ -19,22 +19,20 @@ class AWSShell(object):
         self.aws_api = AWSApi()
         self.ec2_instance_waiter = EC2InstanceWaiter()
         self.ec2_storage_service = EC2StorageService()
+        self.security_group_service = SecurityGroupService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
-        aws_security_group_service = AWSSecurityGroupService()
-        self.deploy_ami_operation = DeployAMIOperation(self.aws_api, aws_security_group_service)
+        self.deploy_ami_operation = DeployAMIOperation(self.aws_api)
         self.power_management_operation = PowerOperation(self.aws_api, self.ec2_instance_waiter)
         self.delete_ami_operation = DeleteAMIOperation(self.aws_api,
                                                        self.ec2_instance_waiter,
                                                        self.ec2_storage_service,
-                                                       aws_security_group_service)
+                                                       self.security_group_service)
 
     def deploy_ami(self, command_context, deployment_request):
         """
         Will deploy Amazon Image on the cloud provider
-        :param command_context:
-        :param deployment_request:
         """
         aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
