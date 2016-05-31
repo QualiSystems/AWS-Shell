@@ -15,7 +15,7 @@ script:
     - pushd package
     - python setup.py develop
     - popd
-    - python runtests.py --with-coverage  --cover-package=package --exclude-dir=integration
+    - python runtests.py --with-coverage  --cover-package=package
 
 after_success: coveralls
     
