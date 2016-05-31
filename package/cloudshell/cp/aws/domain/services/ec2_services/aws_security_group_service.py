@@ -27,16 +27,16 @@ class AWSSecurityGroupService(object):
 
     def _set_outbound_ports(self, outbound_ports, security_group):
         if outbound_ports:
-            ip_permissions = [self._get_ip_permission_object(port) for port in outbound_ports if port is not None]
+            ip_permissions = [self.get_ip_permission_object(port) for port in outbound_ports if port is not None]
             security_group.authorize_egress(IpPermissions=ip_permissions)
 
     def _set_inbound_ports(self, inbound_ports, security_group):
         if inbound_ports:
-            ip_permissions = [self._get_ip_permission_object(port) for port in inbound_ports if port is not None]
+            ip_permissions = [self.get_ip_permission_object(port) for port in inbound_ports if port is not None]
             security_group.authorize_ingress(IpPermissions=ip_permissions)
 
     @staticmethod
-    def _get_ip_permission_object(port_data):
+    def get_ip_permission_object(port_data):
         return {
             'IpProtocol': port_data.protocol,
             'FromPort': int(port_data.from_port),
