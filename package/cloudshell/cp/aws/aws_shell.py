@@ -16,7 +16,7 @@ class AWSShell(object):
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
-        aws_security_group_service = AWSSecurityGroupService(self.aws_api)
+        aws_security_group_service = AWSSecurityGroupService()
         self.deploy_ami_operation = DeployAMIOperation(self.aws_api, aws_security_group_service)
         self.power_management_operation = PowerOperation(self.aws_api)
 

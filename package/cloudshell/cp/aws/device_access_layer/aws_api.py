@@ -37,7 +37,7 @@ class AWSApi(object):
         )[0]
         new_name = name + ' ' + instance.instance_id
 
-        TagManagerService.set_ami_instance_tag(ec2_session, instance, new_name)
+        TagManagerService.set_ami_instance_tag(ec2_session, instance, TagManagerService.get_default_tags(new_name))
 
         # Note: checks every 15 sec
         instance.wait_until_running()
@@ -59,5 +59,3 @@ class AWSApi(object):
     @staticmethod
     def create_key_pair(ec2_session, key_name):
         return ec2_session.create_key_pair(KeyName=key_name)
-
-
