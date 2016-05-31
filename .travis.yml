@@ -15,9 +15,9 @@ script:
     - pushd package
     - python setup.py develop
     - popd
-    - python runtests.py --with-coverage  --cover-package=package
+#    - python runtests.py --with-coverage  --cover-package=package
 
-after_success: coveralls
+#after_success: coveralls
     
 #notifications:
 # webhools: https://qualisystems.getbadges.io/api/app/webhook/{will be added later}
