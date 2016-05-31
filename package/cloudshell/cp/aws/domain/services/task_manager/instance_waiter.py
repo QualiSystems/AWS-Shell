@@ -40,10 +40,10 @@ class EC2InstanceWaiter(object):
 
         start_time = time.time()
         while instance.state['Name'] != state:
+            instance.reload()
             if time.time() - start_time >= self.timeout:
                 raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, instance.state))
             time.sleep(self.delay)
-            instance.reload()
 
         if load:
             instance.reload()
