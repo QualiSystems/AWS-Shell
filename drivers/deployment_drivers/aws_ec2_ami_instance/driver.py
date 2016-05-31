@@ -45,7 +45,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         return result.Output
 
     def vaidate_deployment_ami_model(self, aws_ami_deployment_model):
-        if (aws_ami_deployment_model.aws_ec2 == ''):
+        if aws_ami_deployment_model.aws_ec2 == '':
             raise Exception("The name of the AWS EC2 resource is empty.")
 
     # todo: remove this to a common place
@@ -70,7 +70,6 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         """
         :type image_model: vCenterVMFromImageResourceModel
         """
-
         return DeployDataHolder({'app_name': name,
                                  'ami_params': image_model
                                  })
