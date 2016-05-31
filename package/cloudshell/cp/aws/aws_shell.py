@@ -80,7 +80,7 @@ class AWSShell(object):
 
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        result = self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
+        result = self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
         return self._set_command_result(result)
 
