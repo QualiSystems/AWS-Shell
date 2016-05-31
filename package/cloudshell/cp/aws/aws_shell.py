@@ -5,6 +5,7 @@ from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.ami_managment.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
+from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
@@ -15,12 +16,15 @@ class AWSShell(object):
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
-        self.deploy_ami_operation = DeployAMIOperation(self.aws_api)
+        aws_security_group_service = AWSSecurityGroupService()
+        self.deploy_ami_operation = DeployAMIOperation(self.aws_api, aws_security_group_service)
         self.power_management_operation = PowerOperation(self.aws_api)
 
     def deploy_ami(self, command_context, deployment_request):
         """
         Will deploy Amazon Image on the cloud provider
+        :param command_context:
+        :param deployment_request:
         """
         aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
