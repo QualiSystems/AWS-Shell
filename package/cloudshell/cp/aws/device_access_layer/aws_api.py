@@ -43,10 +43,10 @@ class AWSApi(object):
 
         # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id
+        self.set_instance_name_and_createdby(ec2_session, instance, new_name)
 
         default_tags = self.tags_creator_service.get_default_tags(new_name, reservation_id)
         self.set_ec2_resource_tags(instance, default_tags)
-
         # todo Note: checks every 15 sec, use our waiter instead
         instance.wait_until_running()
 
@@ -58,12 +58,27 @@ class AWSApi(object):
         resource.create_tags(Resources=[resource.id], Tags=tags)
 
     def create_security_group(self, ec2_session, group_name, description, vpc_id):
-        return ec2_session.create_security_group(GroupName=group_name,
-                                                 Description=description,
-                                                 VpcId=vpc_id)
-
     def get_instance_by_id(self, ec2_session, id):
         return ec2_session.Instance(id=id)
 
     def create_key_pair(self, ec2_session, key_name):
+        return self.set_instance_tag(ec2_session, instance, self.get_default_tags(name))
+
+    def get_default_tags(self, name):
+        return [self._get_kvp("Name", name),
+                self._get_created_by_kvp()]
+
         return ec2_session.create_key_pair(KeyName=key_name)
+
+    @staticmethod
+    def set_instance_tag(ec2_session, instance, tags):
+        return ec2_session.create_tags(Resources=[instance.id], Tags=tags)
+
+    def set_security_group_tags(self, security_group, name):
+        return security_group.create_tags(Tags=self.get_default_tags(name))
+
+    def _get_created_by_kvp(self):
+        return self._get_kvp('CreatedBy', 'Quali')
+
+    def _get_kvp(self, key, value):
+        return {'Key': key, 'Value': value}

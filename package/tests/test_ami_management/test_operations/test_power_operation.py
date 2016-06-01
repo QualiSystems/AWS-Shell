@@ -9,7 +9,7 @@ class TestPowerOperations(TestCase):
         self.aws_api = Mock()
         self.instance = Mock()
         self.aws_api.get_instance_by_id = Mock(return_value=self.instance)
-        self.power_operations = PowerOperation(self.aws_api)
+        self.power_operations = PowerOperation(self.aws_api, Mock())
         self.ec2_session = Mock()
 
     def test_power_on(self):
@@ -19,5 +19,4 @@ class TestPowerOperations(TestCase):
     def test_power_off(self):
         self.assertTrue(self.power_operations.power_off(self.ec2_session, 'id'))
         self.assertTrue(self.aws_api.get_instance_by_id.called_with(self.ec2_session, 'id'))
-        self.self.aws_api.get_instance_by_id.st
 
