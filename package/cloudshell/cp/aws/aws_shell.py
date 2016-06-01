@@ -51,25 +51,13 @@ class AWSShell(object):
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         reservation_id = command_context.reservation.reservation_id
 
-        result = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
-                                                  name=name,
-                                                  reservation_id=reservation_id,
-                                                  aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                  ami_deployment_model=aws_ami_deployment_model)
-
-        deploy_data = DeployResult(vm_name=self._get_name_from_tags(result),
-                                   vm_uuid=result.instance_id,
-                                   cloud_provider_resource_name=aws_ami_deployment_model.aws_ec2,
-                                   auto_power_on=aws_ami_deployment_model.auto_power_on,
-                                   auto_power_off=aws_ami_deployment_model.auto_power_off,
-                                   wait_for_ip=aws_ami_deployment_model.wait_for_ip,
-                                   auto_delete=aws_ami_deployment_model.auto_delete,
-                                   autoload=aws_ami_deployment_model.autoload)
+        deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
+                                                       name=name,
+                                                       reservation_id=reservation_id,
+                                                       aws_ec2_cp_resource_model=aws_ec2_resource_model,
+                                                       ami_deployment_model=aws_ami_deployment_model)
 
         return self._set_command_result(deploy_data)
-
-    def _get_name_from_tags(self, result):
-        return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
     def power_on_ami(self, command_context):
         """

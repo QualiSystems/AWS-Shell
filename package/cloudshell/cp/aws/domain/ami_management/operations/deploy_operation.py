@@ -5,6 +5,7 @@ from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import \
     AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService, IsolationTagValues
+from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
@@ -43,10 +44,24 @@ class DeployAMIOperation(object):
                                                                  ami_deployment_model,
                                                                  security_group)
 
-        return self.aws_api.create_instance(ec2_session=ec2_session,
-                                            name=name,
-                                            reservation_id=reservation_id,
-                                            ami_deployment_info=ami_deployment_info)
+        result = self.aws_api.create_instance(ec2_session=ec2_session,
+                                              name=name,
+                                              reservation_id=reservation_id,
+                                              ami_deployment_info=ami_deployment_info)
+
+        return DeployResult(vm_name=self._get_name_from_tags(result),
+                            vm_uuid=result.instance_id,
+                            cloud_provider_resource_name=ami_deployment_model.aws_ec2,
+                            auto_power_on=ami_deployment_model.auto_power_on,
+                            auto_power_off=ami_deployment_model.auto_power_off,
+                            wait_for_ip=ami_deployment_model.wait_for_ip,
+                            auto_delete=ami_deployment_model.auto_delete,
+                            autoload=ami_deployment_model.autoload,
+                            inbound_ports=ami_deployment_model.inbound_ports,
+                            outbound_ports=ami_deployment_model.outbound_ports)
+
+    def _get_name_from_tags(self, result):
+        return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
     def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session,
                                             reservation_id):
