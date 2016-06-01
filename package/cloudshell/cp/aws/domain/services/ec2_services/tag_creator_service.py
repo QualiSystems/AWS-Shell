@@ -1,6 +1,3 @@
-from enum import Enum
-
-
 class TagNames(object):
     CreatedBy = 'CreatedBy'
     ReservationId = 'ReservationId'
@@ -8,9 +5,9 @@ class TagNames(object):
     Isolation = 'Isolation'
 
 
-class IsolationEnum(Enum):
-    exclusive = 1
-    shared = 2
+class IsolationTagValues(object):
+    Exclusive = 'Exclusive'
+    Shared = 'Shared'
 
 
 class TagCreatorService(object):
@@ -23,12 +20,12 @@ class TagCreatorService(object):
         """
         returns the default tags with the isolation tag
         :param str name: the name of the resource
-        :param IsolationEnum isolation: the isolation level of the resource
+        :param str isolation: the isolation level of the resource
         :param str reservation_id: reservation id
         :return: list[dict]
         """
         tags = self.get_default_tags(name, reservation_id)
-        tags.append(self._get_kvp(TagNames.Isolation, isolation.name))
+        tags.append(self._get_kvp(TagNames.Isolation, isolation))
         return tags
 
     def get_default_tags(self, name, reservation_id):
