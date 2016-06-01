@@ -51,7 +51,7 @@ class AWSApi(object):
 
         # Reload the instance attributes
         instance.load()
-        return instance, new_name
+        return instance
 
     def set_ec2_resource_tags(self, resource, tags):
         resource.create_tags(Tags=tags)

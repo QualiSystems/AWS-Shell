@@ -10,7 +10,7 @@ class PortGroupAttributeParser(object):
 
         if ports_attribute:
             splitted_ports = ports_attribute.split(';')
-            port_data_array = [PortGroupAttributeParser._single_port_parse(port) for port in splitted_ports]
+            port_data_array = [PortGroupAttributeParser._single_port_parse(port.strip()) for port in splitted_ports]
             return port_data_array
         return None
 

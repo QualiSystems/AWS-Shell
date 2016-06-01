@@ -35,6 +35,9 @@ class AWSShellDriver(ResourceDriverInterface):
     def delete(self, context, ports):
         return self.aws_shell.delete_ami(context)
 
+    def destroy_vm_only(self, context, ports):
+        return self.aws_shell.delete_ami(context, False)
+
     def ApplyConnectivityChanges(self, context, ports, request):
         pass
 
