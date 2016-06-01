@@ -4,9 +4,9 @@ class DeleteAMIOperation(object):
     def __init__(self, ec2_api, instance_waiter, ec2_storage_service, security_group_service):
         """
         :param ec2_api:
-        :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
-        :type ec2_storage_service: cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service.EC2StorageService
-        :type security_group_service: cloudshell.cp.aws.domain.services.security_group_services.security_group_service.SecurityGroupService
+        :param EC2InstanceWaiter instance_waiter:
+        :param EC2StorageService ec2_storage_service:
+        :param AWSSecurityGroupService security_group_service:
         """
         self.ec2_api = ec2_api
         self.instance_waiter = instance_waiter

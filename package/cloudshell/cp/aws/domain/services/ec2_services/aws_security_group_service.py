@@ -16,14 +16,17 @@ class AWSSecurityGroupService(object):
         for security_group in instance.security_groups:
             self.delete_security_group(security_group)
 
-    @staticmethod
-    def create_security_group(aws_session, ec2_session, vpc, security_group_name):
-        # creating the security group
-        security_group = aws_session.create_security_group(ec2_session,
-                                                           security_group_name,
-                                                           AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
-                                                           vpc)
-        return security_group
+    def create_security_group(self, ec2_session, vpc, security_group_name):
+        """
+        creating a security group
+        :param boto3.Session ec2_session:
+        :param str vpc:
+        :param str security_group_name:
+        :return:
+        """
+        return ec2_session.create_security_group(GroupName=security_group_name,
+                                                 Description=AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
+                                                 VpcId=vpc)
 
     def set_security_group_rules(self, ami_deployment_model, security_group):
         # adding inbound port rules
@@ -57,5 +60,3 @@ class AWSSecurityGroupService(object):
                     'CidrIp': port_data.destination
                 }
             ]}
-
-
