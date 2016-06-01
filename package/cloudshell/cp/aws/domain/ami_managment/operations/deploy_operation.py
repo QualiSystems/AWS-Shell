@@ -4,25 +4,28 @@ from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AM
 from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import \
     AWSSecurityGroupService
-from cloudshell.cp.aws.domain.services.ec2_services.tag_manager_service import TagManagerService
+from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService, IsolationEnum
 
 
 class DeployAMIOperation(object):
-    def __init__(self, aws_api, security_group_service):
+    def __init__(self, aws_api, security_group_service, tag_creator_service):
         """
-
+        :param TagCreatorService tag_creator_service:
         :param AWSApi aws_api: the AWS API
         :param AWSSecurityGroupService security_group_service: service that handel the creation of security group
         :return:
         """
 
+        self.tag_creator_service = tag_creator_service
         self.aws_api = aws_api
         self.security_group_service = security_group_service
 
-    def deploy(self, ec2_session, name, aws_ec2_cp_resource_model, ami_deployment_model):
+    def deploy(self, ec2_session, name, reservation_id, aws_ec2_cp_resource_model, ami_deployment_model):
         """
         :param name: The name of the deployed ami
         :type name: str
+        :param reservation_id:
+        :type reservation_id: str
         :param ec2_session:
         :param aws_ec2_cp_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_cp_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
@@ -37,7 +40,10 @@ class DeployAMIOperation(object):
                                                                  ami_deployment_model,
                                                                  security_group.group_id)
 
-        return self.aws_api.create_instance(ec2_session, name, ami_deployment_info)
+        return self.aws_api.create_instance(ec2_session=ec2_session,
+                                            name=name,
+                                            reservation_id=reservation_id,
+                                            ami_deployment_info=ami_deployment_info)
 
     def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session):
 
@@ -48,7 +54,9 @@ class DeployAMIOperation(object):
                                                                            aws_ec2_cp_resource_model.vpc,
                                                                            security_group_name)
 
-        TagManagerService.set_security_group_tags(security_group, security_group_name)
+        tags = self.tag_creator_service.get_security_group_tags(security_group, security_group_name,
+                                                                IsolationEnum.exclusive)
+        self.aws_api.set_ec2_resource_tags(security_group, tags)
 
         self.security_group_service.set_security_group_rules(ami_deployment_model, security_group)
 

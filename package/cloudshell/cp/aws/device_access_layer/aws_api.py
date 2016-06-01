@@ -1,18 +1,23 @@
-from cloudshell.cp.aws.domain.services.ec2_services.tag_manager_service import TagManagerService
+from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
 
 EC2 = 'ec2'
 
 
 class AWSApi(object):
-    def __init__(self):
-        pass
+    def __init__(self, tags_creator_service):
+        """
+        :param TagCreatorService tags_creator_service:
+        :return:
+        """
+        self.tags_creator_service = tags_creator_service
 
-    @staticmethod
-    def create_instance(ec2_session, name, ami_deployment_info):
+    def create_instance(self, ec2_session, name, reservation_id, ami_deployment_info):
         """
         Deploys an AMI
         :param name: Will assign the deployed vm with the name
         :type name: str
+        :param reservation_id:
+        :type reservation_id: str
         :param ec2_session:
         :type ec2_session: boto3.ec2.session
         :param ami_deployment_info: request details of the AMI
@@ -35,27 +40,30 @@ class AWSApi(object):
                 }]
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
+
+        # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id
 
-        TagManagerService.set_ami_instance_tag(ec2_session, instance, TagManagerService.get_default_tags(new_name))
+        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation_id)
+        self.set_ec2_resource_tags(instance, default_tags)
 
-        # Note: checks every 15 sec
+        # todo Note: checks every 15 sec, use our waiter instead
         instance.wait_until_running()
 
         # Reload the instance attributes
         instance.load()
         return instance, new_name
 
-    @staticmethod
-    def create_security_group(ec2_session, group_name, description, vpc_id):
+    def set_ec2_resource_tags(self, resource, tags):
+        resource.create_tags(Resources=[resource.id], Tags=tags)
+
+    def create_security_group(self, ec2_session, group_name, description, vpc_id):
         return ec2_session.create_security_group(GroupName=group_name,
                                                  Description=description,
                                                  VpcId=vpc_id)
 
-    @staticmethod
-    def get_instance_by_id(ec2_session, id):
+    def get_instance_by_id(self, ec2_session, id):
         return ec2_session.Instance(id=id)
 
-    @staticmethod
-    def create_key_pair(ec2_session, key_name):
+    def create_key_pair(self, ec2_session, key_name):
         return ec2_session.create_key_pair(KeyName=key_name)
