@@ -5,6 +5,7 @@ from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import \
     AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService, IsolationTagValues
+from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
@@ -41,15 +42,32 @@ class DeployAMIOperation(object):
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                 security_group.group_id)
+                                                                 security_group)
 
-        return self.aws_api.create_instance(ec2_session=ec2_session,
-                                            name=name,
-                                            reservation_id=reservation_id,
-                                            ami_deployment_info=ami_deployment_info)
+        result = self.aws_api.create_instance(ec2_session=ec2_session,
+                                              name=name,
+                                              reservation_id=reservation_id,
+                                              ami_deployment_info=ami_deployment_info)
+
+        return DeployResult(vm_name=self._get_name_from_tags(result),
+                            vm_uuid=result.instance_id,
+                            cloud_provider_resource_name=ami_deployment_model.aws_ec2,
+                            auto_power_on=ami_deployment_model.auto_power_on,
+                            auto_power_off=ami_deployment_model.auto_power_off,
+                            wait_for_ip=ami_deployment_model.wait_for_ip,
+                            auto_delete=ami_deployment_model.auto_delete,
+                            autoload=ami_deployment_model.autoload,
+                            inbound_ports=ami_deployment_model.inbound_ports,
+                            outbound_ports=ami_deployment_model.outbound_ports)
+
+    def _get_name_from_tags(self, result):
+        return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
     def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session,
                                             reservation_id):
+
+        if not ami_deployment_model.inbound_ports and not ami_deployment_model.outbound_ports:
+            return None
 
         security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
 
@@ -67,14 +85,14 @@ class DeployAMIOperation(object):
 
         return security_group
 
-    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group_id):
+    def _create_deployment_parameters(self, aws_ec2_resource_model, ami_deployment_model, security_group):
         """
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
-        :param security_group_id : The security group of the AMI
-        :type security_group_id : str
+        :param security_group : The security group of the AMI
+        :type security_group : securityGroup
         """
         aws_model = AMIDeploymentModel()
         if not ami_deployment_model.aws_ami_id:
@@ -89,8 +107,8 @@ class DeployAMIOperation(object):
         aws_model.aws_key = ami_deployment_model.aws_key
         aws_model.subnet_id = aws_ec2_resource_model.subnet
 
-        if security_group_id != '' and security_group_id is not None:
-            aws_model.security_group_ids.append(security_group_id)
+        if security_group is not None:
+            aws_model.security_group_ids.append(security_group.group_id)
         return aws_model
 
     @staticmethod

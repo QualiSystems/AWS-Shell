@@ -19,7 +19,7 @@ class TestSecurityGroups(TestCase):
         self.assertEquals(permission_object['IpProtocol'], self.port_data.protocol)
 
     def test_port_group_parser(self):
-        ports_attribute = "1-3:tcp;1:udp;1-3;1;"
+        ports_attribute = " 1-3:tcp; 1:udp; 1-3;1;  "
         ports = PortGroupAttributeParser.parse_port_group_attribute(ports_attribute)
 
         self.assertEquals(ports[0].from_port, '1')

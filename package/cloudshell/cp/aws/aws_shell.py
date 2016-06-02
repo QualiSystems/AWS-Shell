@@ -51,19 +51,11 @@ class AWSShell(object):
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         reservation_id = command_context.reservation.reservation_id
 
-        result, name = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
-                                                        name=name,
-                                                        reservation_id=reservation_id,
-                                                        aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                        ami_deployment_model=aws_ami_deployment_model)
-        deploy_data = DeployResult(vm_name=name,
-                                   vm_uuid=result.instance_id,
-                                   cloud_provider_resource_name=aws_ami_deployment_model.aws_ec2,
-                                   auto_power_on=aws_ami_deployment_model.auto_power_on,
-                                   auto_power_off=aws_ami_deployment_model.auto_power_off,
-                                   wait_for_ip=aws_ami_deployment_model.wait_for_ip,
-                                   auto_delete=aws_ami_deployment_model.auto_delete,
-                                   autoload=aws_ami_deployment_model.autoload)
+        deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
+                                                       name=name,
+                                                       reservation_id=reservation_id,
+                                                       aws_ec2_cp_resource_model=aws_ec2_resource_model,
+                                                       ami_deployment_model=aws_ami_deployment_model)
 
         return self._set_command_result(deploy_data)
 
@@ -103,9 +95,10 @@ class AWSShell(object):
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
         return self._set_command_result(result)
 
-    def delete_ami(self, command_context):
+    def delete_ami(self, command_context, delete_resource=True):
         """
         Will delete the ami instance
+        :param bool delete_resource:
         :param command_context: RemoteCommandContext
         :return:
         """
@@ -118,6 +111,11 @@ class AWSShell(object):
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
         result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
+
+        # todo this is temporary for the demo
+        if delete_resource:
+            cloudshell_session.DeleteResource(resourceFullPath=resource.fullname)
+
         return self._set_command_result(result)
 
     @staticmethod
