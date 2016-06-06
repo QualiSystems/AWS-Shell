@@ -1,9 +1,7 @@
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
 
-EC2 = 'ec2'
 
-
-class AWSApi(object):
+class AWSEC2Service(object):
     def __init__(self, tags_creator_service):
         """
         :param TagCreatorService tags_creator_service:
