@@ -1,12 +1,14 @@
+from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
+from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+
 
 class PowerOperation(object):
-    def __init__(self, aws_api, instance_waiter):
+    def __init__(self, aws_ec2_service, instance_waiter):
         """
-        :param aws_api: this is the...
-        :type aws_api: cloudshell.cp.aws.device_access_layer.aws_api.AWSApi
-        :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
+        :param AWSEC2Service aws_ec2_service:
+        :param EC2InstanceWaiter instance_waiter:
         """
-        self.aws_api = aws_api
+        self.aws_ec2_service = aws_ec2_service
         self.instance_waiter = instance_waiter
 
     def power_on(self, ec2_session, ami_id):
@@ -18,7 +20,7 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.aws_api.get_instance_by_id(ec2_session, ami_id)
+        instance = self.aws_ec2_service.get_instance_by_id(ec2_session, ami_id)
         instance.start()
         self.instance_waiter.wait(instance, self.instance_waiter.RUNNING)
         return True
@@ -32,7 +34,7 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.aws_api.get_instance_by_id(ec2_session, ami_id)
+        instance = self.aws_ec2_service.get_instance_by_id(ec2_session, ami_id)
         instance.stop()
         self.instance_waiter.wait(instance, self.instance_waiter.STOPPED)
         return True

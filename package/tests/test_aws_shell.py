@@ -6,6 +6,7 @@ from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class TestAWSShell(TestCase):
@@ -13,6 +14,7 @@ class TestAWSShell(TestCase):
         self.aws_shell_api = AWSShell()
 
         self.aws_shell_api.credentials_manager = Mock()
+        self.aws_shell_api.ec2_storage_service = Mock()
         self.aws_shell_api.ec2_instance_waiter = Mock()
         self.aws_shell_api.cloudshell_session_helper = Mock()
         self.aws_shell_api.aws_session_manager.get_ec2_session = Mock(return_value=Mock())
@@ -36,8 +38,6 @@ class TestAWSShell(TestCase):
 
     def test_deploying_ami_returns_deploy_result(self):
         name = 'my instance name'
-        result = Mock()
-        result.instance_id = 'my instance id'
 
         deploymock = DeployAWSEc2AMIInstanceResourceModel()
         deploymock.auto_power_on = "True"
@@ -47,22 +47,35 @@ class TestAWSShell(TestCase):
         deploymock.autoload = "True"
         deploymock.aws_ec2 = "some_name"
 
+        result = DeployResult(vm_name=name,
+                              vm_uuid='my instance id',
+                              cloud_provider_resource_name=deploymock.aws_ec2,
+                              autoload=deploymock.autoload,
+                              auto_delete=deploymock.auto_delete,
+                              wait_for_ip=deploymock.wait_for_ip,
+                              auto_power_on=deploymock.auto_power_on,
+                              auto_power_off=deploymock.auto_power_off,
+                              inbound_ports='',
+                              outbound_ports='')
+
+
         self.aws_shell_api.model_parser.convert_to_deployment_resource_model = Mock(return_value=(deploymock, name))
 
-        self.aws_shell_api.deploy_ami_operation.deploy = Mock(return_value=(result, name))
+        self.aws_shell_api.deploy_ami_operation.deploy = Mock(return_value=result)
 
         aws_cloud_provider = AWSEc2CloudProviderResourceModel()
 
         res = self.aws_shell_api.deploy_ami(self.command_context, aws_cloud_provider)
 
-        self.assertEqual(jsonpickle.decode(res)['vm_name'], name)
-        self.assertEqual(jsonpickle.decode(res)['vm_uuid'], result.instance_id)
-        self.assertEqual(jsonpickle.decode(res)['auto_power_on'], deploymock.auto_power_on)
-        self.assertEqual(jsonpickle.decode(res)['auto_power_off'], deploymock.auto_power_off)
-        self.assertEqual(jsonpickle.decode(res)['wait_for_ip'], deploymock.wait_for_ip)
-        self.assertEqual(jsonpickle.decode(res)['auto_delete'], deploymock.auto_delete)
-        self.assertEqual(jsonpickle.decode(res)['autoload'], deploymock.autoload)
-        self.assertEqual(jsonpickle.decode(res)['cloud_provider_resource_name'], deploymock.aws_ec2)
+        decoded_res = jsonpickle.decode(res)
+        self.assertEqual(decoded_res['vm_name'], name)
+        self.assertEqual(decoded_res['vm_uuid'], result.vm_uuid)
+        self.assertEqual(decoded_res['auto_power_on'], deploymock.auto_power_on)
+        self.assertEqual(decoded_res['auto_power_off'], deploymock.auto_power_off)
+        self.assertEqual(decoded_res['wait_for_ip'], deploymock.wait_for_ip)
+        self.assertEqual(decoded_res['auto_delete'], deploymock.auto_delete)
+        self.assertEqual(decoded_res['autoload'], deploymock.autoload)
+        self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.aws_ec2)
 
     def test_power_on(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})

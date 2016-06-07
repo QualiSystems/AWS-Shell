@@ -1,10 +1,9 @@
 import jsonpickle
 
+from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
+from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
-
-from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
-from cloudshell.cp.aws.device_access_layer.aws_api import AWSApi
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
@@ -12,13 +11,12 @@ from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSM
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
 from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
-from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class AWSShell(object):
     def __init__(self):
         tag_creator_service = TagCreatorService()
-        self.aws_api = AWSApi(tag_creator_service)
+        self.aws_ec2_service = AWSEC2Service(tag_creator_service)
         self.ec2_instance_waiter = EC2InstanceWaiter()
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
@@ -27,14 +25,14 @@ class AWSShell(object):
 
         self.security_group_service = AWSSecurityGroupService()
 
-        self.deploy_ami_operation = DeployAMIOperation(aws_api=self.aws_api,
+        self.deploy_ami_operation = DeployAMIOperation(aws_ec2_service=self.aws_ec2_service,
                                                        security_group_service=self.security_group_service,
                                                        tag_creator_service=tag_creator_service)
 
-        self.power_management_operation = PowerOperation(aws_api=self.aws_api,
+        self.power_management_operation = PowerOperation(aws_ec2_service=self.aws_ec2_service,
                                                          instance_waiter=self.ec2_instance_waiter)
 
-        self.delete_ami_operation = DeleteAMIOperation(ec2_api=self.aws_api,
+        self.delete_ami_operation = DeleteAMIOperation(aws_ec2_service=self.aws_ec2_service,
                                                        instance_waiter=self.ec2_instance_waiter,
                                                        ec2_storage_service=self.ec2_storage_service,
                                                        security_group_service=self.security_group_service)
