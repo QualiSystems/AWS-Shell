@@ -21,4 +21,5 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.autoload = False  # type: bool
         self.outbound_ports = ''  # type: str
         self.inbound_ports = ''  # type: str
+        self.wait_for_credentials = ''  # type: str
 

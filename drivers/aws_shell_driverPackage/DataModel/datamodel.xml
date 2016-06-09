@@ -329,6 +329,9 @@
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
+          <AttributeValues>
+            <AttributeValue Name="Wait for Credentials" Value="true"/>
+          </AttributeValues>
           <ParentModels />
           <Drivers>
             <DriverName>Deploy AWS EC2 AMI Instance</DriverName>

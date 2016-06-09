@@ -51,11 +51,9 @@ class DeployAMIOperation(object):
                                                       reservation_id=reservation_id,
                                                       ami_deployment_info=ami_deployment_info)
 
-        key_value = self.key_pair_loader.load(path=aws_ec2_cp_resource_model.keypairs_location,
-                                              key_name=result.key_pair.key_name,
-                                              location_type=self.key_pair_loader.FILE_SYSTEM)
-
-        ami_credentials = self.credentials_service.get_windows_credentials(result, key_value)
+        ami_credentials = self._get_ami_credentials(aws_ec2_cp_resource_model.keypairs_location,
+                                                    ami_deployment_model.wait_for_credentials,
+                                                    result)
 
         return DeployResult(vm_name=self._get_name_from_tags(result),
                             vm_uuid=result.instance_id,
@@ -67,8 +65,25 @@ class DeployAMIOperation(object):
                             autoload=ami_deployment_model.autoload,
                             inbound_ports=ami_deployment_model.inbound_ports,
                             outbound_ports=ami_deployment_model.outbound_ports,
-                            deployed_app_attributes=[{'Key': 'Password', 'Value': ami_credentials.password},
-                                                     {'Key': 'User Name', 'Value': ami_credentials.user_name}])
+                            deployed_app_attributes=ami_credentials)
+
+    def _get_ami_credentials(self, key_pair_location, wait_for_credentials, instance):
+        key_value = self.key_pair_loader.load(path=key_pair_location,
+                                              key_name=instance.key_pair.key_name,
+                                              location_type=self.key_pair_loader.FILE_SYSTEM)
+
+        # has value for windows instances only
+        if instance.platform:
+            ami_credentials = self.credentials_service.get_windows_credentials(instance, key_value, wait_for_credentials)
+
+            if not ami_credentials:
+                return None
+
+            return [{'Name': 'Password', 'Value': ami_credentials.password},
+                    {'Name': 'User Name', 'Value': ami_credentials.user_name}]
+
+        # returns the key for linux usage
+        return [{'Name': 'Private Key', 'Value': key_value}]
 
     def _get_name_from_tags(self, result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]

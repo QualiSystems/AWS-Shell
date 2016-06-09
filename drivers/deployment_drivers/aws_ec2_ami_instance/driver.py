@@ -63,6 +63,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.autoload = resource.attributes['Autoload']
         deployedResource.inbound_ports = resource.attributes['Inbound Ports']
         deployedResource.outbound_ports = resource.attributes['Outbound Ports']
+        deployedResource.wait_for_credentials = resource.attributes['Wait for Credentials']
 
         return deployedResource
 

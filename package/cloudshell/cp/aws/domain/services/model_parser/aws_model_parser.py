@@ -72,4 +72,5 @@ class AWSModelsParser(object):
         deployment_resource_model.autoload = bool(data_holder.ami_params.autoload)
         deployment_resource_model.inbound_ports = data_holder.ami_params.inbound_ports
         deployment_resource_model.outbound_ports = data_holder.ami_params.outbound_ports
+        deployment_resource_model.wait_for_credentials = data_holder.ami_params.wait_for_credentials
         return deployment_resource_model, data_holder.app_name
