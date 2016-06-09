@@ -5,12 +5,15 @@ from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
+from cloudshell.cp.aws.domain.services.ami_credentials_service.ami_credentials_service import AMICredentialsOperation
+from cloudshell.cp.aws.domain.services.ami_credentials_service.key_pair_loader import KeyPairProvider
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
 from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.task_manager.password_waiter import PasswordWaiter
 
 
 class AWSShell(object):
@@ -22,12 +25,15 @@ class AWSShell(object):
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
-
+        self.password_waiter = PasswordWaiter()
+        self.ami_credentials_service = AMICredentialsOperation(self.password_waiter)
         self.security_group_service = AWSSecurityGroupService()
-
+        self.key_pair_loader = KeyPairProvider()
         self.deploy_ami_operation = DeployAMIOperation(aws_ec2_service=self.aws_ec2_service,
+                                                       ami_credential_service=self.ami_credentials_service,
                                                        security_group_service=self.security_group_service,
-                                                       tag_creator_service=tag_creator_service)
+                                                       tag_creator_service=tag_creator_service,
+                                                       key_pair_loader=self.key_pair_loader)
 
         self.power_management_operation = PowerOperation(aws_ec2_service=self.aws_ec2_service,
                                                          instance_waiter=self.ec2_instance_waiter)
@@ -48,7 +54,6 @@ class AWSShell(object):
                                                                         command_context.reservation.domain)
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         reservation_id = command_context.reservation.reservation_id
-
         deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
                                                        name=name,
                                                        reservation_id=reservation_id,

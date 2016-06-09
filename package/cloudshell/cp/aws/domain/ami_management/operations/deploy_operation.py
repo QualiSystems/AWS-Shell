@@ -8,7 +8,8 @@ from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
-    def __init__(self, aws_ec2_service, security_group_service, tag_creator_service):
+    def __init__(self, aws_ec2_service, ami_credential_service, security_group_service, tag_creator_service,
+                 key_pair_loader):
         """
         :param TagCreatorService tag_creator_service:
         :param AWSEC2Service aws_ec2_service: the AWS API
@@ -19,6 +20,8 @@ class DeployAMIOperation(object):
         self.tag_creator_service = tag_creator_service
         self.aws_ec2_service = aws_ec2_service
         self.security_group_service = security_group_service
+        self.credentials_service = ami_credential_service
+        self.key_pair_loader = key_pair_loader
 
     def deploy(self, ec2_session, name, reservation_id, aws_ec2_cp_resource_model, ami_deployment_model):
         """
@@ -48,6 +51,12 @@ class DeployAMIOperation(object):
                                                       reservation_id=reservation_id,
                                                       ami_deployment_info=ami_deployment_info)
 
+        key_value = self.key_pair_loader.load(path=aws_ec2_cp_resource_model.keypairs_location,
+                                              key_name=result.key_pair.key_name,
+                                              location_type=self.key_pair_loader.FILE_SYSTEM)
+
+        ami_credentials = self.credentials_service.get_windows_credentials(result, key_value)
+
         return DeployResult(vm_name=self._get_name_from_tags(result),
                             vm_uuid=result.instance_id,
                             cloud_provider_resource_name=ami_deployment_model.aws_ec2,
@@ -57,7 +66,9 @@ class DeployAMIOperation(object):
                             auto_delete=ami_deployment_model.auto_delete,
                             autoload=ami_deployment_model.autoload,
                             inbound_ports=ami_deployment_model.inbound_ports,
-                            outbound_ports=ami_deployment_model.outbound_ports)
+                            outbound_ports=ami_deployment_model.outbound_ports,
+                            deployed_app_attributes=[{'Key': 'Password', 'Value': ami_credentials.password},
+                                                     {'Key': 'User Name', 'Value': ami_credentials.user_name}])
 
     def _get_name_from_tags(self, result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]

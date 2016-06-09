@@ -4,7 +4,7 @@ from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 
-EC2_REGIONS = {'US East(N.Virginia)': 'us-east-1',
+EC2_REGIONS = {'US East (N. Virginia)': 'us-east-1',
                'US West (N. California)': 'us-west-1',
                'US West (Oregon)': 'us-west-2',
                'EU (Ireland)': 'us-east-1',
@@ -43,6 +43,7 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']
         aws_ec2_resource_model.aws_access_key_id = resource_context['AWS Access Key ID']
         aws_ec2_resource_model.default_instance_type = resource_context['Default Instance Type']
+        aws_ec2_resource_model.keypairs_location = resource_context['Keypairs Location']
         aws_ec2_resource_model.subnet = resource_context['Subnet']
         return aws_ec2_resource_model
 
