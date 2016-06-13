@@ -13,7 +13,13 @@ class TestDeployOperation(TestCase):
         self.ec2_serv = Mock()
         self.security_group_man = Mock()
         self.tag_creator = Mock()
-        self.deploy_operation = DeployAMIOperation(self.ec2_serv, self.security_group_man, self.tag_creator)
+        self.key_pair = Mock()
+        self.credentials_manager = Mock()
+        self.deploy_operation = DeployAMIOperation(self.ec2_serv,
+                                                   self.credentials_manager,
+                                                   self.security_group_man,
+                                                   self.tag_creator,
+                                                   self.key_pair)
 
     def test_deploy(self):
         ami_datamodel = Mock()
@@ -23,6 +29,7 @@ class TestDeployOperation(TestCase):
         self.ec2_serv.create_instance = Mock(return_value=instance)
         res = self.deploy_operation.deploy(self.ec2_session, 'my name', 'reservation_id', self.ec2_datamodel,
                                            ami_datamodel)
+        ami_credentials = self.credentials_manager.get_windows_credentials()
 
         self.assertEqual(res.vm_name, 'my name')
         self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.aws_ec2)
@@ -34,11 +41,17 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
         self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
+        self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
+                                                        'User Name': ami_credentials.user_name})
         self.assertTrue(self.tag_creator.get_security_group_tags.called)
         self.assertTrue(self.security_group_man.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
             self.security_group_man.create_security_group()),
             self.tag_creator.get_security_group_tags())
+
+        self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
+                                                       instance.key_pair.key_name,
+                                                       self.key_pair.FILE_SYSTEM))
 
         self.assertTrue(self.security_group_man.set_security_group_rules.called_with(
             ami_datamodel, self.security_group_man.create_security_group()))

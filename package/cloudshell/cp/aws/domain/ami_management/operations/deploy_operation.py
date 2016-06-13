@@ -79,11 +79,11 @@ class DeployAMIOperation(object):
             if not ami_credentials:
                 return None
 
-            return [{'Name': 'Password', 'Value': ami_credentials.password},
-                    {'Name': 'User Name', 'Value': ami_credentials.user_name}]
+            return {'Password': ami_credentials.password,
+                    'User Name': ami_credentials.user_name}
 
         # returns the key for linux usage
-        return [{'Name': 'Private Key', 'Value': key_value}]
+        return {'Private Key': key_value}
 
     def _get_name_from_tags(self, result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
