@@ -44,5 +44,8 @@ class AWSShellDriver(ResourceDriverInterface):
     def PrepareConnectivityChanges(self, context, request):
         pass
 
+    def GetApplicationPorts(self, context, ports):
+        return self.aws_shell.get_application_ports(context)
+
     def get_inventory(self, context):
         pass
