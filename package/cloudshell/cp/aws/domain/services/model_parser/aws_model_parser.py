@@ -4,25 +4,8 @@ from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 
-EC2_REGIONS = {'US East(N.Virginia)': 'us-east-1',
-               'US West (N. California)': 'us-west-1',
-               'US West (Oregon)': 'us-west-2',
-               'EU (Ireland)': 'us-east-1',
-               'EU (Frankfurt)': 'eu-central-1',
-               'Asia Pacific (Tokyo)': 'ap-northeast-1',
-               'Asia Pacific (Seoul)': 'ap-northeast-2',
-               'Asia Pacific (Singapore)': 'ap-southeast-1',
-               'Asia Pacific (Sydney)': 'ap-southeast-2',
-               'South America (Sao Paulo)': 'sa-east-1'}
-
 
 class AWSModelsParser(object):
-    @staticmethod
-    def convert_region(region):
-        if region in EC2_REGIONS:
-            return EC2_REGIONS[region]
-        raise ValueError('EC2 region is not supported: {0}'.format(region))
-
     @staticmethod
     def convert_app_resource_to_deployed_app(resource):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
@@ -35,7 +18,7 @@ class AWSModelsParser(object):
         aws_ec2_resource_model = AWSEc2CloudProviderResourceModel()
         aws_ec2_resource_model.default_storage_size = resource_context['Default Storage Size']
         aws_ec2_resource_model.default_storage_iops = resource_context['Default Storage IOPS']
-        aws_ec2_resource_model.region = AWSModelsParser.convert_region(resource_context['Region'])
+        aws_ec2_resource_model.region = resource_context['Region']
         aws_ec2_resource_model.device_name = resource_context['Device Name']
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
