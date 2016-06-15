@@ -20,9 +20,6 @@ class AWSShellDriver(ResourceDriverInterface):
     def deploy_ami(self, context, request):
         return self.aws_shell.deploy_ami(context, request)
 
-    def PrepareConnectivity(self, context):
-        return "MOCK-PrepareConnectivity"
-
     def PowerOn(self, context, ports):
         return self.aws_shell.power_on_ami(context)
 
@@ -41,11 +38,11 @@ class AWSShellDriver(ResourceDriverInterface):
     def destroy_vm_only(self, context, ports):
         return self.aws_shell.delete_ami(context, False)
 
-    def ApplyConnectivityChanges(self, context, ports, request):
+    def ApplyConnectivityChanges(self, context, request):
         pass
 
-    def PrepareConnectivityChanges(self, context, request):
-        pass
+    def PrepareConnectivity(self, context, request):
+        return "MOCK-PrepareConnectivity"
 
     def GetApplicationPorts(self, context, ports):
         return self.aws_shell.get_application_ports(context)
