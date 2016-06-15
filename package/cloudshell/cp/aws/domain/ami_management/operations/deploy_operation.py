@@ -44,7 +44,7 @@ class DeployAMIOperation(object):
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                 security_group)
+                                                                    security_group)
 
         result = self.aws_ec2_service.create_instance(ec2_session=ec2_session,
                                                       name=name,

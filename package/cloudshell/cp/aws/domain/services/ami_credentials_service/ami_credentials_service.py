@@ -4,7 +4,7 @@ from base64 import b64decode
 from Crypto.PublicKey import RSA
 
 
-class AMICredentialsOperation(object):
+class AMICredentialsService(object):
     DEFAULT_USER_NAME = "Wait for Credentials"
 
     def __init__(self, password_waiter):

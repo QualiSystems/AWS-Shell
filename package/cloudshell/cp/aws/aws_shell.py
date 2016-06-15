@@ -5,7 +5,7 @@ from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
-from cloudshell.cp.aws.domain.services.ami_credentials_service.ami_credentials_service import AMICredentialsOperation
+from cloudshell.cp.aws.domain.services.ami_credentials_service.ami_credentials_service import AMICredentialsService
 from cloudshell.cp.aws.domain.services.ami_credentials_service.key_pair_loader import KeyPairProvider
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
@@ -26,7 +26,7 @@ class AWSShell(object):
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
         self.password_waiter = PasswordWaiter()
-        self.ami_credentials_service = AMICredentialsOperation(self.password_waiter)
+        self.ami_credentials_service = AMICredentialsService(self.password_waiter)
         self.security_group_service = AWSSecurityGroupService()
         self.key_pair_loader = KeyPairProvider()
         self.deploy_ami_operation = DeployAMIOperation(aws_ec2_service=self.aws_ec2_service,

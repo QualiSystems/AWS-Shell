@@ -18,6 +18,8 @@ class KeyPairProvider(object):
             raise ValueError('The key name cannot be empty')
 
         loader_function = getattr(self, self.LOAD_FILE_FUNCTION_PREFIX.format(location_type))
+        if not loader_function:
+            raise ValueError('Not implemented key location loader')
         return loader_function(path, key_name)
 
     @staticmethod
