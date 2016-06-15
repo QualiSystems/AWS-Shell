@@ -175,18 +175,7 @@
         <ResourceModel Description="" ImagePath="AWS.png" Name="AWS EC2" SupportsConcurrentCommands="true">
           <AttachedAttributes>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
-              <AllowedValues>
-                <AllowedValue>US East (N. Virginia)</AllowedValue>
-                <AllowedValue>US West (N. California)</AllowedValue>
-                <AllowedValue>US West (Oregon)</AllowedValue>
-                <AllowedValue>EU (Ireland)</AllowedValue>
-                <AllowedValue>EU (Frankfurt)</AllowedValue>
-                <AllowedValue>Asia Pacific (Tokyo)</AllowedValue>
-                <AllowedValue>Asia Pacific (Seoul)</AllowedValue>
-                <AllowedValue>Asia Pacific (Singapore)</AllowedValue>
-                <AllowedValue>Asia Pacific (Sydney)</AllowedValue>
-                <AllowedValue>South America (Sao Paulo)</AllowedValue>
-              </AllowedValues>
+              <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC CIDR">
               <AllowedValues />
