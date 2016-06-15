@@ -13,13 +13,12 @@ class TestDeployOperation(TestCase):
         self.ec2_serv = Mock()
         self.security_group_service = Mock()
         self.tag_creator_service = Mock()
-        self.deploy_operation = DeployAMIOperation(self.ec2_serv, self.security_group_service, self.tag_creator_service)
         self.key_pair = Mock()
         self.credentials_manager = Mock()
         self.deploy_operation = DeployAMIOperation(self.ec2_serv,
                                                    self.credentials_manager,
-                                                   self.security_group_man,
-                                                   self.tag_creator,
+                                                   self.security_group_service,
+                                                   self.tag_creator_service,
                                                    self.key_pair)
 
     def test_deploy(self):
