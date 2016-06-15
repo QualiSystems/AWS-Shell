@@ -1,4 +1,4 @@
-from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
+from cloudshell.cp.aws.models.port_data import PortData
 
 
 class AWSSecurityGroupService(object):
@@ -28,15 +28,19 @@ class AWSSecurityGroupService(object):
                                                  Description=AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
                                                  VpcId=vpc)
 
-    def set_security_group_rules(self, ami_deployment_model, security_group):
+    def set_security_group_rules(self, security_group, inbound_ports, outbound_ports):
+        """
+        :param security_group: AWS SG object
+        :param list[PortData] inbound_ports:
+        :param list[PortData] outbound_ports:
+        :return:
+        """
         # adding inbound port rules
-        if ami_deployment_model.inbound_ports:
-            inbound_ports = PortGroupAttributeParser.parse_port_group_attribute(ami_deployment_model.inbound_ports)
+        if inbound_ports:
             self._set_inbound_ports(inbound_ports, security_group)
 
         # adding outbound port rules
-        if ami_deployment_model.outbound_ports:
-            outbound_ports = PortGroupAttributeParser.parse_port_group_attribute(ami_deployment_model.outbound_ports)
+        if outbound_ports:
             self._set_outbound_ports(outbound_ports, security_group)
 
     def _set_outbound_ports(self, outbound_ports, security_group):

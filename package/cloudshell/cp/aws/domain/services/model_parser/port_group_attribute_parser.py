@@ -7,9 +7,13 @@ class PortGroupAttributeParser(object):
 
     @staticmethod
     def parse_port_group_attribute(ports_attribute):
-
+        """
+        :param ports_attribute:
+        :return:
+        :rtype: list[PortData]
+        """
         if ports_attribute:
-            splitted_ports = ports_attribute.split(';')
+            splitted_ports = filter(lambda x: x, ports_attribute.strip().split(';'))
             port_data_array = [PortGroupAttributeParser._single_port_parse(port.strip()) for port in splitted_ports]
             return port_data_array
         return None
@@ -21,8 +25,6 @@ class PortGroupAttributeParser(object):
         to_port = 'to_port'
         protocol = 'protocol'
         tcp = 'tcp'
-
-        port_data = None
 
         from_to_protocol_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
                                           ports_attribute)
@@ -61,4 +63,4 @@ class PortGroupAttributeParser(object):
             protocol = tcp
             return PortData(from_port, to_port, protocol, destination)
 
-        return port_data
+        raise ValueError("The value '{0}' is not a valid ports rule".format(ports_attribute))

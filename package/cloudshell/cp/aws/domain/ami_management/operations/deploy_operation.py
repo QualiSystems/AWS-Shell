@@ -4,6 +4,7 @@ from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AM
 from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService, IsolationTagValues
+from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
@@ -94,6 +95,11 @@ class DeployAMIOperation(object):
         if not ami_deployment_model.inbound_ports and not ami_deployment_model.outbound_ports:
             return None
 
+        inbound_ports = PortGroupAttributeParser.parse_port_group_attribute(ami_deployment_model.inbound_ports)
+        outbound_ports = PortGroupAttributeParser.parse_port_group_attribute(ami_deployment_model.outbound_ports)
+        if not inbound_ports and not outbound_ports:
+            return None
+
         security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
 
         security_group = self.security_group_service.create_security_group(ec2_session,
@@ -106,7 +112,9 @@ class DeployAMIOperation(object):
 
         self.aws_ec2_service.set_ec2_resource_tags(security_group, tags)
 
-        self.security_group_service.set_security_group_rules(ami_deployment_model, security_group)
+        self.security_group_service.set_security_group_rules(security_group=security_group,
+                                                             inbound_ports=inbound_ports,
+                                                             outbound_ports=outbound_ports)
 
         return security_group
 
