@@ -3,6 +3,8 @@ from base64 import b64decode
 
 from Crypto.PublicKey import RSA
 
+from cloudshell.cp.aws.models.ami_credentials import AMICredentials
+
 
 class AMICredentialsService(object):
     DEFAULT_USER_NAME = "Administrator"
@@ -11,6 +13,15 @@ class AMICredentialsService(object):
         self.password_waiter = password_waiter
 
     def get_windows_credentials(self, instance, key_value, wait_for_password=True):
+        """
+
+        :param instance: Ami amazon instance
+        :param key_value: pem lines
+        :type key_value: list[str]
+        :param wait_for_password:
+        :type wait_for_password: bool
+        :return:
+        """
         password_data = instance.password_data()['PasswordData']
         if not password_data and wait_for_password:
             password_data = self.password_waiter.wait(instance)
@@ -64,9 +75,3 @@ class AMICredentialsService(object):
             # see http://stackoverflow.com/a/931095/309233
             s = s[::-1]
         return s
-
-
-class AMICredentials(object):
-    def __init__(self, user_name, password):
-        self.user_name = user_name
-        self.password = password

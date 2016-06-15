@@ -2,7 +2,7 @@ import time
 
 
 class PasswordWaiter(object):
-    def __init__(self, delay=2, timeout=10):
+    def __init__(self, delay=10, timeout=10):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
@@ -13,6 +13,11 @@ class PasswordWaiter(object):
         self.timeout = timeout * 60
 
     def wait(self, instance):
+        """
+        will wait for the password of the machine to be set
+        :param instance: Amazon AMI instance
+        :return:
+        """
         if not instance:
             raise ValueError('Instance cannot be null')
 

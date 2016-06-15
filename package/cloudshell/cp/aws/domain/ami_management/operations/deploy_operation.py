@@ -75,18 +75,19 @@ class DeployAMIOperation(object):
 
         # has value for windows instances only
         if instance.platform:
-            ami_credentials = self.credentials_service.get_windows_credentials(instance, key_value, wait_for_credentials)
+            ami_credentials = self.credentials_service.get_windows_credentials(instance=instance,
+                                                                               key_value=key_value,
+                                                                               wait_for_password=wait_for_credentials)
 
             if not ami_credentials:
                 return None
 
             return {'Password': ami_credentials.password,
                     'User': ami_credentials.user_name}
+        return None
 
-        # returns the key for linux usage
-        return {'Private Key': key_value}
-
-    def _get_name_from_tags(self, result):
+    @staticmethod
+    def _get_name_from_tags(result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
     def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session,
