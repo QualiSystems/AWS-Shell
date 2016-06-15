@@ -11,17 +11,22 @@ class TestDeployOperation(TestCase):
         self.ec2_datamodel.default_storage_size = 1
         self.ec2_session = Mock()
         self.ec2_serv = Mock()
-        self.security_group_man = Mock()
-        self.tag_creator = Mock()
-        self.deploy_operation = DeployAMIOperation(self.ec2_serv, self.security_group_man, self.tag_creator)
+        self.security_group_service = Mock()
+        self.tag_creator_service = Mock()
+        self.deploy_operation = DeployAMIOperation(self.ec2_serv, self.security_group_service, self.tag_creator_service)
 
     def test_deploy(self):
         ami_datamodel = Mock()
         ami_datamodel.storage_size = None
+        ami_datamodel.inbound_ports = "80"
+        ami_datamodel.outbound_ports = None
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.ec2_serv.create_instance = Mock(return_value=instance)
-        res = self.deploy_operation.deploy(self.ec2_session, 'my name', 'reservation_id', self.ec2_datamodel,
+        res = self.deploy_operation.deploy(self.ec2_session,
+                                           'my name',
+                                           'reservation_id',
+                                           self.ec2_datamodel,
                                            ami_datamodel)
 
         self.assertEqual(res.vm_name, 'my name')
@@ -34,14 +39,14 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
         self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
-        self.assertTrue(self.tag_creator.get_security_group_tags.called)
-        self.assertTrue(self.security_group_man.create_security_group.called)
+        self.assertTrue(self.tag_creator_service.get_security_group_tags.called)
+        self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
-            self.security_group_man.create_security_group()),
-            self.tag_creator.get_security_group_tags())
+            self.security_group_service.create_security_group()),
+            self.tag_creator_service.get_security_group_tags())
 
-        self.assertTrue(self.security_group_man.set_security_group_rules.called_with(
-            ami_datamodel, self.security_group_man.create_security_group()))
+        self.assertTrue(self.security_group_service.set_security_group_rules.called_with(
+            ami_datamodel, self.security_group_service.create_security_group()))
 
     def test_get_block_device_mappings_not_defaults(self):
         ami = Mock()

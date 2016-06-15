@@ -5,12 +5,14 @@ from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
+from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
 from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
 from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
 
 
 class AWSShell(object):
@@ -22,6 +24,7 @@ class AWSShell(object):
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
+        self.vm_custom_params_extractor = VmCustomParamsExtractor()
 
         self.security_group_service = AWSSecurityGroupService()
 
@@ -36,6 +39,8 @@ class AWSShell(object):
                                                        instance_waiter=self.ec2_instance_waiter,
                                                        ec2_storage_service=self.ec2_storage_service,
                                                        security_group_service=self.security_group_service)
+
+        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
 
     def deploy_ami(self, command_context, deployment_request):
         """
@@ -115,6 +120,18 @@ class AWSShell(object):
             cloudshell_session.DeleteResource(resourceFullPath=resource.fullname)
 
         return self._set_command_result(result)
+
+    def get_application_ports(self, command_context):
+        """
+        Will return the application ports in a nicely formated manner
+        :param command_context: RemoteCommandContext
+        :return:
+        """
+        resource = command_context.remote_endpoints[0]
+        data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+
+        return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
+
 
     @staticmethod
     def _set_command_result(result, unpicklable=False):
