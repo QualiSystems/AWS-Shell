@@ -26,6 +26,7 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']
         aws_ec2_resource_model.aws_access_key_id = resource_context['AWS Access Key ID']
         aws_ec2_resource_model.default_instance_type = resource_context['Default Instance Type']
+        aws_ec2_resource_model.keypairs_location = resource_context['Keypairs Location']
         aws_ec2_resource_model.subnet = resource_context['Subnet']
         return aws_ec2_resource_model
 
@@ -54,4 +55,5 @@ class AWSModelsParser(object):
         deployment_resource_model.autoload = bool(data_holder.ami_params.autoload)
         deployment_resource_model.inbound_ports = data_holder.ami_params.inbound_ports
         deployment_resource_model.outbound_ports = data_holder.ami_params.outbound_ports
+        deployment_resource_model.wait_for_credentials = data_holder.ami_params.wait_for_credentials
         return deployment_resource_model, data_holder.app_name

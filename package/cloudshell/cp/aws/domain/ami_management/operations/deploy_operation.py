@@ -9,7 +9,8 @@ from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
-    def __init__(self, aws_ec2_service, security_group_service, tag_creator_service):
+    def __init__(self, aws_ec2_service, ami_credential_service, security_group_service, tag_creator_service,
+                 key_pair_loader):
         """
         :param TagCreatorService tag_creator_service:
         :param AWSEC2Service aws_ec2_service: the AWS API
@@ -20,6 +21,8 @@ class DeployAMIOperation(object):
         self.tag_creator_service = tag_creator_service
         self.aws_ec2_service = aws_ec2_service
         self.security_group_service = security_group_service
+        self.credentials_service = ami_credential_service
+        self.key_pair_loader = key_pair_loader
 
     def deploy(self, ec2_session, name, reservation_id, aws_ec2_cp_resource_model, ami_deployment_model):
         """
@@ -42,12 +45,16 @@ class DeployAMIOperation(object):
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                 security_group)
+                                                                    security_group)
 
         result = self.aws_ec2_service.create_instance(ec2_session=ec2_session,
                                                       name=name,
                                                       reservation_id=reservation_id,
                                                       ami_deployment_info=ami_deployment_info)
+
+        ami_credentials = self._get_ami_credentials(aws_ec2_cp_resource_model.keypairs_location,
+                                                    ami_deployment_model.wait_for_credentials,
+                                                    result)
 
         return DeployResult(vm_name=self._get_name_from_tags(result),
                             vm_uuid=result.instance_id,
@@ -58,9 +65,29 @@ class DeployAMIOperation(object):
                             auto_delete=ami_deployment_model.auto_delete,
                             autoload=ami_deployment_model.autoload,
                             inbound_ports=ami_deployment_model.inbound_ports,
-                            outbound_ports=ami_deployment_model.outbound_ports)
+                            outbound_ports=ami_deployment_model.outbound_ports,
+                            deployed_app_attributes=ami_credentials)
 
-    def _get_name_from_tags(self, result):
+    def _get_ami_credentials(self, key_pair_location, wait_for_credentials, instance):
+        key_value = self.key_pair_loader.load(path=key_pair_location,
+                                              key_name=instance.key_pair.key_name,
+                                              location_type=self.key_pair_loader.FILE_SYSTEM)
+
+        # has value for windows instances only
+        if instance.platform:
+            ami_credentials = self.credentials_service.get_windows_credentials(instance=instance,
+                                                                               key_value=key_value,
+                                                                               wait_for_password=wait_for_credentials)
+
+            if not ami_credentials:
+                return None
+
+            return {'Password': ami_credentials.password,
+                    'User': ami_credentials.user_name}
+        return None
+
+    @staticmethod
+    def _get_name_from_tags(result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
     def _create_security_group_for_instance(self, ami_deployment_model, aws_ec2_cp_resource_model, ec2_session,

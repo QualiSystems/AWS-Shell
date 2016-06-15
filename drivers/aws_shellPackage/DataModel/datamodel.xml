@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DataModelInfo xmlns="http://schemas.qualisystems.com/ResourceManagement/DataModelSchema.xsd">
   <Attributes>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Wait for Credentials" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS Secret Access Key" Type="Password">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Password" Type="Password">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="User" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -231,7 +249,10 @@
       </AttributeValues>
       <Models>
         <ResourceModel Description="" Name="Generic App Model" SupportsConcurrentCommands="false">
-          <AttachedAttributes />
+          <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Password"/>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User"/>
+          </AttachedAttributes>
           <AttributeValues>
           </AttributeValues>
           <ParentModels />
@@ -308,7 +329,13 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Autoload" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for Credentials" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
           </AttachedAttributes>
+          <AttributeValues>
+            <AttributeValue Name="Wait for Credentials" Value="true"/>
+          </AttributeValues>
           <ParentModels />
           <Drivers>
             <DriverName>Deploy AWS EC2 AMI Instance</DriverName>
