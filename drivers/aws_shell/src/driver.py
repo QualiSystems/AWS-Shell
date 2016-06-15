@@ -20,6 +20,9 @@ class AWSShellDriver(ResourceDriverInterface):
     def deploy_ami(self, context, request):
         return self.aws_shell.deploy_ami(context, request)
 
+    def PrepareConnectivity(self, context):
+        return "MOCK-PrepareConnectivity"
+
     def PowerOn(self, context, ports):
         return self.aws_shell.power_on_ami(context)
 
