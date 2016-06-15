@@ -5,7 +5,7 @@ from Crypto.PublicKey import RSA
 
 
 class AMICredentialsService(object):
-    DEFAULT_USER_NAME = "Wait for Credentials"
+    DEFAULT_USER_NAME = "Administrator"
 
     def __init__(self, password_waiter):
         self.password_waiter = password_waiter

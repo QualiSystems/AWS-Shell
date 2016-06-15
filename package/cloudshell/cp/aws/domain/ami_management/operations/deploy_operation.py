@@ -81,7 +81,7 @@ class DeployAMIOperation(object):
                 return None
 
             return {'Password': ami_credentials.password,
-                    'User Name': ami_credentials.user_name}
+                    'User': ami_credentials.user_name}
 
         # returns the key for linux usage
         return {'Private Key': key_value}

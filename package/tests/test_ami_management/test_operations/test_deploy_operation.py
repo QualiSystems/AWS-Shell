@@ -47,7 +47,7 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
-                                                        'User Name': ami_credentials.user_name})
+                                                       'User': ami_credentials.user_name})
         self.assertTrue(self.tag_creator_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(

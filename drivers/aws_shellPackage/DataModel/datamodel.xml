@@ -13,6 +13,18 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Password" Type="Password">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="User" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Generic Input" Type="String">
       <Rules/>
     </AttributeInfo>
@@ -237,7 +249,10 @@
       </AttributeValues>
       <Models>
         <ResourceModel Description="" Name="Generic App Model" SupportsConcurrentCommands="false">
-          <AttachedAttributes />
+          <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Password"/>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User"/>
+          </AttachedAttributes>
           <AttributeValues>
           </AttributeValues>
           <ParentModels />
