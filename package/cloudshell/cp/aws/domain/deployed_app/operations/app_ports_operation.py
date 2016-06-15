@@ -1,18 +1,23 @@
 from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
+from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
 
 
 class DeployedAppPortsOperation(object):
-    def __init__(self):
-        pass
+    def __init__(self, vm_custom_params_extractor):
+        """
+        :param VmCustomParamsExtractor vm_custom_params_extractor:
+        :return:
+        """
+        self.vm_custom_params_extractor = vm_custom_params_extractor
 
     def get_formated_deployed_app_ports(self, custom_params):
         """
         :param custom_params:
         :return:
         """
-        inbound_ports_value = self._get_custom_param_value(custom_params, "inbound_ports")
-        outbound_ports_value = self._get_custom_param_value(custom_params, "outbound_ports")
+        inbound_ports_value = self.vm_custom_params_extractor.get_custom_param_value(custom_params, "inbound_ports")
+        outbound_ports_value = self.vm_custom_params_extractor.get_custom_param_value(custom_params, "outbound_ports")
 
         if not inbound_ports_value and not outbound_ports_value:
             return ""
@@ -35,13 +40,6 @@ class DeployedAppPortsOperation(object):
                     result_str_list.append(self._port_rule_to_string(rule))
 
         return '\n'.join(result_str_list).strip()
-
-    def _get_custom_param_value(self, custom_params, name):
-        name = name.lower()
-        params = filter(lambda x: x.name.lower() == name, custom_params)
-        if len(params) == 1:
-            return params[0].value
-        return False
 
     def _port_rule_to_string(self, port_rule):
         """

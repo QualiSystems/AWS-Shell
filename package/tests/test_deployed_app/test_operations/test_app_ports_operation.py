@@ -4,11 +4,12 @@ import jsonpickle
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
+from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
 
 
 class TestDeployedAppPortsOperation(TestCase):
     def setUp(self):
-        self.operation = DeployedAppPortsOperation()
+        self.operation = DeployedAppPortsOperation(VmCustomParamsExtractor())
 
     def test_format_single_inbound(self):
         json_str = '{"vmCustomParams":[{"name": "inbound_ports", "value": "80"}]}'

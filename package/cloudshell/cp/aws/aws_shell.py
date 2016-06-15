@@ -12,6 +12,7 @@ from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSM
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
 from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
 
 
 class AWSShell(object):
@@ -23,6 +24,7 @@ class AWSShell(object):
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
+        self.vm_custom_params_extractor = VmCustomParamsExtractor()
 
         self.security_group_service = AWSSecurityGroupService()
 
@@ -38,7 +40,7 @@ class AWSShell(object):
                                                        ec2_storage_service=self.ec2_storage_service,
                                                        security_group_service=self.security_group_service)
 
-        self.deployed_app_ports_operation = DeployedAppPortsOperation()
+        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
 
     def deploy_ami(self, command_context, deployment_request):
         """
