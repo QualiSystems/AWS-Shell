@@ -166,13 +166,19 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS EC2" Type="String">
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Cloud Provider Resource" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS AMI Id" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Networks In Use" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -226,6 +232,9 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Default Instance Type">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Networks In Use">
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
@@ -293,7 +302,7 @@
       <Models>
         <ResourceModel Description="" Name="AWS EC2 Instance" SupportsConcurrentCommands="false">
           <AttachedAttributes>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS EC2" UserInput="true">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider Resource" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">

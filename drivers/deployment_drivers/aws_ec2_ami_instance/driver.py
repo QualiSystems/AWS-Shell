@@ -37,7 +37,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
 
         # Calls command on the AWS cloud provider
         result = session.ExecuteCommand(context.reservation.reservation_id,
-                                        aws_ami_deployment_model.aws_ec2,
+                                        aws_ami_deployment_model.cloud_provider_resource,
                                         "Resource",
                                         "deploy_ami",
                                         self._get_command_inputs_list(deployment_info),
@@ -45,14 +45,14 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         return result.Output
 
     def vaidate_deployment_ami_model(self, aws_ami_deployment_model):
-        if aws_ami_deployment_model.aws_ec2 == '':
-            raise Exception("The name of the AWS EC2 resource is empty.")
+        if aws_ami_deployment_model.cloud_provider_resource == '':
+            raise Exception("The name of the Cloud Provider resource is empty.")
 
     # todo: remove this to a common place
     def _convert_context_to_deployment_resource_model(self, resource):
         deployedResource = DeployAWSEc2AMIInstanceResourceModel()
         deployedResource.aws_ami_id = resource.attributes['AWS AMI Id']
-        deployedResource.aws_ec2 = resource.attributes['AWS EC2']
+        deployedResource.cloud_provider_resource = resource.attributes['Cloud Provider Resource']
         deployedResource.storage_iops = resource.attributes['Storage IOPS']
         deployedResource.storage_size = resource.attributes['Storage Size']
         deployedResource.instance_type = resource.attributes['Instance Type']
