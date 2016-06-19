@@ -1,12 +1,15 @@
-from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
+from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagCreatorService
 
 
 class AWSEC2Service(object):
-    def __init__(self, tags_creator_service):
+    def __init__(self, tags_creator_service, instance_waiter):
         """
-        :param TagCreatorService tags_creator_service:
-        :return:
+        :param tags_creator_service: Tags Service
+        :type tags_creator_service: cloudshell.cp.aws.domain.services.tag_creator.TagCreatorService
+        :param instance_waiter: Instance Waiter
+        :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
         """
+        self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
     def create_instance(self, ec2_session, name, reservation_id, ami_deployment_info):
@@ -39,24 +42,20 @@ class AWSEC2Service(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        # todo create the name with a name generator
-        new_name = name + ' ' + instance.instance_id
+        self._set_tags(instance, name, reservation_id)
 
-        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation_id)
-        self.set_ec2_resource_tags(instance, default_tags)
-        # todo Note: checks every 15 sec, use our waiter instead
-        instance.wait_until_running()
+        self.instance_waiter.wait(instance, state=self.instance_waiter.RUNNING)
 
         # Reload the instance attributes
         instance.load()
         return instance
 
-    def set_ec2_resource_tags(self, resource, tags):
-        resource.create_tags(Tags=tags)
+    def _set_tags(self, instance, name, reservation_id):
+        # todo create the name with a name generator
+        new_name = name + ' ' + instance.instance_id
+        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation_id)
+        self.tags_creator_service.set_ec2_resource_tags(instance, default_tags)
 
-    def get_instance_by_id(self, ec2_session, id):
+    @staticmethod
+    def get_instance_by_id(ec2_session, id):
         return ec2_session.Instance(id=id)
-
-    def create_key_pair(self, ec2_session, key_name):
-        return ec2_session.create_key_pair(KeyName=key_name)
-

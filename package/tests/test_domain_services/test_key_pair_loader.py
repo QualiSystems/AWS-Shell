@@ -2,13 +2,13 @@ from unittest import TestCase
 
 from mock import MagicMock, patch
 
-from cloudshell.cp.aws.domain.services.ami_credentials_service.key_pair_loader import KeyPairProvider
+from cloudshell.cp.aws.domain.services.ami_credentials.key_pair_loader import KeyPairProvider
 
 
 class TestKeyPairLoader(TestCase):
     def test_load(self):
         self.ket_pair_loader = KeyPairProvider()
-        with patch('cloudshell.cp.aws.domain.services.ami_credentials_service.key_pair_loader.open', create=True) as mock_open:
+        with patch('cloudshell.cp.aws.domain.services.ami_credentials.key_pair_loader.open', create=True) as mock_open:
             mock_open.return_value = MagicMock(spec=file)
             self.ket_pair_loader.load('zz', 'aa', self.ket_pair_loader.FILE_SYSTEM)
 

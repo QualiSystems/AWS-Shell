@@ -6,22 +6,34 @@ import boto3
 
 class AWSSessionProvider(object):
     EC2 = 'ec2'
+    S3 = 's3'
 
     def __init__(self):
         self.test_cred_path = os.path.join(os.path.dirname(__file__), 'test_cred.ini')
         if not os.path.isfile(self.test_cred_path):
             self.test_cred_path = ''
 
+    def get_s3_session(self, cloudshell_session, aws_ec2_data_model):
+        aws_session = self._get_aws_session(aws_ec2_data_model, cloudshell_session)
+
+        if not aws_session:
+            raise ValueError('Could not create AWS Session')
+        return aws_session.resource(self.S3)
+
     def get_ec2_session(self, cloudshell_session, aws_ec2_data_model):
-        credentials = self._get_aws_credentials(cloudshell_session, aws_ec2_data_model)
-        aws_session = self._get_aws_session(aws_ec2_data_model, credentials)
+        aws_session = self._get_aws_session(aws_ec2_data_model, cloudshell_session)
 
         if not aws_session:
             raise ValueError('Could not create AWS Session')
         return aws_session.resource(self.EC2)
 
+    def _get_aws_session(self, aws_ec2_data_model, cloudshell_session):
+        credentials = self._get_aws_credentials(cloudshell_session, aws_ec2_data_model)
+        aws_session = self._create_aws_session(aws_ec2_data_model, credentials)
+        return aws_session
+
     @staticmethod
-    def _get_aws_session(aws_ec2_data_model, credentials):
+    def _create_aws_session(aws_ec2_data_model, credentials):
         if not credentials:
             aws_session = boto3.Session(region_name=aws_ec2_data_model.region)
         else:

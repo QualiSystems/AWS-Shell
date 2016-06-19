@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
 

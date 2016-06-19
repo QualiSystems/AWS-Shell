@@ -28,6 +28,20 @@ class AWSSecurityGroupService(object):
                                                  Description=AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
                                                  VpcId=vpc)
 
+    @staticmethod
+    def get_security_group_by_name(vpc, name):
+        security_groups = [sg
+                           for sg in list(vpc.security_groups.all())
+                           if sg.group_name == name]
+
+        if not security_groups:
+            return None
+
+        if len(security_groups) > 1:
+            raise ValueError('Too many security groups by that name')
+
+        return security_groups[0]
+
     def set_security_group_rules(self, security_group, inbound_ports, outbound_ports):
         """
         :param security_group: AWS SG object

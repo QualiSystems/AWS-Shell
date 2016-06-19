@@ -2,8 +2,8 @@ import uuid
 
 from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
-from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
-from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService, IsolationTagValues
+from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagCreatorService, IsolationTagValues
 from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
@@ -45,14 +45,14 @@ class DeployAMIOperation(object):
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
                                                                  ami_deployment_model,
-                                                                    security_group)
+                                                                 security_group)
 
         result = self.aws_ec2_service.create_instance(ec2_session=ec2_session,
                                                       name=name,
                                                       reservation_id=reservation_id,
                                                       ami_deployment_info=ami_deployment_info)
 
-        ami_credentials = self._get_ami_credentials(aws_ec2_cp_resource_model.keypairs_location,
+        ami_credentials = self._get_ami_credentials(aws_ec2_cp_resource_model.key_pairs_location,
                                                     ami_deployment_model.wait_for_credentials,
                                                     result)
 

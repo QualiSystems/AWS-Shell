@@ -42,7 +42,7 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def PrepareConnectivity(self, context, request):
-        return "MOCK-PrepareConnectivity"
+        return self.aws_shell.prepare_connectivity(context, request)
 
     def GetApplicationPorts(self, context, ports):
         return self.aws_shell.get_application_ports(context)

@@ -22,12 +22,13 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.device_name = resource_context['Device Name']
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
-        aws_ec2_resource_model.vpc = resource_context['VPC']
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']
         aws_ec2_resource_model.aws_access_key_id = resource_context['AWS Access Key ID']
         aws_ec2_resource_model.default_instance_type = resource_context['Default Instance Type']
-        aws_ec2_resource_model.keypairs_location = resource_context['Keypairs Location']
-        aws_ec2_resource_model.subnet = resource_context['Subnet']
+        aws_ec2_resource_model.key_pairs_location = resource_context['Keypairs Location']
+        aws_ec2_resource_model.management_vpc_id = resource_context['Management VPC ID']
+        aws_ec2_resource_model.management_sg_id = resource_context['Management SG ID']
+        aws_ec2_resource_model.management_vpc_cidr = resource_context['Management VPC CIDR']
         return aws_ec2_resource_model
 
     @staticmethod

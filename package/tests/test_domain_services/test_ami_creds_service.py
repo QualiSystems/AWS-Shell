@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from cloudshell.cp.aws.domain.services.ami_credentials_service.ami_credentials_service import AMICredentialsService
+from cloudshell.cp.aws.domain.services.ami_credentials.ami_credentials_service import AMICredentialsService
 from cloudshell.cp.aws.domain.services.task_manager.password_waiter import PasswordWaiter
 
 
