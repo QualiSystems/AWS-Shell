@@ -58,7 +58,7 @@ class DeployAMIOperation(object):
 
         return DeployResult(vm_name=self._get_name_from_tags(result),
                             vm_uuid=result.instance_id,
-                            cloud_provider_resource_name=ami_deployment_model.aws_ec2,
+                            cloud_provider_resource_name=ami_deployment_model.cloud_provider_resource,
                             auto_power_on=ami_deployment_model.auto_power_on,
                             auto_power_off=ami_deployment_model.auto_power_off,
                             wait_for_ip=ami_deployment_model.wait_for_ip,
