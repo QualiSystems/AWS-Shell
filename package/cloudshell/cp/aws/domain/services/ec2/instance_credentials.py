@@ -17,7 +17,7 @@ class InstanceCredentialsService(object):
 
         :param instance: Ami amazon instance
         :param key_value: pem lines
-        :type key_value: list[str]
+        :type key_value: str
         :param wait_for_password:
         :type wait_for_password: bool
         :return:

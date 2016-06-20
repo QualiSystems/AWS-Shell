@@ -59,7 +59,7 @@ class DeployAMIOperation(object):
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_resource_model=aws_ec2_cp_resource_model,
                                                                  ami_deployment_model=ami_deployment_model,
-                                                                 vpc='',
+                                                                 vpc=vpc,
                                                                  security_group=security_group,
                                                                  reservation_id=reservation_id)
 
@@ -134,7 +134,7 @@ class DeployAMIOperation(object):
         security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
 
         security_group = self.security_group_service.create_security_group(ec2_session=ec2_session,
-                                                                           vpc_id=vpc,
+                                                                           vpc_id=vpc.id,
                                                                            security_group_name=security_group_name)
 
         tags = self.tag_service.get_security_group_tags(name=security_group_name,
@@ -175,7 +175,9 @@ class DeployAMIOperation(object):
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = ami_deployment_model.aws_key
 
-        aws_model.subnet_id = self.subnet_serivce.get_subnet_from_vpc(vpc)
+        subnet = self.subnet_serivce.get_subnet_from_vpc(vpc)
+        aws_model.subnet_id = subnet.id
+
         self._set_security_group_param(aws_model, reservation_id, security_group, vpc)
 
         return aws_model

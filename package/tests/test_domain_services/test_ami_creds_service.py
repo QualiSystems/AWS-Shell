@@ -20,8 +20,6 @@ class TestAmiCredentialsService(TestCase):
         instance.password_data = Mock(return_value={'PasswordData': ''})
         self.password_waiter.wait = Mock(return_value=self.encrypted)
 
-        res = self.credentials_service.get_windows_credentials(instance, self.pem)
+        res = self.credentials_service.get_windows_credentials(instance, ''.join(self.pem))
         self.assertEquals(self.decrypted, self.credentials_service.decrypt_password(self.pem, self.encrypted), res.password)
         self.assertEquals('Administrator', res.user_name, InstanceCredentialsService.DEFAULT_USER_NAME)
-
-

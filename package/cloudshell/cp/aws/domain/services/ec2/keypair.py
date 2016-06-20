@@ -21,7 +21,8 @@ class KeyPairService(object):
         :return:
         """
         s3_key = self._get_s3_key_location(reservation_id)
-        return self.s3_service.get_key(s3_session, bucket_name, s3_key)
+        s3_obj = self.s3_service.get_key(s3_session, bucket_name, s3_key)
+        return self.s3_service.get_body_of_object(s3_obj)
 
     def create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
         key_pair = ec2_session.create_key_pair(KeyName=self._get_reservation_key_name(reservation_id))

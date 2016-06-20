@@ -6,6 +6,20 @@ class S3BucketService(object):
         pass
 
     @staticmethod
+    def get_body_of_object(obj):
+        """
+        Will load a S3 object and download it content
+        :param obj: S3 Object
+        :return: str it body data
+        """
+        if not obj:
+            raise ValueError('S3 object cannot be None')
+        object_body = obj.get()
+        body_stream = object_body['Body']
+        data = body_stream.read()
+        return data
+
+    @staticmethod
     def get_key(s3_session, bucket_name, key):
         """
         Gets the provided key if exists, otherwise returns None

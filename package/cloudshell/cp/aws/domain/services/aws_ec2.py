@@ -31,7 +31,6 @@ class AWSEC2Service(object):
             InstanceType=ami_deployment_info.instance_type,
             KeyName=ami_deployment_info.aws_key,
             BlockDeviceMappings=ami_deployment_info.block_device_mappings,
-            SecurityGroupIds=ami_deployment_info.security_group_ids,
             NetworkInterfaces=[
                 {
                     'SubnetId': ami_deployment_info.subnet_id,
