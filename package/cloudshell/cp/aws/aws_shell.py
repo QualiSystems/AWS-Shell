@@ -12,6 +12,7 @@ from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
 from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
@@ -35,7 +36,8 @@ class AWSShell(object):
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = AWSSecurityGroupService()
-        self.vpc_service = VPCService(tag_service=self.tag_service)
+        self.subnet_service = SubnetService(self.tag_service)
+        self.vpc_service = VPCService(tag_service=self.tag_service, subnet_service=self.subnet_service)
         self.s3_service = S3BucketService()
         self.key_pair_service = KeyPairService(self.s3_service)
 
@@ -49,7 +51,8 @@ class AWSShell(object):
                                                        security_group_service=self.security_group_service,
                                                        tag_service=self.tag_service,
                                                        vpc_service=self.vpc_service,
-                                                       key_pair_service=self.key_pair_service)
+                                                       key_pair_service=self.key_pair_service,
+                                                       subnet_service=self.subnet_service)
 
         self.power_management_operation = PowerOperation(aws_ec2_service=self.aws_ec2_service,
                                                          instance_waiter=self.ec2_instance_waiter)

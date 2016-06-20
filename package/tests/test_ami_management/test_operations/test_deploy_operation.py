@@ -16,13 +16,15 @@ class TestDeployOperation(TestCase):
         self.tag_service = Mock()
         self.key_pair = Mock()
         self.vpc_service = Mock()
+        self.subnet_service = Mock()
         self.credentials_manager = Mock()
         self.deploy_operation = DeployAMIOperation(self.ec2_serv,
                                                    self.credentials_manager,
                                                    self.security_group_service,
                                                    self.tag_service,
                                                    self.vpc_service,
-                                                   self.key_pair)
+                                                   self.key_pair,
+                                                   self.subnet_service)
 
     def test_deploy(self):
         ami_datamodel = Mock()
@@ -98,16 +100,26 @@ class TestDeployOperation(TestCase):
         ami = Mock()
         ami.aws_ami_id = None
         self.assertRaises(ValueError,
-                          self.deploy_operation._create_deployment_parameters, self.ec2_datamodel, ami, Mock())
+                          self.deploy_operation._create_deployment_parameters,
+                          aws_ec2_resource_model=self.ec2_datamodel,
+                          ami_deployment_model=ami,
+                          vpc=Mock(),
+                          security_group=None,
+                          reservation_id='res')
 
     def test_create_deployment_parameters(self):
         ami = Mock()
         ami.aws_ami_id = 'asd'
         ami.storage_size = '0'
-        aws_model = self.deploy_operation._create_deployment_parameters(self.ec2_datamodel, ami, None)
+        vpc = Mock()
+        aws_model = self.deploy_operation._create_deployment_parameters(aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        reservation_id='res')
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
         self.assertEquals(aws_model.aws_key, ami.aws_key)
-        self.assertTrue(len(aws_model.security_group_ids) == 0)
+        self.assertTrue(len(aws_model.security_group_ids) == 1)
         return aws_model

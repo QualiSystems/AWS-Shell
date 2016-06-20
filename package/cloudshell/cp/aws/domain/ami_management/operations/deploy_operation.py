@@ -50,13 +50,18 @@ class DeployAMIOperation(object):
         :return:
         """
 
+        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation_id)
+
         security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                   ec2_session=ec2_session,
-                                                                  reservation_id=reservation_id)
+                                                                  reservation_id=reservation_id,
+                                                                  vpc=vpc)
 
-        ami_deployment_info = self._create_deployment_parameters(aws_ec2_cp_resource_model,
-                                                                 ami_deployment_model,
-                                                                 security_group)
+        ami_deployment_info = self._create_deployment_parameters(aws_ec2_resource_model=aws_ec2_cp_resource_model,
+                                                                 ami_deployment_model=ami_deployment_model,
+                                                                 vpc='',
+                                                                 security_group=security_group,
+                                                                 reservation_id=reservation_id)
 
         instance = self.aws_ec2_service.create_instance(ec2_session=ec2_session,
                                                         name=name,
@@ -115,7 +120,8 @@ class DeployAMIOperation(object):
     def _create_security_group_for_instance(self,
                                             ami_deployment_model,
                                             ec2_session,
-                                            reservation_id):
+                                            reservation_id,
+                                            vpc):
 
         if not ami_deployment_model.inbound_ports and not ami_deployment_model.outbound_ports:
             return None
@@ -125,7 +131,6 @@ class DeployAMIOperation(object):
         if not inbound_ports and not outbound_ports:
             return None
 
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation_id)
         security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
 
         security_group = self.security_group_service.create_security_group(ec2_session=ec2_session,
@@ -181,7 +186,7 @@ class DeployAMIOperation(object):
 
         aws_model.security_group_ids = [default_sg.id]
 
-        if not security_group:
+        if security_group:
             aws_model.security_group_ids.append(security_group.group_id)
 
     @staticmethod
