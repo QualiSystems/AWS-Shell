@@ -41,7 +41,7 @@ class TestDeployOperation(TestCase):
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
         self.assertEqual(res.vm_name, 'my name')
-        self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.aws_ec2)
+        self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider_resource)
         self.assertEqual(res.auto_power_on, ami_datamodel.auto_power_on)
         self.assertEqual(res.auto_power_off, ami_datamodel.auto_power_off)
         self.assertEqual(res.wait_for_ip, ami_datamodel.wait_for_ip)
