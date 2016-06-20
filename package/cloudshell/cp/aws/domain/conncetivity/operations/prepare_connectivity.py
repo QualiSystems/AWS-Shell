@@ -68,13 +68,13 @@ class PrepareConnectivityOperation(object):
                                    vpc_id2=vpc_id)
 
     def get_or_create_security_group(self, ec2_session, reservation_id, vpc):
-        sg_name = self._get_security_group_name(reservation_id)
+        sg_name = self.security_group_service.get_security_group_name(reservation_id)
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
         if not security_group:
             security_group = \
-                self.security_group_service.create_security_group(ec2_session,
-                                                                  vpc.id,
-                                                                  sg_name)
+                self.security_group_service.create_security_group(ec2_session=ec2_session,
+                                                                  vpc_id=vpc.id,
+                                                                  security_group_name=sg_name)
         return security_group
 
     def _get_or_create_vpc(self, action, ec2_session, reservation_id):
@@ -96,10 +96,6 @@ class PrepareConnectivityOperation(object):
         action_result.vpcId = vpc.id
         action_result.securityGroupId = security_group.id
         return action_result
-
-    @staticmethod
-    def _get_security_group_name(reservation_id):
-        return 'quali_sandbox_security_group_{0}'.format(reservation_id)
 
     @staticmethod
     def _extract_cider(action):

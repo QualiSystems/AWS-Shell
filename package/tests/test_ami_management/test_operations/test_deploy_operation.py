@@ -13,14 +13,14 @@ class TestDeployOperation(TestCase):
         self.s3_session = Mock()
         self.ec2_serv = Mock()
         self.security_group_service = Mock()
-        self.tag_creator_service = Mock()
+        self.tag_service = Mock()
         self.key_pair = Mock()
         self.vpc_service = Mock()
         self.credentials_manager = Mock()
         self.deploy_operation = DeployAMIOperation(self.ec2_serv,
                                                    self.credentials_manager,
                                                    self.security_group_service,
-                                                   self.tag_creator_service,
+                                                   self.tag_service,
                                                    self.vpc_service,
                                                    self.key_pair)
 
@@ -52,11 +52,11 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
                                                        'User': ami_credentials.user_name})
-        self.assertTrue(self.tag_creator_service.get_security_group_tags.called)
+        self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
             self.security_group_service.create_security_group()),
-            self.tag_creator_service.get_security_group_tags())
+            self.tag_service.get_security_group_tags())
 
         self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
                                                        instance.key_pair.key_name,

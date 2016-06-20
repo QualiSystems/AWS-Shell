@@ -12,7 +12,7 @@ from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
 from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
-from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagService
+from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
@@ -24,9 +24,9 @@ from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 
 class AWSShell(object):
     def __init__(self):
-        self.tag_creator_service = TagService()
+        self.tag_service = TagService()
         self.ec2_instance_waiter = EC2InstanceWaiter()
-        self.aws_ec2_service = AWSEC2Service(self.tag_creator_service, self.ec2_instance_waiter)
+        self.aws_ec2_service = AWSEC2Service(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
@@ -35,7 +35,7 @@ class AWSShell(object):
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = AWSSecurityGroupService()
-        self.vpc_service = VPCService(tag_service=self.tag_creator_service)
+        self.vpc_service = VPCService(tag_service=self.tag_service)
         self.s3_service = S3BucketService()
         self.key_pair_service = KeyPairService(self.s3_service)
 
@@ -47,7 +47,7 @@ class AWSShell(object):
         self.deploy_ami_operation = DeployAMIOperation(aws_ec2_service=self.aws_ec2_service,
                                                        ami_credential_service=self.ami_credentials_service,
                                                        security_group_service=self.security_group_service,
-                                                       tag_creator_service=self.tag_creator_service,
+                                                       tag_service=self.tag_service,
                                                        vpc_service=self.vpc_service,
                                                        key_pair_service=self.key_pair_service)
 

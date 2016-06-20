@@ -4,7 +4,7 @@ class AWSEC2Service(object):
     def __init__(self, tags_creator_service, instance_waiter):
         """
         :param tags_creator_service: Tags Service
-        :type tags_creator_service: cloudshell.cp.aws.domain.services.tag_creator.TagService
+        :type tags_creator_service: cloudshell.cp.aws.domain.services.tags.TagService
         :param instance_waiter: Instance Waiter
         :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
         """
@@ -31,7 +31,7 @@ class AWSEC2Service(object):
             InstanceType=ami_deployment_info.instance_type,
             KeyName=ami_deployment_info.aws_key,
             BlockDeviceMappings=ami_deployment_info.block_device_mappings,
-            # SecurityGroupIds=ami_deployment_info.security_group_ids,
+            SecurityGroupIds=ami_deployment_info.security_group_ids,
             NetworkInterfaces=[
                 {
                     'SubnetId': ami_deployment_info.subnet_id,

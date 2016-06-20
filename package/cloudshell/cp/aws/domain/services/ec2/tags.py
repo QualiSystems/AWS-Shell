@@ -35,9 +35,12 @@ class TagService(object):
         :param str reservation_id: reservation id
         :return: list[dict]
         """
-        return [self._get_kvp(TagNames.Name, name),
+        return [self.get_name_tag(name),
                 self.get_created_by_kvp(),
                 self.get_reservation_tag(reservation_id)]
+
+    def get_name_tag(self, name):
+        return self._get_kvp(TagNames.Name, name)
 
     def get_reservation_tag(self, reservation_id):
         return self._get_kvp(TagNames.ReservationId, reservation_id)

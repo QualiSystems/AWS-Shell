@@ -2,13 +2,15 @@ VPC_RESERVATION = 'VPC Reservation: {0}'
 
 
 class VPCService(object):
-    def __init__(self, tag_service):
+    def __init__(self, tag_service, subnet_service):
         """
         :param tag_service: Tag Service
-        :type tag_service: cloudshell.cp.aws.domain.services.ec2.tag_creator.TagService
-        :return:
+        :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
+        :param subnet_service: Subnet Service
+        :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
         """
         self.tag_service = tag_service
+        self.subnet_service = subnet_service
 
     def create_vpc_for_reservation(self, ec2_session, reservation_id, cidr):
         """
@@ -22,10 +24,10 @@ class VPCService(object):
         """
         vpc = ec2_session.create_vpc(CidrBlock=cidr)
 
-        # TODO: vpc check status if needed
+        vpc_name = VPC_RESERVATION.format(reservation_id)
+        self._set_tags(vpc_name=vpc_name, reservation_id=reservation_id, vpc=vpc)
 
-        self._set_tags(reservation_id, vpc)
-        # self.s3_service.save_to_reservation_bucket(s3_bucket_name, reservation_id, vpc.id)
+        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name)
         return vpc
 
     @staticmethod
@@ -58,6 +60,6 @@ class VPCService(object):
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
         return vpc_peer_connection.id
 
-    def _set_tags(self, reservation_id, resource):
-        tags = self.tag_service.get_default_tags(VPC_RESERVATION.format(reservation_id), reservation_id)
-        self.tag_service.set_ec2_resource_tags(resource, tags)
+    def _set_tags(self, vpc_name, reservation_id, vpc):
+        tags = self.tag_service.get_default_tags(vpc_name, reservation_id)
+        self.tag_service.set_ec2_resource_tags(vpc, tags)
