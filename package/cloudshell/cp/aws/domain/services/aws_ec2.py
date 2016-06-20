@@ -1,4 +1,3 @@
-from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagService
 
 
 class AWSEC2Service(object):
@@ -22,7 +21,7 @@ class AWSEC2Service(object):
         :param ec2_session:
         :type ec2_session: boto3.ec2.session
         :param ami_deployment_info: request details of the AMI
-        :type ami_deployment_info: cloudshell.cp.aws.device_access_layer.models.ami_deployment_model.AMIDeploymentModel
+        :type ami_deployment_info: cloudshell.cp.aws.models.ami_deployment_model.AMIDeploymentModel
         :return:
         """
         instance = ec2_session.create_instances(

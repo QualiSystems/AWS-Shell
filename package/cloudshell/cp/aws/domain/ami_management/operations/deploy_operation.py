@@ -1,9 +1,9 @@
 import uuid
 
-from cloudshell.cp.aws.device_access_layer.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tag_creator import IsolationTagValues
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
+from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
