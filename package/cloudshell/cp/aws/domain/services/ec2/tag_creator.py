@@ -10,7 +10,7 @@ class IsolationTagValues(object):
     Shared = 'Shared'
 
 
-class TagCreatorService(object):
+class TagService(object):
     CREATED_BY_QUALI = "Quali"
 
     def __init__(self):
@@ -54,7 +54,7 @@ class TagCreatorService(object):
         resource.create_tags(Tags=tags)
 
     def get_created_by_kvp(self):
-        return self._get_kvp(TagNames.CreatedBy, TagCreatorService.CREATED_BY_QUALI)
+        return self._get_kvp(TagNames.CreatedBy, TagService.CREATED_BY_QUALI)
 
     @staticmethod
     def _get_kvp(key, value):

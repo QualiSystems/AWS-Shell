@@ -1,11 +1,11 @@
-from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagCreatorService
+from cloudshell.cp.aws.domain.services.ec2.tag_creator import TagService
 
 
 class AWSEC2Service(object):
     def __init__(self, tags_creator_service, instance_waiter):
         """
         :param tags_creator_service: Tags Service
-        :type tags_creator_service: cloudshell.cp.aws.domain.services.tag_creator.TagCreatorService
+        :type tags_creator_service: cloudshell.cp.aws.domain.services.tag_creator.TagService
         :param instance_waiter: Instance Waiter
         :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
         """

@@ -5,7 +5,7 @@ class VPCService(object):
     def __init__(self, tag_service):
         """
         :param tag_service: Tag Service
-        :type tag_service: cloudshell.cp.aws.domain.services.ec2.tag_creator.TagCreatorService
+        :type tag_service: cloudshell.cp.aws.domain.services.ec2.tag_creator.TagService
         :return:
         """
         self.tag_service = tag_service
@@ -16,8 +16,6 @@ class VPCService(object):
         :param ec2_session: Ec2 Session
         :param reservation_id: Reservation ID
         :type reservation_id: str
-        :param s3_bucket_name: S3 bucket name to save the id of the vpc
-        :type s3_bucket_name: str
         :param cidr: The CIDR block
         :type cidr: str
         :return: vpc

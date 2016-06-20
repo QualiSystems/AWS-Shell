@@ -1,7 +1,7 @@
 from unittest import TestCase
 from mock import Mock, patch
 
-from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
 
 instance = Mock()
 instance.state = {'Name': ''}

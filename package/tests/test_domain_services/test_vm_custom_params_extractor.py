@@ -2,7 +2,7 @@ from unittest import TestCase
 
 import jsonpickle
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
-from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
+from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 
 
 class TestVmCustomParamsExtractor(TestCase):

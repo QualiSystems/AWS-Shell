@@ -1,5 +1,5 @@
-from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
-from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.aws_ec2 import AWSEC2Service
+from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
 
 
 class PowerOperation(object):

@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from cloudshell.cp.aws.domain.services.task_manager.password_waiter import PasswordWaiter
+from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 
 
 class TestPasswordWaiter(TestCase):
