@@ -42,7 +42,10 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def PrepareConnectivity(self, context, request):
-        return "MOCK-PrepareConnectivity"
+        return "{ driverResponse: { actionResults: [{success: true}] } }"
+
+    def CleanupConnectivity(self, context, request):
+        return "{ driverResponse: { actionResults: [{success: true}] } }"
 
     def GetApplicationPorts(self, context, ports):
         return self.aws_shell.get_application_ports(context)
