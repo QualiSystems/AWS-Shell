@@ -35,7 +35,7 @@ class AWSModelsParser(object):
         data = jsonpickle.decode(deployment_request)
         data_holder = DeployDataHolder(data)
         deployment_resource_model = DeployAWSEc2AMIInstanceResourceModel()
-        deployment_resource_model.aws_ec2 = data_holder.ami_params.aws_ec2
+        deployment_resource_model.cloud_provider_resource = data_holder.ami_params.cloud_provider_resource
         deployment_resource_model.aws_ami_id = data_holder.ami_params.aws_ami_id
         deployment_resource_model.storage_size = data_holder.ami_params.storage_size
         deployment_resource_model.storage_iops = data_holder.ami_params.storage_iops
