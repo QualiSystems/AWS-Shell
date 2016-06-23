@@ -51,7 +51,8 @@ class DeployAMIOperation(object):
         """
 
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation_id)
-
+        if not vpc:
+            raise ValueError('VPC is not set for this reservation')
         security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                   ec2_session=ec2_session,
                                                                   reservation_id=reservation_id,
@@ -98,9 +99,9 @@ class DeployAMIOperation(object):
         """
         # has value for windows instances only
         if instance.platform:
-            key_value = self.key_pair_service.get_key_pair_by_name(s3_session=s3_session,
-                                                                   bucket_name=key_pair_location,
-                                                                   reservation_id=reservation_id)
+            key_value = self.key_pair_service.load_key_pair_by_name(s3_session=s3_session,
+                                                                    bucket_name=key_pair_location,
+                                                                    reservation_id=reservation_id)
 
             ami_credentials = self.credentials_service.get_windows_credentials(instance=instance,
                                                                                key_value=key_value,

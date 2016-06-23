@@ -10,7 +10,14 @@ class KeyPairService(object):
         """
         self.s3_service = s3_service
 
-    def get_key_pair_by_name(self, s3_session, bucket_name, reservation_id):
+    def get_key_for_reservation(self, s3_session, bucket_name, reservation_id):
+        s3_key = self._get_s3_key_location(reservation_id)
+
+        if self.s3_service.get_key(s3_session, bucket_name, s3_key):
+            return s3_key
+        return None
+
+    def load_key_pair_by_name(self, s3_session, bucket_name, reservation_id):
         """
         Will load a key form s3 if exists
         :param s3_session: s3 session
@@ -21,7 +28,11 @@ class KeyPairService(object):
         :return:
         """
         s3_key = self._get_s3_key_location(reservation_id)
+
         s3_obj = self.s3_service.get_key(s3_session, bucket_name, s3_key)
+        if not s3_obj:
+            return None
+
         return self.s3_service.get_body_of_object(s3_obj)
 
     def create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):

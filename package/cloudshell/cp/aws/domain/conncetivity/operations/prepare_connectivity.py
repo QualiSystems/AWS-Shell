@@ -53,9 +53,9 @@ class PrepareConnectivityOperation(object):
         return results
 
     def _create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
-        keypair = self.key_pair_service.get_key_pair_by_name(s3_session=s3_session,
-                                                             bucket_name=bucket,
-                                                             reservation_id=reservation_id)
+        keypair = self.key_pair_service.get_key_for_reservation(s3_session=s3_session,
+                                                                bucket_name=bucket,
+                                                                reservation_id=reservation_id)
         if not keypair:
             self.key_pair_service.create_key_pair(ec2_session=ec2_session,
                                                   s3_session=s3_session,
@@ -91,8 +91,8 @@ class PrepareConnectivityOperation(object):
     def _create_action_result(action, security_group, vpc):
         action_result = PrepareConnectivityActionResult()
         action_result.actionId = action.actionId
-        action_result.isSuccess = True
-        action_result.message = 'PrepareConnectivity finished successfully'
+        action_result.success = True
+        action_result.infoMessage = 'PrepareConnectivity finished successfully'
         action_result.vpcId = vpc.id
         action_result.securityGroupId = security_group.id
         return action_result
@@ -112,6 +112,6 @@ class PrepareConnectivityOperation(object):
     def _create_fault_action_result(action, e):
         action_result = PrepareConnectivityActionResult()
         action_result.actionId = action.actionId
-        action_result.isSuccess = False
-        action_result.message = 'PrepareConnectivity ended with the error: {0}'.format(e)
+        action_result.success = False
+        action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result

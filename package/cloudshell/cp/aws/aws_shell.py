@@ -93,7 +93,7 @@ class AWSShell(object):
             aws_ec2_datamodel=aws_ec2_resource_model,
             request=prepare_connectivity_request)
 
-        return self._set_command_result({'driverRequest': {'actions': results}})
+        return self._set_command_result({'driverResponse': {'actionResults': results}})
 
     def deploy_ami(self, command_context, deployment_request):
         """

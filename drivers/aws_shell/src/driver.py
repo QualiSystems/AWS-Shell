@@ -41,7 +41,7 @@ class AWSShellDriver(ResourceDriverInterface):
     def ApplyConnectivityChanges(self, context, request):
         pass
 
-    def PrepareSandboxConnectivity(self, context, request):
+    def PrepareConnectivity(self, context, request):
         return self.aws_shell.prepare_connectivity(context, request)
 
     def GetApplicationPorts(self, context, ports):
