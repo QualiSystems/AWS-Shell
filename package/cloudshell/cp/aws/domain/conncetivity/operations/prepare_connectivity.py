@@ -42,7 +42,7 @@ class PrepareConnectivityOperation(object):
                 # will get or create a vpc for the reservation
                 vpc = self._get_or_create_vpc(action, ec2_session, reservation_id)
 
-                security_group = self.get_or_create_security_group(ec2_session, reservation_id, vpc)
+                security_group = self._get_or_create_security_group(ec2_session, reservation_id, vpc)
 
                 self._peer_vpcs(ec2_session, aws_ec2_datamodel.management_vpc_id, vpc.id)
 
@@ -67,7 +67,7 @@ class PrepareConnectivityOperation(object):
                                    vpc_id1=management_vpc_id,
                                    vpc_id2=vpc_id)
 
-    def get_or_create_security_group(self, ec2_session, reservation_id, vpc):
+    def _get_or_create_security_group(self, ec2_session, reservation_id, vpc):
         sg_name = self.security_group_service.get_security_group_name(reservation_id)
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
         if not security_group:
