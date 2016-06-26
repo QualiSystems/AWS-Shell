@@ -94,6 +94,12 @@ class TestAWSShell(TestCase):
         ))
         self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
 
+    def test_prepare_connectivity_invalid_req(self):
+        req = '{"aa": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+        self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
+
+        self.assertRaises(ValueError, self.aws_shell_api.prepare_connectivity, self.command_context, req)
+
     def test_delete_ami(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
         remote_resource = Mock()
