@@ -79,6 +79,20 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['autoload'], deploymock.autoload)
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider_resource)
 
+    def test_delete_ami(self):
+        pass
+        # deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
+        # remote_resource = Mock()
+        # remote_resource.fullname = 'my ami name'
+        # self.command_context.remote_endpoints = [remote_resource]
+        # self.aws_shell_api.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
+        # self.aws_shell_api.power_management_operation.power_on = Mock(return_value=True)
+        # self.aws_shell_api.power_on_ami(self.command_context)
+        #
+        # self.assertTrue(
+        #     self.aws_shell_api.power_management_operation.power_on.called_with(
+        #         self.aws_shell_api.aws_session_manager.get_ec2_session(), 'id'))
+
     def test_power_on(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
         remote_resource = Mock()
