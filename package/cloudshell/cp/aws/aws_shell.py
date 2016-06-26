@@ -1,42 +1,58 @@
 import jsonpickle
 
+from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
-from cloudshell.cp.aws.device_access_layer.aws_ec2 import AWSEC2Service
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
-from cloudshell.cp.aws.domain.services.ami_credentials_service.ami_credentials_service import AMICredentialsService
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare_connectivity import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
-from cloudshell.cp.aws.domain.services.ami_credentials_service.key_pair_loader import KeyPairProvider
-from cloudshell.cp.aws.domain.services.ec2_services.aws_security_group_service import AWSSecurityGroupService
-from cloudshell.cp.aws.domain.services.ec2_services.tag_creator_service import TagCreatorService
-from cloudshell.cp.aws.domain.services.model_parser.aws_model_parser import AWSModelsParser
+from cloudshell.cp.aws.domain.services.aws_ec2 import AWSEC2Service
+from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
+from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
+from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
+from cloudshell.cp.aws.domain.services.ec2.tags import TagService
+from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
+from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
+from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
+from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
-from cloudshell.cp.aws.domain.services.storage_services.ec2_storage_service import EC2StorageService
-from cloudshell.cp.aws.domain.services.task_manager.instance_waiter import EC2InstanceWaiter
-from cloudshell.cp.aws.domain.services.task_manager.password_waiter import PasswordWaiter
-from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
+from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 
 
 class AWSShell(object):
     def __init__(self):
-        tag_creator_service = TagCreatorService()
-        self.aws_ec2_service = AWSEC2Service(tag_creator_service)
+        self.tag_service = TagService()
         self.ec2_instance_waiter = EC2InstanceWaiter()
+        self.aws_ec2_service = AWSEC2Service(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
         self.password_waiter = PasswordWaiter()
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
-        self.ami_credentials_service = AMICredentialsService(self.password_waiter)
+        self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = AWSSecurityGroupService()
-        self.key_pair_loader = KeyPairProvider()
+        self.subnet_service = SubnetService(self.tag_service)
+        self.vpc_service = VPCService(tag_service=self.tag_service, subnet_service=self.subnet_service)
+        self.s3_service = S3BucketService()
+        self.key_pair_service = KeyPairService(self.s3_service)
+
+        self.prepare_connectivity_operation = \
+            PrepareConnectivityOperation(vpc_service=self.vpc_service,
+                                         security_group_service=self.security_group_service,
+                                         key_pair_service=self.key_pair_service)
+
         self.deploy_ami_operation = DeployAMIOperation(aws_ec2_service=self.aws_ec2_service,
                                                        ami_credential_service=self.ami_credentials_service,
                                                        security_group_service=self.security_group_service,
-                                                       tag_creator_service=tag_creator_service,
-                                                       key_pair_loader=self.key_pair_loader)
+                                                       tag_service=self.tag_service,
+                                                       vpc_service=self.vpc_service,
+                                                       key_pair_service=self.key_pair_service,
+                                                       subnet_service=self.subnet_service)
 
         self.power_management_operation = PowerOperation(aws_ec2_service=self.aws_ec2_service,
                                                          instance_waiter=self.ec2_instance_waiter)
@@ -47,6 +63,37 @@ class AWSShell(object):
                                                        security_group_service=self.security_group_service)
 
         self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
+
+    def prepare_connectivity(self, command_context, request):
+        """
+        Will create a vpc for the reservation and will peer it with the management vpc
+        :param command_context: The Command Context
+        :param request: The json request
+        :type request: str
+        :return:
+        """
+        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
+                                                                        command_context.connectivity.admin_auth_token,
+                                                                        command_context.reservation.domain)
+        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+
+        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
+
+        # parse request
+        prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
+        prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
+        if not prepare_connectivity_request:
+            raise ValueError('Invalid prepare connectivity request')
+
+        results = self.prepare_connectivity_operation.prepare_connectivity(
+            ec2_session=ec2_session,
+            s3_session=s3_session,
+            reservation_id=command_context.reservation.reservation_id,
+            aws_ec2_datamodel=aws_ec2_resource_model,
+            request=prepare_connectivity_request)
+
+        return self._set_command_result({'driverResponse': {'actionResults': results}})
 
     def deploy_ami(self, command_context, deployment_request):
         """
@@ -59,7 +106,9 @@ class AWSShell(object):
                                                                         command_context.reservation.domain)
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         reservation_id = command_context.reservation.reservation_id
+        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
         deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
+                                                       s3_session=s3_session,
                                                        name=name,
                                                        reservation_id=reservation_id,
                                                        aws_ec2_cp_resource_model=aws_ec2_resource_model,
@@ -136,7 +185,6 @@ class AWSShell(object):
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
         return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
-
 
     @staticmethod
     def _set_command_result(result, unpicklable=False):

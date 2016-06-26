@@ -10,16 +10,21 @@ class TestDeployOperation(TestCase):
         self.ec2_datamodel = Mock()
         self.ec2_datamodel.default_storage_size = 1
         self.ec2_session = Mock()
+        self.s3_session = Mock()
         self.ec2_serv = Mock()
         self.security_group_service = Mock()
-        self.tag_creator_service = Mock()
+        self.tag_service = Mock()
         self.key_pair = Mock()
+        self.vpc_service = Mock()
+        self.subnet_service = Mock()
         self.credentials_manager = Mock()
         self.deploy_operation = DeployAMIOperation(self.ec2_serv,
                                                    self.credentials_manager,
                                                    self.security_group_service,
-                                                   self.tag_creator_service,
-                                                   self.key_pair)
+                                                   self.tag_service,
+                                                   self.vpc_service,
+                                                   self.key_pair,
+                                                   self.subnet_service)
 
     def test_deploy(self):
         ami_datamodel = Mock()
@@ -30,6 +35,7 @@ class TestDeployOperation(TestCase):
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.ec2_serv.create_instance = Mock(return_value=instance)
         res = self.deploy_operation.deploy(self.ec2_session,
+                                           self.s3_session,
                                            'my name',
                                            'reservation_id',
                                            self.ec2_datamodel,
@@ -48,11 +54,11 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
                                                        'User': ami_credentials.user_name})
-        self.assertTrue(self.tag_creator_service.get_security_group_tags.called)
+        self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
             self.security_group_service.create_security_group()),
-            self.tag_creator_service.get_security_group_tags())
+            self.tag_service.get_security_group_tags())
 
         self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
                                                        instance.key_pair.key_name,
@@ -94,17 +100,26 @@ class TestDeployOperation(TestCase):
         ami = Mock()
         ami.aws_ami_id = None
         self.assertRaises(ValueError,
-                          self.deploy_operation._create_deployment_parameters, self.ec2_datamodel, ami, Mock())
+                          self.deploy_operation._create_deployment_parameters,
+                          aws_ec2_resource_model=self.ec2_datamodel,
+                          ami_deployment_model=ami,
+                          vpc=Mock(),
+                          security_group=None,
+                          reservation_id='res')
 
     def test_create_deployment_parameters(self):
         ami = Mock()
         ami.aws_ami_id = 'asd'
         ami.storage_size = '0'
-        aws_model = self.deploy_operation._create_deployment_parameters(self.ec2_datamodel, ami, None)
+        vpc = Mock()
+        aws_model = self.deploy_operation._create_deployment_parameters(aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        reservation_id='res')
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
         self.assertEquals(aws_model.aws_key, ami.aws_key)
-        self.assertEquals(aws_model.subnet_id, self.ec2_datamodel.subnet)
-        self.assertTrue(len(aws_model.security_group_ids) == 0)
+        self.assertTrue(len(aws_model.security_group_ids) == 1)
         return aws_model

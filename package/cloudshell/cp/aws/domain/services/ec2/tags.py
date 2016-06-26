@@ -10,8 +10,8 @@ class IsolationTagValues(object):
     Shared = 'Shared'
 
 
-class TagCreatorService(object):
-    CreatedByTagValue = "Quali"
+class TagService(object):
+    CREATED_BY_QUALI = "Quali"
 
     def __init__(self):
         pass
@@ -35,11 +35,30 @@ class TagCreatorService(object):
         :param str reservation_id: reservation id
         :return: list[dict]
         """
-        return [self._get_kvp(TagNames.Name, name), self._get_created_by_kvp(),
-                self._get_kvp(TagNames.ReservationId, reservation_id)]
+        return [self.get_name_tag(name),
+                self.get_created_by_kvp(),
+                self.get_reservation_tag(reservation_id)]
 
-    def _get_created_by_kvp(self):
-        return self._get_kvp(TagNames.CreatedBy, TagCreatorService.CreatedByTagValue)
+    def get_name_tag(self, name):
+        return self._get_kvp(TagNames.Name, name)
 
-    def _get_kvp(self, key, value):
+    def get_reservation_tag(self, reservation_id):
+        return self._get_kvp(TagNames.ReservationId, reservation_id)
+
+    @staticmethod
+    def set_ec2_resource_tags(resource, tags):
+        """
+        Will set tags on a EC2 resource
+        :param resource: EC2 resource
+        :param tags: Array of key pair tags
+        :type tags: list[dict]
+        :return:
+        """
+        resource.create_tags(Tags=tags)
+
+    def get_created_by_kvp(self):
+        return self._get_kvp(TagNames.CreatedBy, TagService.CREATED_BY_QUALI)
+
+    @staticmethod
+    def _get_kvp(key, value):
         return {'Key': key, 'Value': value}

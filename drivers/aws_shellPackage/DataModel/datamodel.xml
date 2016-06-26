@@ -25,6 +25,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management VPC ID" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Generic Input" Type="String">
       <Rules/>
     </AttributeInfo>
@@ -71,18 +77,6 @@
       </Rules>
     </AttributeInfo>
     <AttributeInfo DefaultValue="false" Description="" IsReadOnly="false" Name="Auto Power On"   Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo  Description="" IsReadOnly="false" Name="VPC"  Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo  Description="" IsReadOnly="false" Name="Subnet"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -154,7 +148,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-        <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Default Storage IOPS" Type="Numeric">
+    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Default Storage IOPS" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -198,13 +192,10 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC CIDR">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="VPC" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Subnet" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management SG ID">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC ID">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Device Name">

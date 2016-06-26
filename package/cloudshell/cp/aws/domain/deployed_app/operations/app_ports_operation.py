@@ -1,6 +1,6 @@
-from cloudshell.cp.aws.domain.services.model_parser.port_group_attribute_parser import PortGroupAttributeParser
+from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
-from cloudshell.cp.aws.domain.services.model_parser.custom_param_extractor import VmCustomParamsExtractor
+from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 
 
 class DeployedAppPortsOperation(object):

@@ -6,7 +6,7 @@ from Crypto.PublicKey import RSA
 from cloudshell.cp.aws.models.ami_credentials import AMICredentials
 
 
-class AMICredentialsService(object):
+class InstanceCredentialsService(object):
     DEFAULT_USER_NAME = "Administrator"
 
     def __init__(self, password_waiter):
@@ -17,7 +17,7 @@ class AMICredentialsService(object):
 
         :param instance: Ami amazon instance
         :param key_value: pem lines
-        :type key_value: list[str]
+        :type key_value: str
         :param wait_for_password:
         :type wait_for_password: bool
         :return:

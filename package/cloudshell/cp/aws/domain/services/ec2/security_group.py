@@ -16,17 +16,35 @@ class AWSSecurityGroupService(object):
         for security_group in instance.security_groups:
             self.delete_security_group(security_group)
 
-    def create_security_group(self, ec2_session, vpc, security_group_name):
+    def create_security_group(self, ec2_session, vpc_id, security_group_name):
         """
         creating a security group
-        :param boto3.Session ec2_session:
-        :param str vpc:
+        :param ec2_session:
+        :param str vpc_id:
         :param str security_group_name:
         :return:
         """
         return ec2_session.create_security_group(GroupName=security_group_name,
                                                  Description=AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
-                                                 VpcId=vpc)
+                                                 VpcId=vpc_id)
+
+    @staticmethod
+    def get_security_group_name(reservation_id):
+        return 'quali_sandbox_security_group_{0}'.format(reservation_id)
+
+    @staticmethod
+    def get_security_group_by_name(vpc, name):
+        security_groups = [sg
+                           for sg in list(vpc.security_groups.all())
+                           if sg.group_name == name]
+
+        if not security_groups:
+            return None
+
+        if len(security_groups) > 1:
+            raise ValueError('Too many security groups by that name')
+
+        return security_groups[0]
 
     def set_security_group_rules(self, security_group, inbound_ports, outbound_ports):
         """
