@@ -79,6 +79,55 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['autoload'], deploymock.autoload)
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider_resource)
 
+    def test_prepare_connectivity(self):
+        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+        self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
+
+        res = self.aws_shell_api.prepare_connectivity(self.command_context, req)
+
+        self.assertTrue(self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity.called_with(
+            self.aws_shell_api.aws_session_manager.get_ec2_session(),
+            self.aws_shell_api.aws_session_manager.get_s3_session(),
+            self.command_context.reservation.reservation_id,
+            self.aws_shell_api.model_parser.convert_to_aws_resource_model,
+            DeployDataHolder(jsonpickle.decode(req)).driverRequest
+        ))
+        self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
+
+    def test_prepare_connectivity_invalid_req(self):
+        req = '{"aa": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+        self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
+
+        self.assertRaises(ValueError, self.aws_shell_api.prepare_connectivity, self.command_context, req)
+
+    def test_delete_ami(self):
+        deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
+        remote_resource = Mock()
+        remote_resource.fullname = 'my ami name'
+        self.command_context.remote_endpoints = [remote_resource]
+        self.aws_shell_api.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
+        self.aws_shell_api.delete_ami_operation.delete_instance = Mock(return_value=True)
+
+        self.aws_shell_api.delete_ami(self.command_context, False)
+
+        self.assertTrue(
+            self.aws_shell_api.delete_ami_operation.delete_instance.called_with(
+                self.aws_shell_api.aws_session_manager.get_ec2_session(), 'id'))
+
+    def test_delete_ami_delete_resource(self):
+        deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
+        remote_resource = Mock()
+        remote_resource.fullname = 'my ami name'
+        self.command_context.remote_endpoints = [remote_resource]
+        self.aws_shell_api.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
+        self.aws_shell_api.delete_ami_operation.delete_instance = Mock(return_value=True)
+
+        self.aws_shell_api.delete_ami(self.command_context, False)
+
+        self.assertTrue(
+            self.aws_shell_api.delete_ami_operation.delete_instance.called_with(
+                self.aws_shell_api.aws_session_manager.get_ec2_session(), 'id'))
+
     def test_power_on(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
         remote_resource = Mock()

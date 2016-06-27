@@ -68,7 +68,7 @@ class PrepareConnectivityOperation(object):
                                    vpc_id2=vpc_id)
 
     def _get_or_create_security_group(self, ec2_session, reservation_id, vpc):
-        sg_name = self.security_group_service.get_security_group_name(reservation_id)
+        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation_id)
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
         if not security_group:
             security_group = \
@@ -78,7 +78,7 @@ class PrepareConnectivityOperation(object):
         return security_group
 
     def _get_or_create_vpc(self, action, ec2_session, reservation_id):
-        cidr = self._extract_cider(action)
+        cidr = self._extract_cidr(action)
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
                                                         reservation_id=reservation_id)
         if not vpc:
@@ -98,7 +98,7 @@ class PrepareConnectivityOperation(object):
         return action_result
 
     @staticmethod
-    def _extract_cider(action):
+    def _extract_cidr(action):
         cidrs = [custom_attribute.attributeValue
                  for custom_attribute in action.customActionAttributes
                  if custom_attribute.attributeName == 'Network']

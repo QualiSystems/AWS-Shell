@@ -1,4 +1,4 @@
-SUBNET_NAME = 'vpc name: {0}'
+SUBNET_NAME = 'VPC Name: {0}'
 
 
 class SubnetService(object):
@@ -9,9 +9,11 @@ class SubnetService(object):
         """
         self.tag_service = tag_service
 
-    def create_subnet_for_vpc(self, vpc, cidr, vpc_name):
+    def create_subnet_for_vpc(self, vpc, cidr, vpc_name, reservation_id):
         """
         Will create a subnet for the given vpc
+        :param reservation_id: Reservation ID
+        :type reservation_id: str
         :param vpc: VPC instanve
         :param cidr: CIDR
         :type cidr: str
@@ -22,8 +24,7 @@ class SubnetService(object):
         subnet = vpc.create_subnet(CidrBlock=cidr)
         subnet_name = self._get_subnet_name(vpc_name)
 
-        tags = [self.tag_service.get_created_by_kvp(),
-                self.tag_service.get_name_tag(subnet_name)]
+        tags = self.tag_service.get_default_tags(subnet_name, reservation_id)
 
         self.tag_service.set_ec2_resource_tags(subnet, tags)
         return subnet

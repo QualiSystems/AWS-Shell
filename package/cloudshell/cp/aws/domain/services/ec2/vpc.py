@@ -1,7 +1,8 @@
-VPC_RESERVATION = 'VPC Reservation: {0}'
 
 
 class VPCService(object):
+    VPC_RESERVATION = 'VPC Reservation: {0}'
+
     def __init__(self, tag_service, subnet_service):
         """
         :param tag_service: Tag Service
@@ -24,16 +25,15 @@ class VPCService(object):
         """
         vpc = ec2_session.create_vpc(CidrBlock=cidr)
 
-        vpc_name = VPC_RESERVATION.format(reservation_id)
+        vpc_name = self.VPC_RESERVATION.format(reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation_id=reservation_id, vpc=vpc)
 
-        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name)
+        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name, reservation_id=reservation_id)
         return vpc
 
-    @staticmethod
-    def find_vpc_for_reservation(ec2_session, reservation_id):
+    def find_vpc_for_reservation(self, ec2_session, reservation_id):
         filters = [{'Name': 'tag:Name',
-                    'Values': [VPC_RESERVATION.format(reservation_id)]}]
+                    'Values': [self.VPC_RESERVATION.format(reservation_id)]}]
 
         vpcs = list(ec2_session.vpcs.filter(Filters=filters))
 
@@ -53,8 +53,6 @@ class VPCService(object):
         :type vpc_id1: str
         :param vpc_id2: VPC Id
         :type vpc_id2: str
-        :param reservation_id: The reservation id
-        :type reservation_id: str
         :return: vpc peering id
         """
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)

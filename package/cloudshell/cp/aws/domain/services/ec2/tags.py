@@ -45,8 +45,7 @@ class TagService(object):
     def get_reservation_tag(self, reservation_id):
         return self._get_kvp(TagNames.ReservationId, reservation_id)
 
-    @staticmethod
-    def set_ec2_resource_tags(resource, tags):
+    def set_ec2_resource_tags(self, resource, tags):
         """
         Will set tags on a EC2 resource
         :param resource: EC2 resource
