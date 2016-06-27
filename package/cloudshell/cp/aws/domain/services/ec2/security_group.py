@@ -2,8 +2,9 @@ from cloudshell.cp.aws.models.port_data import PortData
 
 
 class AWSSecurityGroupService(object):
-    QUALI_SECURITY_GROUP = "Quali_security_group"
-    QUALI_SECURITY_GROUP_DESCRIPTION = "Quali Security Group"
+    CLOUDSHELL_SANDBOX_SG = "Cloudshell Sandbox SG {0}"
+    CLOUDSHELL_CUSTOM_SECURITY_GROUP = "Cloudshell Custom SG {0}"
+    CLOUDSHELL_SECURITY_GROUP_DESCRIPTION = "Cloudshell Security Group"
 
     @staticmethod
     def delete_security_group(security_group):
@@ -25,12 +26,12 @@ class AWSSecurityGroupService(object):
         :return:
         """
         return ec2_session.create_security_group(GroupName=security_group_name,
-                                                 Description=AWSSecurityGroupService.QUALI_SECURITY_GROUP_DESCRIPTION,
+                                                 Description=AWSSecurityGroupService.CLOUDSHELL_SECURITY_GROUP_DESCRIPTION,
                                                  VpcId=vpc_id)
 
     @staticmethod
-    def get_security_group_name(reservation_id):
-        return 'quali_sandbox_security_group_{0}'.format(reservation_id)
+    def get_sandbox_security_group_name(reservation_id):
+        return AWSSecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id)
 
     @staticmethod
     def get_security_group_by_name(vpc, name):

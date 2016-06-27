@@ -132,7 +132,7 @@ class DeployAMIOperation(object):
         if not inbound_ports and not outbound_ports:
             return None
 
-        security_group_name = AWSSecurityGroupService.QUALI_SECURITY_GROUP + " " + str(uuid.uuid4())
+        security_group_name = AWSSecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))
 
         security_group = self.security_group_service.create_security_group(ec2_session=ec2_session,
                                                                            vpc_id=vpc.id,
@@ -184,7 +184,7 @@ class DeployAMIOperation(object):
         return aws_model
 
     def _set_security_group_param(self, aws_model, reservation_id, security_group, vpc):
-        default_sg_name = self.security_group_service.get_security_group_name(reservation_id)
+        default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation_id)
         default_sg = self.security_group_service.get_security_group_by_name(vpc, default_sg_name)
 
         aws_model.security_group_ids = [default_sg.id]

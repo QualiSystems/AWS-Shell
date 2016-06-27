@@ -11,14 +11,14 @@ class TestSubnetService(TestCase):
         self.vpc = Mock()
         self.cidr = '10.0.0.0/24'
         self.vpc_name = 'name'
+        self.reservation_id = 'res'
         self.tag_srv = Mock()
         self.subnet_srv = SubnetService(self.tag_srv)
 
     def test_create_subnet_for_vpc(self):
-        subnet = self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name)
+        subnet = self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.reservation_id)
         self.assertTrue(self.vpc.create_subnet.called_with(self.cidr))
-        self.assertTrue(self.tag_srv.get_created_by_kvp.called)
-        self.assertTrue(self.tag_srv.get_name_tag.called_with(self.subnet_srv._get_subnet_name(self.vpc_name)))
+        self.assertTrue(self.tag_srv.get_default_tags.called_with(self.vpc_name, self.reservation_id))
         self.assertEqual(subnet, self.vpc.create_subnet())
 
     def test_get_subnet_from_vpc(self):

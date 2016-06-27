@@ -28,7 +28,7 @@ class VPCService(object):
         vpc_name = self.VPC_RESERVATION.format(reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation_id=reservation_id, vpc=vpc)
 
-        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name)
+        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name, reservation_id=reservation_id)
         return vpc
 
     def find_vpc_for_reservation(self, ec2_session, reservation_id):

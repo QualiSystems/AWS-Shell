@@ -68,7 +68,7 @@ class PrepareConnectivityOperation(object):
                                    vpc_id2=vpc_id)
 
     def _get_or_create_security_group(self, ec2_session, reservation_id, vpc):
-        sg_name = self.security_group_service.get_security_group_name(reservation_id)
+        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation_id)
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
         if not security_group:
             security_group = \
