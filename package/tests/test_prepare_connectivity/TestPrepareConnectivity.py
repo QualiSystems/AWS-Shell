@@ -87,7 +87,7 @@ class TestPrepareConnectivity(TestCase):
                 "type": "customAttribute"}],
             "type": "prepareNetwork"})
 
-        cidr = self.prepare_conn._extract_cider(action1)
+        cidr = self.prepare_conn._extract_cidr(action1)
         self.assertEqual(cidr, '10.0.0.0/24')
 
         action2 = DeployDataHolder({
@@ -105,14 +105,14 @@ class TestPrepareConnectivity(TestCase):
             ],
             "type": "prepareNetwork"})
 
-        self.assertRaises(ValueError, self.prepare_conn._extract_cider, action2)
+        self.assertRaises(ValueError, self.prepare_conn._extract_cidr, action2)
 
         action3 = DeployDataHolder({
             "customActionAttributes": [
             ],
             "type": "prepareNetwork"})
 
-        self.assertRaises(ValueError, self.prepare_conn._extract_cider, action3)
+        self.assertRaises(ValueError, self.prepare_conn._extract_cidr, action3)
 
     def test_get_or_create_security_group(self):
         sg_name = Mock()
@@ -142,10 +142,10 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv)
         cidr = Mock()
-        prepare_conn._extract_cider = Mock(return_value=cidr)
+        prepare_conn._extract_cidr = Mock(return_value=cidr)
         res = prepare_conn._get_or_create_vpc(action, self.ec2_session, reservation_id)
 
         self.assertTrue(vpc_service.find_vpc_for_reservation.called_with(self.ec2_session, reservation_id))
         self.assertTrue(vpc_service.create_vpc_for_reservation.called_with(self.ec2_session, reservation_id, cidr))
-        self.assertTrue(prepare_conn._extract_cider.called_with(action))
+        self.assertTrue(prepare_conn._extract_cidr.called_with(action))
         self.assertEqual(vpc, res)
