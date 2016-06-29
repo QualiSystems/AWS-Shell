@@ -1,7 +1,7 @@
 from cloudshell.cp.aws.models.port_data import PortData
 
 
-class AWSSecurityGroupService(object):
+class SecurityGroupService(object):
     CLOUDSHELL_SANDBOX_SG = "Cloudshell Sandbox SG {0}"
     CLOUDSHELL_CUSTOM_SECURITY_GROUP = "Cloudshell Custom SG {0}"
     CLOUDSHELL_SECURITY_GROUP_DESCRIPTION = "Cloudshell Security Group"
@@ -26,12 +26,12 @@ class AWSSecurityGroupService(object):
         :return:
         """
         return ec2_session.create_security_group(GroupName=security_group_name,
-                                                 Description=AWSSecurityGroupService.CLOUDSHELL_SECURITY_GROUP_DESCRIPTION,
+                                                 Description=SecurityGroupService.CLOUDSHELL_SECURITY_GROUP_DESCRIPTION,
                                                  VpcId=vpc_id)
 
     @staticmethod
     def get_sandbox_security_group_name(reservation_id):
-        return AWSSecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id)
+        return SecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id)
 
     @staticmethod
     def get_security_group_by_name(vpc, name):

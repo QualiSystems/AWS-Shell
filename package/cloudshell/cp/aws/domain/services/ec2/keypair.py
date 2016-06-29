@@ -36,7 +36,7 @@ class KeyPairService(object):
         return self.s3_service.get_body_of_object(s3_obj)
 
     def create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
-        key_pair = ec2_session.create_key_pair(KeyName=self._get_reservation_key_name(reservation_id))
+        key_pair = ec2_session.create_key_pair(KeyName=self.get_reservation_key_name(reservation_id))
         self._save_key_to_s3(bucket, key_pair, reservation_id, s3_session)
         return key_pair
 
@@ -45,8 +45,12 @@ class KeyPairService(object):
         self.s3_service.put_key(s3_session, bucket_name=bucket, key=s3_key, value=key_pair.key_material)
 
     def _get_s3_key_location(self, reservation_id):
-        return KEY_FORMAT.format(reservation_id, self._get_reservation_key_name(reservation_id))
+        return KEY_FORMAT.format(reservation_id, self.get_reservation_key_name(reservation_id))
 
     @staticmethod
-    def _get_reservation_key_name(reservation_id):
+    def get_reservation_key_name(reservation_id):
         return RESERVATION_KEY_PAIR.format(reservation_id)
+
+    def remove_key_pair_for_reservation(self, s3_session, bucket, reservation_id):
+        key = self.get_key_for_reservation(s3_session, bucket, reservation_id)
+        return self.s3_service.delete_key(s3_session=s3_session, bucket=bucket, key=key)

@@ -6,7 +6,6 @@ class AMIDeploymentModel(object):
         self.min_count = 0  # type: int
         self.max_count = 0  # type: int
         self.instance_type = ''  # type: str
-        self.aws_key = ''  # type: str
         self.private_ip_address = ''  # type: str
         self.security_group_ids = []  # type: list[str]
         self.block_device_mappings = []  # type: list[dict]

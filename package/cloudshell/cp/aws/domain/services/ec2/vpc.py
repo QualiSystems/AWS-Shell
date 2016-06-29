@@ -1,17 +1,18 @@
-
-
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
 
-    def __init__(self, tag_service, subnet_service):
+    def __init__(self, tag_service, subnet_service, instance_service):
         """
         :param tag_service: Tag Service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
         :param subnet_service: Subnet Service
         :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param instance_service: Instance Service
+        :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
         """
         self.tag_service = tag_service
         self.subnet_service = subnet_service
+        self.instance_service = instance_service
 
     def create_vpc_for_reservation(self, ec2_session, reservation_id, cidr):
         """
@@ -61,3 +62,43 @@ class VPCService(object):
     def _set_tags(self, vpc_name, reservation_id, vpc):
         tags = self.tag_service.get_default_tags(vpc_name, reservation_id)
         self.tag_service.set_ec2_resource_tags(vpc, tags)
+
+    def remove_all_peering(self, vpc):
+        """
+        Remove all peering to that VPC
+        :param vpc: EC2 VPC instance
+        :return:
+        """
+        peerings = list(vpc.accepted_vpc_peering_connections.all())
+        for peer in peerings:
+            peer.delete()
+        return True
+
+    def remove_all_security_groups(self, vpc):
+        """
+        Will remove all security groups to the VPC
+        :param vpc: EC2 VPC instance
+        :return:
+        """
+        security_groups = list(vpc.security_groups.all())
+        for sg in security_groups:
+            if sg.group_name != 'default':
+                sg.delete()
+        return True
+
+    def remove_all_subnets(self, vpc):
+        """
+        Will remove all attached subnets to that vpc
+        :param vpc: EC2 VPC instance
+        :return:
+        """
+        subnets = list(vpc.subnets.all())
+        for subnet in subnets:
+            subnet.delete()
+        return True
+
+    def delete_all_instances(self, vpc):
+        instances = list(vpc.instances.all())
+        for instance in instances:
+            self.instance_service.terminate_instance(instance)
+        return True

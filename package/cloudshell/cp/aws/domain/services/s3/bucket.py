@@ -55,3 +55,22 @@ class S3BucketService(object):
         """
         bytes_arr = value.encode('utf-8')
         return s3_session.Bucket(bucket_name).put_object(Body=bytes_arr, Key=key)
+
+    def delete_key(self, s3_session, bucket, key):
+        """
+        Will delete the key if exist
+        :param s3_session: S3 Session
+        :param bucket: The bucket name
+        :type bucket: str
+        :param key: The key to delete
+        :type key: str
+        :return:
+        """
+        if not key:
+            return False
+
+        obj = self.get_key(s3_session, bucket, key)
+        if not obj:
+            return False
+
+        return obj.delete()

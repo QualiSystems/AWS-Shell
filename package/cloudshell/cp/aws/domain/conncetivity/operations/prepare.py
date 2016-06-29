@@ -9,7 +9,7 @@ class PrepareConnectivityOperation(object):
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc_service.VPCService
         :param security_group_service:
-        :type security_group_service: cloushell.cp.aws.domain.services.ec2.security_group.AWSSecurityGroupService
+        :type security_group_service: cloushell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         :param key_pair_service:
         :type key_pair_service: cloushell.cp.aws.domain.services.ec2.keypair.KeyPairService
         """
@@ -33,7 +33,7 @@ class PrepareConnectivityOperation(object):
         if not aws_ec2_datamodel.management_vpc_id:
             raise ValueError('Management VPC ID must be set!')
         self._create_key_pair(ec2_session=ec2_session,
-                              s3_session=s3_session,
+                              s3_session=s3_session ,
                               bucket=aws_ec2_datamodel.key_pairs_location,
                               reservation_id=reservation_id)
         results = []

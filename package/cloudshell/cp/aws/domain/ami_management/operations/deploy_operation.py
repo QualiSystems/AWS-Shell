@@ -1,6 +1,6 @@
 import uuid
 
-from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
@@ -8,15 +8,15 @@ from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 
 
 class DeployAMIOperation(object):
-    def __init__(self, aws_ec2_service, ami_credential_service, security_group_service, tag_service,
+    def __init__(self, instance_service, ami_credential_service, security_group_service, tag_service,
                  vpc_service, key_pair_service, subnet_service):
         """
-        :param aws_ec2_service: EC2 Basic service
-        :type aws_ec2_service: cloudshell.cp.aws.device_access_layer.aws_ec2.AWSEC2Service
+        :param instance_service: Instance Service
+        :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
         :param ami_credential_service: AMI Credential Service
         :type ami_credential_service: cloudshell.cp.aws.domain.services.ec2.instance_credentials.InstanceCredentialsService
         :param security_group_service: Security Group Service
-        :type security_group_service: cloudshell.cp.aws.domain.services.ec2.security_group.AWSSecurityGroupService
+        :type security_group_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         :param tag_service: Tag service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
         :param vpc_service: VPC service
@@ -28,7 +28,7 @@ class DeployAMIOperation(object):
         """
 
         self.tag_service = tag_service
-        self.aws_ec2_service = aws_ec2_service
+        self.instance_service = instance_service
         self.security_group_service = security_group_service
         self.credentials_service = ami_credential_service
         self.vpc_service = vpc_service
@@ -53,6 +53,9 @@ class DeployAMIOperation(object):
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation_id)
         if not vpc:
             raise ValueError('VPC is not set for this reservation')
+
+        key_name = self.key_pair_service.get_reservation_key_name(reservation_id=reservation_id)
+
         security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                   ec2_session=ec2_session,
                                                                   reservation_id=reservation_id,
@@ -62,12 +65,13 @@ class DeployAMIOperation(object):
                                                                  ami_deployment_model=ami_deployment_model,
                                                                  vpc=vpc,
                                                                  security_group=security_group,
+                                                                 key_pair=key_name,
                                                                  reservation_id=reservation_id)
 
-        instance = self.aws_ec2_service.create_instance(ec2_session=ec2_session,
-                                                        name=name,
-                                                        reservation_id=reservation_id,
-                                                        ami_deployment_info=ami_deployment_info)
+        instance = self.instance_service.create_instance(ec2_session=ec2_session,
+                                                         name=name,
+                                                         reservation_id=reservation_id,
+                                                         ami_deployment_info=ami_deployment_info)
 
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
@@ -132,7 +136,7 @@ class DeployAMIOperation(object):
         if not inbound_ports and not outbound_ports:
             return None
 
-        security_group_name = AWSSecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))
+        security_group_name = SecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))
 
         security_group = self.security_group_service.create_security_group(ec2_session=ec2_session,
                                                                            vpc_id=vpc.id,
@@ -152,7 +156,11 @@ class DeployAMIOperation(object):
 
     def _create_deployment_parameters(self,
                                       aws_ec2_resource_model,
-                                      ami_deployment_model, vpc, security_group, reservation_id):
+                                      ami_deployment_model,
+                                      vpc,
+                                      security_group,
+                                      key_pair,
+                                      reservation_id):
         """
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
@@ -161,6 +169,8 @@ class DeployAMIOperation(object):
         :param vpc: The reservation VPC
         :param security_group : The security group of the AMI
         :type security_group : securityGroup
+        :param key_pair : The Key pair name
+        :type key_pair : str
         :param reservation_id : The reservation Id
         :type reservation_id : str
         """
@@ -174,7 +184,7 @@ class DeployAMIOperation(object):
         aws_model.instance_type = ami_deployment_model.instance_type or aws_ec2_resource_model.default_instance_type
         aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
-        aws_model.aws_key = ami_deployment_model.aws_key
+        aws_model.aws_key = key_pair
 
         subnet = self.subnet_serivce.get_subnet_from_vpc(vpc)
         aws_model.subnet_id = subnet.id
@@ -199,7 +209,7 @@ class DeployAMIOperation(object):
                 'DeviceName': ami_rm.device_name if ami_rm.device_name else aws_ec2_rm.device_name,
                 'Ebs': {
                     'VolumeSize': int(ami_rm.storage_size or aws_ec2_rm.default_storage_size),
-                    'DeleteOnTermination': ami_rm.delete_on_termination or aws_ec2_rm.delete_on_termination,
+                    'DeleteOnTermination': True,
                     'VolumeType': ami_rm.storage_type or aws_ec2_rm.default_storage_type
                 }
             }]
