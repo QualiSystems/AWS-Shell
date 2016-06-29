@@ -14,9 +14,11 @@ class TestPrepareConnectivity(TestCase):
         self.ec2_session = Mock()
         self.s3_session = Mock()
         self.aws_dm = Mock()
+        self.tag_service = Mock()
         self.reservation_id = 'reservation_id'
 
-        self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv)
+        self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
+                                                         self.tag_service)
 
     def test_prepare_conn_command(self):
         request = DeployDataHolder({"actions": [
@@ -68,7 +70,7 @@ class TestPrepareConnectivity(TestCase):
     def test_create_key_pair(self):
         key_pair = Mock()
         key_pair.get_key_for_reservation = Mock(return_value=None)
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair)
+        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair, self.tag_service)
         key_pair.create_key_pair = Mock(return_value=Mock())
 
         prepare_conn._create_key_pair(self.ec2_session, self.s3_session, 'bucket', 'res_id')
@@ -118,14 +120,15 @@ class TestPrepareConnectivity(TestCase):
         sg_name = Mock()
         sg = Mock()
         vpc = Mock()
+        management_sg_id = Mock()
         security_group_service = Mock()
         security_group_service.get_security_group_name = Mock(return_value=sg_name)
         security_group_service.get_security_group_by_name = Mock(return_value=None)
         security_group_service.create_security_group = Mock(return_value=sg)
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv)
+        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv, self.tag_service)
 
-        res = prepare_conn._get_or_create_security_group(self.ec2_session, 'reservation_id', vpc)
+        res = prepare_conn._get_or_create_security_group(self.ec2_session, 'reservation_id', vpc, management_sg_id)
 
         self.assertTrue(security_group_service.get_security_group_name.called_with('reservation_id'))
         self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
@@ -140,7 +143,7 @@ class TestPrepareConnectivity(TestCase):
         vpc_service.find_vpc_for_reservation = Mock(return_value=None)
         vpc_service.create_vpc_for_reservation = Mock(return_value=vpc)
 
-        prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv)
+        prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service)
         cidr = Mock()
         prepare_conn._extract_cidr = Mock(return_value=cidr)
         res = prepare_conn._get_or_create_vpc(action, self.ec2_session, reservation_id)

@@ -22,6 +22,7 @@ from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
 from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
+from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 
 
 class AWSShell(object):
@@ -38,6 +39,8 @@ class AWSShell(object):
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = SecurityGroupService()
         self.subnet_service = SubnetService(self.tag_service)
+        self.vpc_service = VPCService(tag_service=self.tag_service, subnet_service=self.subnet_service,
+                                      vpc_peering_waiter=VpcPeeringConnectionWaiter())
         self.s3_service = S3BucketService()
         self.key_pair_service = KeyPairService(self.s3_service)
 
@@ -48,7 +51,8 @@ class AWSShell(object):
         self.prepare_connectivity_operation = \
             PrepareConnectivityOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
-                                         key_pair_service=self.key_pair_service)
+                                         key_pair_service=self.key_pair_service,
+                                         tag_service=self.tag_service)
 
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
@@ -107,11 +111,11 @@ class AWSShell(object):
             raise ValueError('Invalid prepare connectivity request')
 
         results = self.prepare_connectivity_operation.prepare_connectivity(
-            ec2_session=ec2_session,
-            s3_session=s3_session,
-            reservation_id=command_context.reservation.reservation_id,
-            aws_ec2_datamodel=aws_ec2_resource_model,
-            request=prepare_connectivity_request)
+                ec2_session=ec2_session,
+                s3_session=s3_session,
+                reservation_id=command_context.reservation.reservation_id,
+                aws_ec2_datamodel=aws_ec2_resource_model,
+                request=prepare_connectivity_request)
 
         return self._set_command_result({'driverResponse': {'actionResults': results}})
 

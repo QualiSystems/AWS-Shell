@@ -47,6 +47,39 @@ class SecurityGroupService(object):
 
         return security_groups[0]
 
+    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id):
+        """
+        Set inbound rules for the reservation shared security group.
+        The default rules are:
+         1) Allow all inbound traffic from instances with the same reservation id (inner sandbox connectivity)
+         2) Allow all inbound traffic from the management vpc for specific security group id
+        :param security_group: security group object
+        :param str management_sg_id: Id of the management security group id
+        :return:
+        """
+        security_group.authorize_ingress(IpPermissions=
+        [
+            {
+                'IpProtocol': '-1',
+                'FromPort': -1,
+                'ToPort': -1,
+                'UserIdGroupPairs': [
+                    {
+                        'GroupId': management_sg_id
+                    }
+                ]
+            }, {
+                'IpProtocol': '-1',
+                'FromPort': -1,
+                'ToPort': -1,
+                'UserIdGroupPairs': [
+                    {
+                        'GroupId': security_group.id
+                    }
+                ]
+            }
+        ])
+
     def set_security_group_rules(self, security_group, inbound_ports, outbound_ports):
         """
         :param security_group: AWS SG object
