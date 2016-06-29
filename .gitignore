@@ -92,3 +92,5 @@ package/cloudshell/core/*
 package/cloudshell/helpers/*
 package/cloudshell/shell/*
 package/cloudshell/configuration/*
+drivers/aws_shell/src/debug.xml
+drivers/aws_shell/src/debug_info.txt
