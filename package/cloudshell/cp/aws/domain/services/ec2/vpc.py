@@ -1,17 +1,21 @@
+from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 
 
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
 
-    def __init__(self, tag_service, subnet_service):
+    def __init__(self, tag_service, subnet_service, vpc_peering_waiter):
         """
         :param tag_service: Tag Service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
         :param subnet_service: Subnet Service
         :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param vpc_peering_waiter: Vpc Peering Connection Waiter
+        :type vpc_peering_waiter: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
         """
         self.tag_service = tag_service
         self.subnet_service = subnet_service
+        self.vpc_peering_waiter = vpc_peering_waiter
 
     def create_vpc_for_reservation(self, ec2_session, reservation_id, cidr):
         """
@@ -47,7 +51,7 @@ class VPCService(object):
 
     def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2):
         """
-        Will create a peering between vpc to the other
+        Will create a peering request between 2 vpc's and approve it
         :param ec2_session: EC2 session
         :param vpc_id1: VPC Id
         :type vpc_id1: str
@@ -56,6 +60,15 @@ class VPCService(object):
         :return: vpc peering id
         """
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
+
+        # wait until pending acceptance
+        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
+
+        vpc_peer_connection.accept()
+
+        # wait until connection active
+        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.ACTIVE)
+
         return vpc_peer_connection.id
 
     def _set_tags(self, vpc_name, reservation_id, vpc):
