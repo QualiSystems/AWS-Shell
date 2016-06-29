@@ -2,7 +2,7 @@ import time
 
 
 class VpcPeeringConnectionWaiter(object):
-    INITIATING = 'initiating-request',
+    INITIATING_REQUEST = 'initiating-request',
     PENDING_ACCEPTANCE = 'pending-acceptance'
     ACTIVE = 'active'
     DELETED = 'deleted'
@@ -12,7 +12,7 @@ class VpcPeeringConnectionWaiter(object):
     PROVISIONING = 'provisioning'
     DELETING = 'deleting'
 
-    STATES = [INITIATING,
+    STATES = [INITIATING_REQUEST,
               PENDING_ACCEPTANCE,
               ACTIVE,
               DELETED,
