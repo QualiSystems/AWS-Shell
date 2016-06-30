@@ -10,6 +10,7 @@ from cloudshell.cp.aws.models.port_data import PortData
 class TestSecurityGroups(TestCase):
     def setUp(self):
         self.port_data = PortData('1', '2', 'tcp', '0.0.0.0/0')
+        self.sg_service = SecurityGroupService()
 
     def test_get_ip_permission_object(self):
         permission_object = SecurityGroupService.get_ip_permission_object(self.port_data)
@@ -37,3 +38,80 @@ class TestSecurityGroups(TestCase):
         self.assertEquals(ports[3].from_port, '1')
         self.assertEquals(ports[3].to_port, '1')
         self.assertEquals(ports[3].protocol, 'tcp')
+
+    def test_delete_sg(self):
+        sg = Mock()
+        self.sg_service.delete_security_group(sg)
+
+        self.assertTrue(sg.delete.called)
+
+    def test_delete_sg_exception(self):
+        sg = Mock()
+        sg.delete = Mock(side_effect=Exception())
+        self.assertRaises(Exception, self.sg_service.delete_security_group, sg)
+
+    def test_instance_sg(self):
+        instance = Mock()
+        instance.security_groups = [Mock(), Mock()]
+        self.sg_service.delete_all_security_groups_of_instance(instance)
+        self.assertTrue(instance.security_groups[0].delete.callled and instance.security_groups[1].delete.callled)
+
+    def test_create_sg(self):
+        ec2_session = Mock()
+        self.sg_service.create_security_group(ec2_session, 'vpc', 'name')
+
+        self.assertTrue(ec2_session.create_security_group.called_with(
+            'name',
+            SecurityGroupService.CLOUDSHELL_SECURITY_GROUP_DESCRIPTION,
+            'vpc'))
+
+    def test_get_sg_name(self):
+        reservation_id = 'res'
+        res = self.sg_service.get_sandbox_security_group_name(reservation_id=reservation_id)
+
+        self.assertEqual(res, SecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id))
+
+    def test_get_security_group_by_name(self):
+        vpc = Mock()
+        sg = Mock()
+        sg.group_name = 'name'
+        vpc.security_groups = Mock()
+        vpc.security_groups.all = Mock(return_value=[sg])
+        res = self.sg_service.get_security_group_by_name(vpc, 'name')
+
+        self.assertEqual(res, sg)
+
+        vpc.security_groups.all = Mock(return_value=[])
+        res = self.sg_service.get_security_group_by_name(vpc, 'name')
+
+        self.assertIsNone(res)
+
+        vpc.security_groups.all = Mock(return_value=[sg, sg])
+        self.assertRaises(ValueError, self.sg_service.get_security_group_by_name, vpc, 'name')
+
+    def test_set_shared_reservation_security_group_rules(self):
+        sg = Mock()
+        sg.id = 'id'
+        self.sg_service.set_shared_reservation_security_group_rules(sg, 'man')
+
+        self.assertTrue(sg.authorize_ingress.called_with(IpPermissions=[
+            {
+                'IpProtocol': '-1',
+                'FromPort': -1,
+                'ToPort': -1,
+                'UserIdGroupPairs': [
+                    {
+                        'GroupId': 'man'
+                    }
+                ]
+            }, {
+            'IpProtocol': '-1',
+            'FromPort': -1,
+            'ToPort': -1,
+            'UserIdGroupPairs': [
+                {
+                    'GroupId': 'id'
+                }
+            ]
+        }
+        ]))

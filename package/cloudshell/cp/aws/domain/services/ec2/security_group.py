@@ -68,7 +68,8 @@ class SecurityGroupService(object):
                         'GroupId': management_sg_id
                     }
                 ]
-            }, {
+            },
+            {
                 'IpProtocol': '-1',
                 'FromPort': -1,
                 'ToPort': -1,
