@@ -41,6 +41,7 @@ class S3BucketService(object):
             obj.load()
 
         except Exception:
+            # todo: write to log
             obj = None
         return obj
 

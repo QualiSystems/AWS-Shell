@@ -1,7 +1,7 @@
 import time
 
 
-class VPCWaiter(object):
+class SubnetWaiter(object):
     PENDING = 'pending'
     AVAILABLE = 'available'
     INSTANCE_STATES = [PENDING,
@@ -17,26 +17,26 @@ class VPCWaiter(object):
         self.delay = delay
         self.timeout = timeout * 60
 
-    def wait(self, vpc, state, load=False):
+    def wait(self, subnet, state, load=False):
         """
-        Will sync wait for the change of state of the vpc
-        :param vpc:
+        Will sync wait for the change of state of the subnet
+        :param subnet:
         :param state:
         :param load:
         :return:
         """
-        if not vpc:
+        if not subnet:
             raise ValueError('Instance cannot be null')
         if state not in self.INSTANCE_STATES:
             raise ValueError('Unsupported instance state')
 
         start_time = time.time()
-        while vpc.state != state:
-            vpc.reload()
+        while subnet.state != state:
+            subnet.reload()
             if time.time() - start_time >= self.timeout:
-                raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, vpc.state))
+                raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, subnet.state))
             time.sleep(self.delay)
 
         if load:
-            vpc.reload()
-        return vpc
+            subnet.reload()
+        return subnet
