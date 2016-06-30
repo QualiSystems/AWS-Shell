@@ -115,3 +115,21 @@ class TestSecurityGroups(TestCase):
             ]
         }
         ]))
+
+    def test_set_sg_security_group_rules(self):
+        sg = Mock()
+        port_data_in = Mock()
+        port_data_in.from_port = 1
+        port_data_in.to_port = 10
+        inboud = [port_data_in]
+        port_data_out = Mock()
+        port_data_out.from_port = 1
+        port_data_out.to_port = 10
+        outboud = [port_data_out]
+
+        self.sg_service.set_security_group_rules(sg, inboud, outboud)
+
+        self.assertTrue(
+            sg.security_group.authorize_egress.called_with([self.sg_service.get_ip_permission_object(port_data_out)]))
+        self.assertTrue(
+            sg.security_group.authorize_ingress.called_with([self.sg_service.get_ip_permission_object(port_data_in)]))
