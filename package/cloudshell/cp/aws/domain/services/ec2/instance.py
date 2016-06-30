@@ -52,6 +52,11 @@ class InstanceService(object):
         instance.terminate()
         return self.instance_waiter.wait(instance, self.instance_waiter.TERMINATED)
 
+    def terminate_instances(self, instances):
+        for instance in instances:
+            instance.terminate()
+        return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
+
     def _set_tags(self, instance, name, reservation_id):
         # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id

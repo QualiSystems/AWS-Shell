@@ -20,9 +20,7 @@ class DeleteAMIOperation(object):
         :return:
         """
         instance = self.instance_service.get_instance_by_id(ec2_session, instance_id)
-
         instance = self.instance_service.terminate_instance(instance)
 
         self.security_group_service.delete_all_security_groups_of_instance(instance)
-        # self.ec2_storage_service.delete_all_instance_volumes(ec2_session, instance_id)
         return True

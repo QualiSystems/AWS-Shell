@@ -22,6 +22,7 @@ from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
 from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
+from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 
 
@@ -39,15 +40,16 @@ class AWSShell(object):
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = SecurityGroupService()
         self.subnet_service = SubnetService(self.tag_service)
-        self.vpc_service = VPCService(tag_service=self.tag_service, subnet_service=self.subnet_service,
-                                      vpc_peering_waiter=VpcPeeringConnectionWaiter())
         self.s3_service = S3BucketService()
+        self.vpc_peering_waiter = VpcPeeringConnectionWaiter()
         self.key_pair_service = KeyPairService(self.s3_service)
+        self.vpc_waiter = VPCWaiter()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
-                                      instance_service=self.instance_service)
-
+                                      instance_service=self.instance_service,
+                                      vpc_waiter=self.vpc_waiter,
+                                      vpc_peering_waiter=self.vpc_peering_waiter)
         self.prepare_connectivity_operation = \
             PrepareConnectivityOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,

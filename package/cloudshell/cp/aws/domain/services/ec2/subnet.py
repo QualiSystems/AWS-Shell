@@ -39,3 +39,7 @@ class SubnetService(object):
     @staticmethod
     def _get_subnet_name(name):
         return SUBNET_NAME.format(name)
+
+    def detele_subnet(self, subnet):
+        subnet.delete()
+        return True

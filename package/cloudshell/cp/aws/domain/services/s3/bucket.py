@@ -31,13 +31,17 @@ class S3BucketService(object):
         :return:
         """
         try:
+            if not key:
+                raise ValueError('S3 object key cannot be empty')
+
+            if not bucket_name:
+                raise ValueError('S3 bucket name cannot be empty')
+
             obj = s3_session.Object(bucket_name, key)
             obj.load()
-        except botocore.exceptions.ClientError as e:
-            if e.response['Error']['Code'] == "404":
-                return None
-            else:
-                raise e
+
+        except Exception:
+            obj = None
         return obj
 
     @staticmethod

@@ -21,3 +21,5 @@ class CleanupConnectivityOperation(object):
         self.vpc_service.remove_all_security_groups(vpc)
         self.vpc_service.remove_all_subnets(vpc)
         self.vpc_service.remove_all_peering(vpc)
+
+        self.vpc_service.delete_vpc(vpc)
