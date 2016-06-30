@@ -27,8 +27,6 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         # create deployment resource model and serialize it to json
         aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource)
 
-        aws_ami_deployment_model.aws_key = "aws_testing_key_pair"  # we will create it on the run if needed
-
         ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
 
         deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
@@ -63,9 +61,18 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.autoload = resource.attributes['Autoload']
         deployedResource.inbound_ports = resource.attributes['Inbound Ports']
         deployedResource.outbound_ports = resource.attributes['Outbound Ports']
-        deployedResource.wait_for_credentials = resource.attributes['Wait for Credentials']
+        deployedResource.wait_for_credentials = self._convert_to_bool(resource.attributes['Wait for Credentials'])
 
         return deployedResource
+
+    def _convert_to_bool(self, string):
+        """
+        Converts string to bool
+        :param string: String
+        :str string: str
+        :return: True or False
+        """
+        return string in ['true', 'True', '1']
 
     def _get_deployment_info(self, image_model, name):
         """

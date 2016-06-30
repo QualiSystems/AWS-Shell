@@ -2,7 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
-from cloudshell.cp.aws.domain.services.ec2.security_group import AWSSecurityGroupService
+from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
 
@@ -12,7 +12,7 @@ class TestSecurityGroups(TestCase):
         self.port_data = PortData('1', '2', 'tcp', '0.0.0.0/0')
 
     def test_get_ip_permission_object(self):
-        permission_object = AWSSecurityGroupService.get_ip_permission_object(self.port_data)
+        permission_object = SecurityGroupService.get_ip_permission_object(self.port_data)
         self.assertEquals(str(permission_object['FromPort']), self.port_data.from_port)
         self.assertEquals(str(permission_object['ToPort']), self.port_data.to_port)
         self.assertEquals(permission_object['IpRanges'][0]['CidrIp'], self.port_data.destination)

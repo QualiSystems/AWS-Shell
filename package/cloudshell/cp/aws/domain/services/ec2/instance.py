@@ -1,6 +1,6 @@
 
 
-class AWSEC2Service(object):
+class InstanceService(object):
     def __init__(self, tags_creator_service, instance_waiter):
         """
         :param tags_creator_service: Tags Service
@@ -47,6 +47,15 @@ class AWSEC2Service(object):
         # Reload the instance attributes
         instance.load()
         return instance
+
+    def terminate_instance(self, instance):
+        instance.terminate()
+        return self.instance_waiter.wait(instance, self.instance_waiter.TERMINATED)
+
+    def terminate_instances(self, instances):
+        for instance in instances:
+            instance.terminate()
+        return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
 
     def _set_tags(self, instance, name, reservation_id):
         # todo create the name with a name generator

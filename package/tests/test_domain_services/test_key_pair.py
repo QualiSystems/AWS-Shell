@@ -19,7 +19,7 @@ class TestKeyPair(TestCase):
             self.key_pair_serv.create_key_pair(self.ec2_session, self.s3_session, self.bucket_name, self.reservation_id)
 
         self.assertTrue(self.ec2_session.create_key_pair.called_with(
-            self.key_pair_serv._get_reservation_key_name(self.reservation_id)))
+            self.key_pair_serv.get_reservation_key_name(self.reservation_id)))
         self.assertTrue(
             self.s3_service.put_key.called_with(self.s3_session,
                                                 self.bucket_name,

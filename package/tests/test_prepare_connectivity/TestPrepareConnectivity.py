@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare_connectivity import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 
 
 class TestPrepareConnectivity(TestCase):

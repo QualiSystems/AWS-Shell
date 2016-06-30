@@ -18,9 +18,13 @@ class TestVPCService(TestCase):
         self.s3_session = Mock()
         self.reservation_id = 'id'
         self.cidr = Mock()
+        self.vpc_waiter = Mock()
         self.vpc_peering_waiter = Mock()
+        self.instance_waiter = Mock()
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
+                                      instance_service=self.instance_waiter,
+                                      vpc_waiter=self.vpc_waiter,
                                       vpc_peering_waiter=self.vpc_peering_waiter)
 
     def test_create_vpc_for_reservation(self):
@@ -28,6 +32,7 @@ class TestVPCService(TestCase):
 
         vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation_id)
 
+        self.assertTrue(self.vpc_waiter.wait.called_with(vpc, 'available'))
         self.assertEqual(self.vpc, vpc)
         self.assertTrue(self.ec2_session.create_vpc.called_with(self.cidr))
         self.assertTrue(

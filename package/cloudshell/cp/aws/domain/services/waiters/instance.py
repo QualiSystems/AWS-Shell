@@ -48,3 +48,30 @@ class EC2InstanceWaiter(object):
         if load:
             instance.reload()
         return instance
+
+    def multi_wait(self, instances, state):
+        """
+        Will sync wait for the change of state of the instance
+        :param instances:
+        :param state:
+        :return:
+        """
+        if not instances:
+            raise ValueError('Instance cannot be null')
+        if state not in self.INSTANCE_STATES:
+            raise ValueError('Unsupported instance state')
+
+        start_time = time.time()
+        last_item = 0
+        while len(instances) - last_item:
+            instance = instances[last_item]
+            if instance.state['Name'] != state:
+                instance.reload()
+                if time.time() - start_time >= self.timeout:
+                    instance = instance or instances[0]
+                    raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, instance.state))
+                time.sleep(self.delay)
+            else:
+                last_item += 1
+
+        return instances

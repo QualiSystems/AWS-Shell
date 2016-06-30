@@ -105,6 +105,7 @@ class TestDeployOperation(TestCase):
                           ami_deployment_model=ami,
                           vpc=Mock(),
                           security_group=None,
+                          key_pair='keypair',
                           reservation_id='res')
 
     def test_create_deployment_parameters(self):
@@ -116,10 +117,11 @@ class TestDeployOperation(TestCase):
                                                                         ami_deployment_model=ami,
                                                                         vpc=vpc,
                                                                         security_group=None,
+                                                                        key_pair='keypair',
                                                                         reservation_id='res')
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
-        self.assertEquals(aws_model.aws_key, ami.aws_key)
+        self.assertEquals(aws_model.aws_key, 'keypair')
         self.assertTrue(len(aws_model.security_group_ids) == 1)
         return aws_model

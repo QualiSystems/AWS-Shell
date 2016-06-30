@@ -9,7 +9,6 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.min_count = 0  # type: int
         self.max_count = 0  # type: int
         self.instance_type = ''  # type: str
-        self.aws_key = ''  # type: str
         self.security_group_ids = None  # type: str
         self.private_ip_address = ''  # type: str
         self.device_name = ''  # type: str
