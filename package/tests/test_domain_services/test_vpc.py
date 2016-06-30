@@ -21,11 +21,13 @@ class TestVPCService(TestCase):
         self.vpc_waiter = Mock()
         self.vpc_peering_waiter = Mock()
         self.instance_waiter = Mock()
+        self.sg_service = Mock()
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
                                       instance_service=self.instance_waiter,
                                       vpc_waiter=self.vpc_waiter,
-                                      vpc_peering_waiter=self.vpc_peering_waiter)
+                                      vpc_peering_waiter=self.vpc_peering_waiter,
+                                      sg_service=self.sg_service)
 
     def test_create_vpc_for_reservation(self):
         vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation_id, self.cidr)
