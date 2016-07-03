@@ -58,3 +58,8 @@ class TestInstanceWaiter(TestCase):
         res = self.instance_waiter.multi_wait([instance, inst], InstanceWaiter.STOPPED)
         self.assertEqual(res, [instance, inst])
         self.assertTrue(instance.reload.call_count, 2)
+
+    def test_waiter_multi_errors(self):
+        self.assertRaises(ValueError, self.instance_waiter.multi_wait, [], InstanceWaiter.STOPPED)
+        self.assertRaises(ValueError, self.instance_waiter.multi_wait, [Mock], 'blalala')
+

@@ -19,6 +19,9 @@ class TestS3BucketService(TestCase):
         self.assertTrue(obj.get.called)
         self.assertEqual(data, body['Body'].read())
 
+    def test_get_body_of_object_none(self):
+        self.assertRaises(ValueError, self.bucket_service.get_body_of_object, None)
+
     def test_get_key(self):
         obj = Mock()
         s3_session = Mock()
@@ -73,4 +76,11 @@ class TestS3BucketService(TestCase):
         res = self.bucket_service.delete_key(s3_session, 'buck', 'key')
 
         self.assertTrue(s3_session.get_key.called_with('buck', 'key'))
+        self.assertFalse(res)
+
+    def test_delete_key_none(self):
+        s3_session = Mock()
+        s3_session.Object = Mock(return_value=None)
+
+        res = self.bucket_service.delete_key(s3_session, 'buck', None)
         self.assertFalse(res)

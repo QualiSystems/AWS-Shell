@@ -35,3 +35,9 @@ class TestSubnetService(TestCase):
         vpc.subnets = Mock()
         vpc.subnets.all = Mock(return_value=[])
         self.assertRaises(ValueError, self.subnet_srv.get_subnet_from_vpc, vpc)
+
+    def test_delete_subnet(self):
+        subnet = Mock()
+        res = self.subnet_srv.detele_subnet(subnet)
+        self.assertTrue(res)
+        self.assertTrue(subnet.delete.called)
