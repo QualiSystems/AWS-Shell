@@ -58,6 +58,8 @@ class AWSModelsParser(object):
         deployment_resource_model.outbound_ports = data_holder.ami_params.outbound_ports
         deployment_resource_model.wait_for_credentials = \
             AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_credentials)
+        deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.add_public_ip)
+        deployment_resource_model.add_elastic_ip = data_holder.ami_params.add_elastic_ip
         return deployment_resource_model, data_holder.app_name
 
     @staticmethod

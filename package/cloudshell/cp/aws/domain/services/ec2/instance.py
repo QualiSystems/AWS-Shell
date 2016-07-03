@@ -35,7 +35,8 @@ class InstanceService(object):
                 {
                     'SubnetId': ami_deployment_info.subnet_id,
                     'DeviceIndex': 0,
-                    'Groups': ami_deployment_info.security_group_ids
+                    'Groups': ami_deployment_info.security_group_ids,
+                    'AssociatePublicIpAddress': ami_deployment_info.add_public_ip
                 }]
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
@@ -56,6 +57,22 @@ class InstanceService(object):
         for instance in instances:
             instance.terminate()
         return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
+
+    def associate_elastic_ip(self, ec2_session, instance, elastic_ip):
+        """
+        Assign an elastic ip to the primary interface and primary private ip of the given instance
+        :param ec2_session:
+        :param instance:
+        :param str elastic_ip: The allocation ID
+        :return:
+        """
+        response = list(ec2_session.vpc_addresses.filter(PublicIps=[elastic_ip]))
+        if len(response) == 1:
+            ec2_session.associate_address(InstanceId=instance.id,
+                                          AllocationId=response[0].allocation_id,
+                                          AllowReassociation=False)
+        else:
+            raise ValueError("Failed to find elastic ip {0} allocation id".format(elastic_ip))
 
     def _set_tags(self, instance, name, reservation_id):
         # todo create the name with a name generator

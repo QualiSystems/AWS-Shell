@@ -73,6 +73,8 @@ class DeployAMIOperation(object):
                                                          reservation_id=reservation_id,
                                                          ami_deployment_info=ami_deployment_info)
 
+        self._set_elastic_ip(instance, ami_deployment_model)
+
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
                                                     instance=instance,
@@ -89,7 +91,8 @@ class DeployAMIOperation(object):
                             autoload=ami_deployment_model.autoload,
                             inbound_ports=ami_deployment_model.inbound_ports,
                             outbound_ports=ami_deployment_model.outbound_ports,
-                            deployed_app_attributes=ami_credentials)
+                            deployed_app_attributes=ami_credentials,
+                            deployed_app_address=instance.private_ip_address)
 
     def _get_ami_credentials(self, s3_session, key_pair_location, reservation_id, wait_for_credentials, instance):
         """
@@ -185,6 +188,7 @@ class DeployAMIOperation(object):
         aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = key_pair
+        aws_model.add_public_ip = ami_deployment_model.add_public_ip
 
         subnet = self.subnet_serivce.get_subnet_from_vpc(vpc)
         aws_model.subnet_id = subnet.id
@@ -214,3 +218,16 @@ class DeployAMIOperation(object):
                 }
             }]
         return block_device_mappings
+
+    def _set_elastic_ip(self, ec2_session, instance, ami_deployment_model):
+        """
+        :param ec2_session: EC2 session
+        :param instance:
+        :param ami_deployment_model: The resource model on which the AMI will be deployed on
+        :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
+        :return:
+        """
+        if ami_deployment_model.add_elastic_ip:
+            self.instance_service.associate_elastic_ip(ec2_session=ec2_session,
+                                                       instance=instance,
+                                                       elastic_ip=ami_deployment_model.add_elastic_ip)

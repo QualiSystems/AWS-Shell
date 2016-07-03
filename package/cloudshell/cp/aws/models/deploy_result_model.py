@@ -2,7 +2,8 @@ class DeployResult(object):
     # def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, ip_regex, refresh_ip_timeout, auto_power_on,
     #              auto_power_off, wait_for_ip, auto_delete, autoload):
     def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, autoload, auto_delete, wait_for_ip,
-                 auto_power_off, auto_power_on, inbound_ports, outbound_ports, deployed_app_attributes):
+                 auto_power_off, auto_power_on, inbound_ports, outbound_ports, deployed_app_attributes,
+                 deployed_app_address):
         """
         :param str vm_name: The name of the virtual machine
         :param uuid uuid: The UUID
@@ -15,6 +16,7 @@ class DeployResult(object):
         :param str inbound_ports:
         :param str outbound_ports:
         :param [dict] deployed_app_attributes:
+        :param str deployed_app_address:
         :return:
         """
 
@@ -29,3 +31,4 @@ class DeployResult(object):
         self.auto_delete = auto_delete
         self.autoload = autoload
         self.deployed_app_attributes = deployed_app_attributes
+        self.deployed_app_address = deployed_app_address
