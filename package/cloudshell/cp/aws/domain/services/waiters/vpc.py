@@ -17,7 +17,7 @@ class VPCWaiter(object):
         self.delay = delay
         self.timeout = timeout * 60
 
-    def wait(self, vpc, state, load=False):
+    def wait(self, vpc, state):
         """
         Will sync wait for the change of state of the vpc
         :param vpc:
@@ -32,11 +32,9 @@ class VPCWaiter(object):
 
         start_time = time.time()
         while vpc.state != state:
-            vpc.reload()
+            time.sleep(self.delay)
             if time.time() - start_time >= self.timeout:
                 raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, vpc.state))
-            time.sleep(self.delay)
 
-        if load:
             vpc.reload()
         return vpc
