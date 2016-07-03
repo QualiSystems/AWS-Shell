@@ -1,7 +1,7 @@
 import time
 
 
-class EC2InstanceWaiter(object):
+class InstanceWaiter(object):
     PENDING = 'pending'
     RUNNING = 'running'
     SHUTTING_DOWN = 'shutting-down',
@@ -25,29 +25,14 @@ class EC2InstanceWaiter(object):
         self.delay = delay
         self.timeout = timeout * 60
 
-    def wait(self, instance, state, load=False):
+    def wait(self, instance, state):
         """
         Will sync wait for the change of state of the instance
         :param instance:
         :param state:
-        :param load:
         :return:
         """
-        if not instance:
-            raise ValueError('Instance cannot be null')
-        if state not in self.INSTANCE_STATES:
-            raise ValueError('Unsupported instance state')
-
-        start_time = time.time()
-        while instance.state['Name'] != state:
-            instance.reload()
-            if time.time() - start_time >= self.timeout:
-                raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, instance.state))
-            time.sleep(self.delay)
-
-        if load:
-            instance.reload()
-        return instance
+        return self.multi_wait([instance], state)[0]
 
     def multi_wait(self, instances, state):
         """

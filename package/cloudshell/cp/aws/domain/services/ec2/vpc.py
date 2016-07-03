@@ -1,8 +1,9 @@
-from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
+
+
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
 
-    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter):
+    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service):
         """
         :param tag_service: Tag Service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
@@ -14,12 +15,15 @@ class VPCService(object):
         :type vpc_waiter: cloudshell.cp.aws.domain.services.waiters.vpc.VPCWaiter
         :param vpc_peering_waiter: Vpc Peering Connection Waiter
         :type vpc_peering_waiter: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
+        :param sg_service: Vpc Peering Connection Waiter
+        :type sg_service: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
         """
         self.tag_service = tag_service
         self.subnet_service = subnet_service
         self.instance_service = instance_service
         self.vpc_waiter = vpc_waiter
         self.vpc_peering_waiter = vpc_peering_waiter
+        self.sg_service = sg_service
 
     def create_vpc_for_reservation(self, ec2_session, reservation_id, cidr):
         """
@@ -33,7 +37,7 @@ class VPCService(object):
         """
         vpc = ec2_session.create_vpc(CidrBlock=cidr)
 
-        self.vpc_waiter.wait(vpc, self.vpc_waiter.RUNNING)
+        self.vpc_waiter.wait(vpc, self.vpc_waiter.AVAILABLE)
 
         vpc_name = self.VPC_RESERVATION.format(reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation_id=reservation_id, vpc=vpc)
@@ -101,8 +105,7 @@ class VPCService(object):
         """
         security_groups = list(vpc.security_groups.all())
         for sg in security_groups:
-            if sg.group_name != 'default':
-                sg.delete()
+            self.sg_service.delete_security_group(sg)
         return True
 
     def remove_all_subnets(self, vpc):

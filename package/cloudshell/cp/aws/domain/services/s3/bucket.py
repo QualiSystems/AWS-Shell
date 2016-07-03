@@ -39,8 +39,10 @@ class S3BucketService(object):
 
             obj = s3_session.Object(bucket_name, key)
             obj.load()
-
+        except ValueError:
+            raise
         except Exception:
+            # todo: write to log
             obj = None
         return obj
 
