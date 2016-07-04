@@ -12,14 +12,22 @@ class CleanupConnectivityOperation(object):
         self.key_pair_service = key_pair_service
 
     def cleanup(self, ec2_session, s3_session, bucket_name, reservation_id):
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
-        if not vpc:
-            raise ValueError('No VPC was created for this reservation')
+        result = {'success': True}
+        try:
+            vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
+            if not vpc:
+                raise ValueError('No VPC was created for this reservation')
 
-        self.key_pair_service.remove_key_pair_for_reservation(s3_session, bucket_name, reservation_id)
-        self.vpc_service.delete_all_instances(vpc)
-        self.vpc_service.remove_all_security_groups(vpc)
-        self.vpc_service.remove_all_subnets(vpc)
-        self.vpc_service.remove_all_peering(vpc)
+            self.key_pair_service.remove_key_pair_for_reservation(s3_session, bucket_name, reservation_id)
+            self.vpc_service.delete_all_instances(vpc)
+            self.vpc_service.remove_all_security_groups(vpc)
+            self.vpc_service.remove_all_subnets(vpc)
+            self.vpc_service.remove_all_internet_gateways(vpc)
+            self.vpc_service.remove_all_peering(vpc)
 
-        self.vpc_service.delete_vpc(vpc)
+            self.vpc_service.delete_vpc(vpc)
+        except Exception as exc:
+            result.success = False
+            result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(exc)
+
+        return result

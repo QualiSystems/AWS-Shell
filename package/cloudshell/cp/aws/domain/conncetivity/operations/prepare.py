@@ -39,7 +39,7 @@ class PrepareConnectivityOperation(object):
             raise ValueError('Management VPC ID must be set!')
 
         self._create_key_pair(ec2_session=ec2_session,
-                              s3_session=s3_session ,
+                              s3_session=s3_session,
                               bucket=aws_ec2_datamodel.key_pairs_location,
                               reservation_id=reservation_id)
         results = []
@@ -47,6 +47,8 @@ class PrepareConnectivityOperation(object):
             try:
                 # will get or create a vpc for the reservation
                 vpc = self._get_or_create_vpc(action, ec2_session, reservation_id)
+
+                self._create_and_attach_internet_gateway(ec2_session, vpc, reservation_id)
 
                 self._peer_vpcs(ec2_session, aws_ec2_datamodel.management_vpc_id, vpc.id)
 
@@ -135,8 +137,25 @@ class PrepareConnectivityOperation(object):
         action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result
 
-    def _get_sandbox_security_group_inbound_rules(self, management_vpc_id):
-        return [PortData(3389, 3389, 'TCP', management_vpc_id),  # RDP
-                PortData(3389, 3389, 'UDP', management_vpc_id),  # RDP
-                PortData(22, 22, 'TCP', management_vpc_id),  # SSH
-                ]
+    def _create_and_attach_internet_gateway(self, ec2_session, vpc, reservation_id):
+        """
+        :param ec2_session:
+        :param vpc:
+        :param str reservation_id:
+        :return:
+        """
+
+        # check if internet gateway is not already attached
+        all_internet_gateways = list(vpc.internet_gateways.all())
+        if len(all_internet_gateways) > 0:
+            return
+
+        internet_gateway = ec2_session.create_internet_gateway()
+
+        tags = self.tag_service.get_default_tags("IGW {0}".format(reservation_id), reservation_id)
+
+        self.tag_service.set_ec2_resource_tags(
+                resource=internet_gateway,
+                tags=tags)
+
+        vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)

@@ -54,6 +54,9 @@ class InstanceService(object):
         return self.instance_waiter.wait(instance, self.instance_waiter.TERMINATED)
 
     def terminate_instances(self, instances):
+        if len(instances) == 0:
+            return
+
         for instance in instances:
             instance.terminate()
         return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
@@ -68,9 +71,8 @@ class InstanceService(object):
         """
         response = list(ec2_session.vpc_addresses.filter(PublicIps=[elastic_ip]))
         if len(response) == 1:
-            ec2_session.associate_address(InstanceId=instance.id,
-                                          AllocationId=response[0].allocation_id,
-                                          AllowReassociation=False)
+            vpc_address = response[0]
+            vpc_address.associate(InstanceId=instance.id, AllowReassociation=False)
         else:
             raise ValueError("Failed to find elastic ip {0} allocation id".format(elastic_ip))
 

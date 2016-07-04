@@ -81,6 +81,16 @@ class VPCService(object):
         tags = self.tag_service.get_default_tags(vpc_name, reservation_id)
         self.tag_service.set_ec2_resource_tags(vpc, tags)
 
+    def remove_all_internet_gateways(self, vpc):
+        """
+        Removes all internet gateways from a VPC
+        :param vpc: EC2 VPC instance
+        """
+        internet_gateways = list(vpc.internet_gateways.all())
+        for ig in internet_gateways:
+            ig.detach_from_vpc(VpcId=vpc.id)
+            ig.delete()
+
     def remove_all_peering(self, vpc):
         """
         Remove all peering to that VPC
