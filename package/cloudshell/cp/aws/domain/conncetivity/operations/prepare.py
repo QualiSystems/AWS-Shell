@@ -146,16 +146,8 @@ class PrepareConnectivityOperation(object):
         """
 
         # check if internet gateway is not already attached
-        all_internet_gateways = list(vpc.internet_gateways.all())
+        all_internet_gateways = self.vpc_service.get_all_internet_gateways()
         if len(all_internet_gateways) > 0:
             return
 
-        internet_gateway = ec2_session.create_internet_gateway()
-
-        tags = self.tag_service.get_default_tags("IGW {0}".format(reservation_id), reservation_id)
-
-        self.tag_service.set_ec2_resource_tags(
-                resource=internet_gateway,
-                tags=tags)
-
-        vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
+        self.vpc_service.create_and_attach_internet_gateway(ec2_session, vpc, reservation_id)

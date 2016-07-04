@@ -86,10 +86,29 @@ class VPCService(object):
         Removes all internet gateways from a VPC
         :param vpc: EC2 VPC instance
         """
-        internet_gateways = list(vpc.internet_gateways.all())
+        internet_gateways = self.get_all_internet_gateways(vpc)
         for ig in internet_gateways:
             ig.detach_from_vpc(VpcId=vpc.id)
             ig.delete()
+
+    def get_all_internet_gateways(self, vpc):
+        """
+        :param vpc:
+        :return:
+        :rtype: list
+        """
+        return list(vpc.internet_gateways.all())
+
+    def create_and_attach_internet_gateway(self, ec2_session, vpc, reservation_id):
+        internet_gateway = ec2_session.create_internet_gateway()
+
+        tags = self.tag_service.get_default_tags("IGW {0}".format(reservation_id), reservation_id)
+
+        self.tag_service.set_ec2_resource_tags(
+                resource=internet_gateway,
+                tags=tags)
+
+        vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
 
     def remove_all_peering(self, vpc):
         """
