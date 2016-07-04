@@ -1,3 +1,4 @@
+from _ast import Eq
 from unittest import TestCase
 
 from mock import Mock
@@ -36,11 +37,10 @@ class TestCleanupConnectivity(TestCase):
     def test_cleanup_no_vpc(self):
         vpc_serv = Mock()
         vpc_serv.find_vpc_for_reservation = Mock(return_value=None)
-        cleanup_operation = CleanupConnectivityOperation(vpc_serv, self.key_pair_serv)
-
-        self.assertRaises(ValueError,
-                          cleanup_operation.cleanup,
+        result = CleanupConnectivityOperation(vpc_serv, self.key_pair_serv).cleanup(
                           ec2_session=self.ec2_session,
                           s3_session=self.s3_session,
                           bucket_name=self.bucket_name,
                           reservation_id=self.reservation_id)
+
+        self.assertFalse(result['success'])

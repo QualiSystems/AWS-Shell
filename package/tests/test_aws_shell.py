@@ -58,7 +58,10 @@ class TestAWSShell(TestCase):
                               auto_power_off=deploymock.auto_power_off,
                               inbound_ports='',
                               outbound_ports='',
-                              deployed_app_attributes=dict())
+                              deployed_app_attributes=dict(),
+                              deployed_app_address=None,
+                              public_ip=None,
+                              elastic_ip=None)
 
 
         self.aws_shell_api.model_parser.convert_to_deployment_resource_model = Mock(return_value=(deploymock, name))

@@ -31,6 +31,8 @@ class TestDeployOperation(TestCase):
         ami_datamodel.storage_size = None
         ami_datamodel.inbound_ports = "80"
         ami_datamodel.outbound_ports = None
+        ami_datamodel.add_public_ip = None
+        ami_datamodel.add_elastic_ip = None
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.ec2_serv.create_instance = Mock(return_value=instance)

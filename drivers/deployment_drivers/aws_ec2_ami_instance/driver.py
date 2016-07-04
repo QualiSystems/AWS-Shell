@@ -62,6 +62,8 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.inbound_ports = resource.attributes['Inbound Ports']
         deployedResource.outbound_ports = resource.attributes['Outbound Ports']
         deployedResource.wait_for_credentials = self._convert_to_bool(resource.attributes['Wait for Credentials'])
+        deployedResource.add_public_ip = self._convert_to_bool(resource.attributes['Add Public IP'])
+        deployedResource.add_elastic_ip = resource.attributes['Add Elastic IP']
 
         return deployedResource
 

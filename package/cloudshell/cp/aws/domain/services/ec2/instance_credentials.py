@@ -21,6 +21,7 @@ class InstanceCredentialsService(object):
         :param wait_for_password:
         :type wait_for_password: bool
         :return:
+        :rtype: AMICredentials
         """
         password_data = instance.password_data()['PasswordData']
         if not password_data and wait_for_password:
