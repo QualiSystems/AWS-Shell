@@ -20,8 +20,9 @@ from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModels
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
-from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.waiters.instance import InstanceWaiter
 from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
+from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 
@@ -29,7 +30,7 @@ from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConn
 class AWSShell(object):
     def __init__(self):
         self.tag_service = TagService()
-        self.ec2_instance_waiter = EC2InstanceWaiter()
+        self.ec2_instance_waiter = InstanceWaiter()
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
@@ -39,7 +40,8 @@ class AWSShell(object):
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = SecurityGroupService()
-        self.subnet_service = SubnetService(self.tag_service)
+        self.subnet_waiter = SubnetWaiter()
+        self.subnet_service = SubnetService(self.tag_service, self.subnet_waiter)
         self.s3_service = S3BucketService()
         self.vpc_peering_waiter = VpcPeeringConnectionWaiter()
         self.key_pair_service = KeyPairService(self.s3_service)
@@ -49,7 +51,8 @@ class AWSShell(object):
                                       subnet_service=self.subnet_service,
                                       instance_service=self.instance_service,
                                       vpc_waiter=self.vpc_waiter,
-                                      vpc_peering_waiter=self.vpc_peering_waiter)
+                                      vpc_peering_waiter=self.vpc_peering_waiter,
+                                      sg_service=self.security_group_service)
         self.prepare_connectivity_operation = \
             PrepareConnectivityOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,

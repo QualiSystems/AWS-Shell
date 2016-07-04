@@ -65,3 +65,8 @@ class VpcPeeringConnectionWaiter(object):
         if load:
             vpc_peering_connection.reload()
         return vpc_peering_connection
+
+    def delete_security_group(self, sg):
+        if sg.group_name != 'default':
+            sg.delete()
+        return True

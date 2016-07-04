@@ -13,11 +13,13 @@ class TestSubnetService(TestCase):
         self.vpc_name = 'name'
         self.reservation_id = 'res'
         self.tag_srv = Mock()
-        self.subnet_srv = SubnetService(self.tag_srv)
+        self.subnet_waiter = Mock()
+        self.subnet_srv = SubnetService(self.tag_srv, self.subnet_waiter)
 
     def test_create_subnet_for_vpc(self):
         subnet = self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.reservation_id)
         self.assertTrue(self.vpc.create_subnet.called_with(self.cidr))
+        self.assertTrue(self.subnet_waiter.wait.called_with(subnet, 'available'))
         self.assertTrue(self.tag_srv.get_default_tags.called_with(self.vpc_name, self.reservation_id))
         self.assertEqual(subnet, self.vpc.create_subnet())
 
@@ -33,3 +35,9 @@ class TestSubnetService(TestCase):
         vpc.subnets = Mock()
         vpc.subnets.all = Mock(return_value=[])
         self.assertRaises(ValueError, self.subnet_srv.get_subnet_from_vpc, vpc)
+
+    def test_delete_subnet(self):
+        subnet = Mock()
+        res = self.subnet_srv.detele_subnet(subnet)
+        self.assertTrue(res)
+        self.assertTrue(subnet.delete.called)

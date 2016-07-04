@@ -50,8 +50,7 @@ class InstanceService(object):
         return instance
 
     def terminate_instance(self, instance):
-        instance.terminate()
-        return self.instance_waiter.wait(instance, self.instance_waiter.TERMINATED)
+        return self.terminate_instances([instance])
 
     def terminate_instances(self, instances):
         if len(instances) == 0:

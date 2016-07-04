@@ -1,12 +1,12 @@
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
-from cloudshell.cp.aws.domain.services.waiters.instance import EC2InstanceWaiter
+from cloudshell.cp.aws.domain.services.waiters.instance import InstanceWaiter
 
 
 class PowerOperation(object):
     def __init__(self, instance_service, instance_waiter):
         """
         :param InstanceService instance_service:
-        :param EC2InstanceWaiter instance_waiter:
+        :param InstanceWaiter instance_waiter:
         """
         self.instance_service = instance_service
         self.instance_waiter = instance_waiter
