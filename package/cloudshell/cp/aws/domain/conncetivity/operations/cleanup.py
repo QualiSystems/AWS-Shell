@@ -27,7 +27,7 @@ class CleanupConnectivityOperation(object):
 
             self.vpc_service.delete_vpc(vpc)
         except Exception as exc:
-            result.success = False
-            result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(exc)
+            result['success'] = False
+            result['errorMessage'] = 'PrepareConnectivity ended with the error: {0}'.format(exc)
 
         return result
