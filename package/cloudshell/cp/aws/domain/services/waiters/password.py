@@ -2,7 +2,7 @@ import time
 
 
 class PasswordWaiter(object):
-    def __init__(self, delay=10, timeout=10):
+    def __init__(self, delay=10, timeout=15):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
