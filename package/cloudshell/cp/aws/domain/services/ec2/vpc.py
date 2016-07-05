@@ -15,8 +15,8 @@ class VPCService(object):
         :type vpc_waiter: cloudshell.cp.aws.domain.services.waiters.vpc.VPCWaiter
         :param vpc_peering_waiter: Vpc Peering Connection Waiter
         :type vpc_peering_waiter: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
-        :param sg_service: Vpc Peering Connection Waiter
-        :type sg_service: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
+        :param sg_service: Security Group Service
+        :type sg_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         """
         self.tag_service = tag_service
         self.subnet_service = subnet_service
@@ -105,6 +105,8 @@ class VPCService(object):
 
     def create_and_attach_internet_gateway(self, ec2_session, vpc, reservation_id):
         internet_gateway = ec2_session.create_internet_gateway()
+
+        internet_gateway.reload()
 
         tags = self.tag_service.get_default_tags("IGW {0}".format(reservation_id), reservation_id)
 
