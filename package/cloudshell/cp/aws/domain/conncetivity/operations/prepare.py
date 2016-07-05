@@ -146,7 +146,7 @@ class PrepareConnectivityOperation(object):
         """
 
         # check if internet gateway is not already attached
-        all_internet_gateways = self.vpc_service.get_all_internet_gateways()
+        all_internet_gateways = self.vpc_service.get_all_internet_gateways(vpc)
         if len(all_internet_gateways) > 0:
             return
 
