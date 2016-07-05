@@ -9,6 +9,8 @@ from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConn
 class TestPrepareConnectivity(TestCase):
     def setUp(self):
         self.vpc_serv = Mock()
+        self.vpc_serv.get_all_internet_gateways = Mock(return_value=[])
+
         self.sg_serv = Mock()
         self.key_pair_serv = Mock()
         self.ec2_session = Mock()

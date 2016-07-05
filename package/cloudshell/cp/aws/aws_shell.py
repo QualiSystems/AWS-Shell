@@ -88,10 +88,12 @@ class AWSShell(object):
 
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
-        self.clean_up_operation.cleanup(ec2_session=ec2_session,
+        result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
                                         s3_session=s3_session,
                                         bucket_name=aws_ec2_resource_model.key_pairs_location,
                                         reservation_id=command_context.reservation.reservation_id)
+
+        return self._set_command_result({'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request):
         """
