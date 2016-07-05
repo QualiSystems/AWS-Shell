@@ -50,6 +50,7 @@ class TestInstanceService(TestCase):
         self.assertIsNotNone(res)
 
     def test_terminate_instance(self):
+        self.instance_waiter.multi_wait = Mock(return_value=[self.instance])
         res = self.instance_service.terminate_instance(self.instance)
 
         self.assertTrue(self.instance.terminate.called)

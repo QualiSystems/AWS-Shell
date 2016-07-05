@@ -6,7 +6,7 @@ class InstanceService(object):
         :param tags_creator_service: Tags Service
         :type tags_creator_service: cloudshell.cp.aws.domain.services.tags.TagService
         :param instance_waiter: Instance Waiter
-        :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
+        :type instance_waiter: cloudshell.cp.aws.domain.services.waiters.instance.InstanceWaiter
         """
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
@@ -50,7 +50,7 @@ class InstanceService(object):
         return instance
 
     def terminate_instance(self, instance):
-        return self.terminate_instances([instance])
+        return self.terminate_instances([instance])[0]
 
     def terminate_instances(self, instances):
         if len(instances) == 0:

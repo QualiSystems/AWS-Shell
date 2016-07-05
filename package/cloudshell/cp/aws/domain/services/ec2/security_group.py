@@ -6,16 +6,15 @@ class SecurityGroupService(object):
     CLOUDSHELL_CUSTOM_SECURITY_GROUP = "Cloudshell Custom SG {0}"
     CLOUDSHELL_SECURITY_GROUP_DESCRIPTION = "Cloudshell Security Group"
 
-    @staticmethod
-    def delete_security_group(security_group):
-        try:
-            security_group.delete()
-        except Exception:
-            raise
+    def delete_security_group(self, sg):
+        if sg.group_name != 'default':
+            sg.delete()
+        return True
 
     def delete_all_security_groups_of_instance(self, instance):
-        for security_group in instance.security_groups:
-            self.delete_security_group(security_group)
+        if instance.security_groups:
+            for security_group in instance.security_groups:
+                self.delete_security_group(security_group)
 
     def create_security_group(self, ec2_session, vpc_id, security_group_name):
         """

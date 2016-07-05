@@ -1,6 +1,6 @@
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
+
 from cloudshell.cp.aws.aws_shell import AWSShell
-from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
 
 class AWSShellDriver(ResourceDriverInterface):
@@ -32,11 +32,8 @@ class AWSShellDriver(ResourceDriverInterface):
     def remote_refresh_ip(self, context, ports, cancellation_context):
         pass
 
-    def delete(self, context, ports):
-        return self.aws_shell.delete_ami(context)
-
     def destroy_vm_only(self, context, ports):
-        return self.aws_shell.delete_ami(context, False)
+        return self.aws_shell.delete_ami(context)
 
     def ApplyConnectivityChanges(self, context, request):
         pass

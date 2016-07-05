@@ -111,7 +111,7 @@ class TestAWSShell(TestCase):
         self.aws_shell_api.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
         self.aws_shell_api.delete_ami_operation.delete_instance = Mock(return_value=True)
 
-        self.aws_shell_api.delete_ami(self.command_context, False)
+        self.aws_shell_api.delete_ami(self.command_context)
 
         self.assertTrue(
             self.aws_shell_api.delete_ami_operation.delete_instance.called_with(
@@ -125,7 +125,7 @@ class TestAWSShell(TestCase):
         self.aws_shell_api.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
         self.aws_shell_api.delete_ami_operation.delete_instance = Mock(return_value=True)
 
-        self.aws_shell_api.delete_ami(self.command_context, False)
+        self.aws_shell_api.delete_ami(self.command_context)
 
         self.assertTrue(
             self.aws_shell_api.delete_ami_operation.delete_instance.called_with(

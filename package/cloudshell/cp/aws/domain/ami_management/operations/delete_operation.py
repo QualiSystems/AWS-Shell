@@ -4,6 +4,7 @@ class DeleteAMIOperation(object):
     def __init__(self, instance_service, ec2_storage_service, security_group_service):
         """
         :param instance_service:
+        :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
         :param EC2StorageService ec2_storage_service:
         :param SecurityGroupService security_group_service:
         """
