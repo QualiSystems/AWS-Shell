@@ -23,7 +23,7 @@ class TestInstanceService(TestCase):
         ami_dep = Mock()
         res = self.instance_service.create_instance(ec2_session=self.ec2_session,
                                                     name=self.name,
-                                                    reservation_id=self.reservation_id,
+                                                    reservation=self.reservation_id,
                                                     ami_deployment_info=ami_dep)
         self.assertTrue(self.ec2_session.create_instances.called_with(ami_dep.aws_ami_id,
                                                                       ami_dep.min_count,

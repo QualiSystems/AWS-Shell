@@ -39,7 +39,7 @@ class TestDeployOperation(TestCase):
         res = self.deploy_operation.deploy(self.ec2_session,
                                            self.s3_session,
                                            'my name',
-                                           'reservation_id',
+                                           Mock(),
                                            self.ec2_datamodel,
                                            ami_datamodel)
         ami_credentials = self.credentials_manager.get_windows_credentials()
@@ -108,7 +108,7 @@ class TestDeployOperation(TestCase):
                           vpc=Mock(),
                           security_group=None,
                           key_pair='keypair',
-                          reservation_id='res')
+                          reservation=Mock())
 
     def test_create_deployment_parameters(self):
         ami = Mock()
@@ -120,7 +120,7 @@ class TestDeployOperation(TestCase):
                                                                         vpc=vpc,
                                                                         security_group=None,
                                                                         key_pair='keypair',
-                                                                        reservation_id='res')
+                                                                        reservation=Mock())
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)

@@ -25,12 +25,12 @@ class VPCService(object):
         self.vpc_peering_waiter = vpc_peering_waiter
         self.sg_service = sg_service
 
-    def create_vpc_for_reservation(self, ec2_session, reservation_id, cidr):
+    def create_vpc_for_reservation(self, ec2_session, reservation, cidr):
         """
         Will create a vpc for reservation and will save it in a folder in the s3 bucket
         :param ec2_session: Ec2 Session
-        :param reservation_id: Reservation ID
-        :type reservation_id: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param cidr: The CIDR block
         :type cidr: str
         :return: vpc
@@ -39,10 +39,10 @@ class VPCService(object):
 
         self.vpc_waiter.wait(vpc, self.vpc_waiter.AVAILABLE)
 
-        vpc_name = self.VPC_RESERVATION.format(reservation_id)
-        self._set_tags(vpc_name=vpc_name, reservation_id=reservation_id, vpc=vpc)
+        vpc_name = self.VPC_RESERVATION.format(reservation.reservation_id)
+        self._set_tags(vpc_name=vpc_name, reservation=reservation, vpc=vpc)
 
-        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name, reservation_id=reservation_id)
+        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name, reservation=reservation)
         return vpc
 
     def find_vpc_for_reservation(self, ec2_session, reservation_id):
@@ -81,8 +81,8 @@ class VPCService(object):
 
         return vpc_peer_connection.id
 
-    def _set_tags(self, vpc_name, reservation_id, vpc):
-        tags = self.tag_service.get_default_tags(vpc_name, reservation_id)
+    def _set_tags(self, vpc_name, reservation, vpc):
+        tags = self.tag_service.get_default_tags(vpc_name, reservation)
         self.tag_service.set_ec2_resource_tags(vpc, tags)
 
     def remove_all_internet_gateways(self, vpc):
@@ -103,12 +103,21 @@ class VPCService(object):
         """
         return list(vpc.internet_gateways.all())
 
-    def create_and_attach_internet_gateway(self, ec2_session, vpc, reservation_id):
+    def create_and_attach_internet_gateway(self, ec2_session, vpc, reservation):
+        """
+
+        :param ec2_session:
+        :param vpc:
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
+        :return:
+        """
         internet_gateway = ec2_session.create_internet_gateway()
 
         internet_gateway.reload()
 
-        tags = self.tag_service.get_default_tags("IGW {0}".format(reservation_id), reservation_id)
+        tags = self.tag_service.get_default_tags("IGW {0}".format(reservation.reservation_id),
+                                                 reservation)
 
         self.tag_service.set_ec2_resource_tags(
                 resource=internet_gateway,

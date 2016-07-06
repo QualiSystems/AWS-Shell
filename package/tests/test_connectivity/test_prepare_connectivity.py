@@ -17,7 +17,7 @@ class TestPrepareConnectivity(TestCase):
         self.s3_session = Mock()
         self.aws_dm = Mock()
         self.tag_service = Mock()
-        self.reservation_id = 'reservation_id'
+        self.reservation = Mock()
 
         self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service)
@@ -30,7 +30,7 @@ class TestPrepareConnectivity(TestCase):
 
         results = self.prepare_conn.prepare_connectivity(self.ec2_session,
                                                          self.s3_session,
-                                                         self.reservation_id,
+                                                         self.reservation,
                                                          self.aws_dm,
                                                          request)
 
@@ -48,7 +48,7 @@ class TestPrepareConnectivity(TestCase):
                           self.prepare_conn.prepare_connectivity,
                           self.ec2_session,
                           self.s3_session,
-                          self.reservation_id,
+                          self.reservation,
                           aws_dm,
                           request)
 
@@ -59,7 +59,7 @@ class TestPrepareConnectivity(TestCase):
 
         results = self.prepare_conn.prepare_connectivity(self.ec2_session,
                                                          self.s3_session,
-                                                         self.reservation_id,
+                                                         self.reservation,
                                                          self.aws_dm,
                                                          request)
 
@@ -130,9 +130,9 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv, self.tag_service)
 
-        res = prepare_conn._get_or_create_security_group(self.ec2_session, 'reservation_id', vpc, management_sg_id)
+        res = prepare_conn._get_or_create_security_group(self.ec2_session, self.reservation, vpc, management_sg_id)
 
-        self.assertTrue(security_group_service.get_security_group_name.called_with('reservation_id'))
+        self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
         self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
         self.assertTrue(security_group_service.create_security_group.called_with(self.ec2_session, vpc.id, sg_name))
         self.assertEqual(sg, res)

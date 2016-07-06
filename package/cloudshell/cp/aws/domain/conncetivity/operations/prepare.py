@@ -22,14 +22,14 @@ class PrepareConnectivityOperation(object):
         self.key_pair_service = key_pair_service
         self.tag_service = tag_service
 
-    def prepare_connectivity(self, ec2_session, s3_session, reservation_id, aws_ec2_datamodel, request):
+    def prepare_connectivity(self, ec2_session, s3_session, reservation, aws_ec2_datamodel, request):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
         also will create a key pair for that reservation
         :param ec2_session: EC2 Session
         :param s3_session: S3 Session
-        :param reservation_id: The reservation ID
-        :type reservation_id: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param aws_ec2_datamodel: The AWS EC2 data model
         :type aws_ec2_datamodel: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param request: Parsed prepare connectivity request
@@ -41,19 +41,19 @@ class PrepareConnectivityOperation(object):
         self._create_key_pair(ec2_session=ec2_session,
                               s3_session=s3_session,
                               bucket=aws_ec2_datamodel.key_pairs_location,
-                              reservation_id=reservation_id)
+                              reservation_id=reservation.reservation_id)
         results = []
         for action in request.actions:
             try:
                 # will get or create a vpc for the reservation
-                vpc = self._get_or_create_vpc(action, ec2_session, reservation_id)
+                vpc = self._get_or_create_vpc(action, ec2_session, reservation)
 
-                self._create_and_attach_internet_gateway(ec2_session, vpc, reservation_id)
+                self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
                 self._peer_vpcs(ec2_session, aws_ec2_datamodel.management_vpc_id, vpc.id)
 
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
-                                                                    reservation_id=reservation_id,
+                                                                    reservation=reservation,
                                                                     vpc=vpc,
                                                                     management_sg_id=aws_ec2_datamodel.management_sg_id)
 
@@ -78,8 +78,8 @@ class PrepareConnectivityOperation(object):
                                    vpc_id1=management_vpc_id,
                                    vpc_id2=vpc_id)
 
-    def _get_or_create_security_group(self, ec2_session, reservation_id, vpc, management_sg_id):
-        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation_id)
+    def _get_or_create_security_group(self, ec2_session, reservation, vpc, management_sg_id):
+        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
 
         if not security_group:
@@ -90,7 +90,7 @@ class PrepareConnectivityOperation(object):
 
             tags = self.tag_service.get_security_group_tags(name=sg_name,
                                                             isolation=IsolationTagValues.Shared,
-                                                            reservation_id=reservation_id)
+                                                            reservation=reservation)
             self.tag_service.set_ec2_resource_tags(security_group, tags)
 
             self.security_group_service.set_shared_reservation_security_group_rules(security_group=security_group,
@@ -98,13 +98,13 @@ class PrepareConnectivityOperation(object):
 
         return security_group
 
-    def _get_or_create_vpc(self, action, ec2_session, reservation_id):
+    def _get_or_create_vpc(self, action, ec2_session, reservation):
         cidr = self._extract_cidr(action)
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
-                                                        reservation_id=reservation_id)
+                                                        reservation_id=reservation.reservation_id)
         if not vpc:
             vpc = self.vpc_service.create_vpc_for_reservation(ec2_session=ec2_session,
-                                                              reservation_id=reservation_id,
+                                                              reservation=reservation,
                                                               cidr=cidr)
         return vpc
 
@@ -137,11 +137,12 @@ class PrepareConnectivityOperation(object):
         action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result
 
-    def _create_and_attach_internet_gateway(self, ec2_session, vpc, reservation_id):
+    def _create_and_attach_internet_gateway(self, ec2_session, vpc, reservation):
         """
         :param ec2_session:
         :param vpc:
-        :param str reservation_id:
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :return:
         """
 
@@ -150,4 +151,4 @@ class PrepareConnectivityOperation(object):
         if len(all_internet_gateways) > 0:
             return
 
-        self.vpc_service.create_and_attach_internet_gateway(ec2_session, vpc, reservation_id)
+        self.vpc_service.create_and_attach_internet_gateway(ec2_session, vpc, reservation)

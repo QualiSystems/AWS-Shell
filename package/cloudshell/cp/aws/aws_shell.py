@@ -1,5 +1,6 @@
 import jsonpickle
 
+from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
@@ -25,10 +26,12 @@ from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
+from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
 
 class AWSShell(object):
     def __init__(self):
+        self.command_result_parser = CommandResultsParser()
         self.tag_service = TagService()
         self.ec2_instance_waiter = InstanceWaiter()
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
@@ -83,17 +86,16 @@ class AWSShell(object):
         cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
                                                                         command_context.connectivity.admin_auth_token,
                                                                         command_context.reservation.domain)
-
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
 
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
         s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
         result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
-                                        s3_session=s3_session,
-                                        bucket_name=aws_ec2_resource_model.key_pairs_location,
-                                        reservation_id=command_context.reservation.reservation_id)
+                                                 s3_session=s3_session,
+                                                 bucket_name=aws_ec2_resource_model.key_pairs_location,
+                                                 reservation_id=command_context.reservation.reservation_id)
 
-        return self._set_command_result({'driverResponse': {'actionResults': [result]}})
+        return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request):
         """
@@ -114,38 +116,20 @@ class AWSShell(object):
         # parse request
         prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
         prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
+
+        reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
+
         if not prepare_connectivity_request:
             raise ValueError('Invalid prepare connectivity request')
 
         results = self.prepare_connectivity_operation.prepare_connectivity(
-                ec2_session=ec2_session,
-                s3_session=s3_session,
-                reservation_id=command_context.reservation.reservation_id,
-                aws_ec2_datamodel=aws_ec2_resource_model,
-                request=prepare_connectivity_request)
+            ec2_session=ec2_session,
+            s3_session=s3_session,
+            reservation=reservation_model,
+            aws_ec2_datamodel=aws_ec2_resource_model,
+            request=prepare_connectivity_request)
 
-        return self._set_command_result({'driverResponse': {'actionResults': results}})
-
-    def deploy_ami(self, command_context, deployment_request):
-        """
-        Will deploy Amazon Image on the cloud provider
-        """
-        aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        command_context.reservation.domain)
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
-        reservation_id = command_context.reservation.reservation_id
-        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
-        deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
-                                                       s3_session=s3_session,
-                                                       name=name,
-                                                       reservation_id=reservation_id,
-                                                       aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                       ami_deployment_model=aws_ami_deployment_model)
-
-        return self._set_command_result(deploy_data)
+        return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
     def power_on_ami(self, command_context):
         """
@@ -163,7 +147,7 @@ class AWSShell(object):
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
         result = self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
-        return self._set_command_result(result)
+        return self.command_result_parser.set_command_result(result)
 
     def power_off_ami(self, command_context):
         """
@@ -181,7 +165,7 @@ class AWSShell(object):
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
         result = self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
-        return self._set_command_result(result)
+        return self.command_result_parser.set_command_result(result)
 
     def delete_ami(self, command_context):
         """
@@ -200,7 +184,7 @@ class AWSShell(object):
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
         result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
 
-        return self._set_command_result(result)
+        return self.command_result_parser.set_command_result(result)
 
     def get_application_ports(self, command_context):
         """
@@ -213,14 +197,25 @@ class AWSShell(object):
 
         return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
 
-    @staticmethod
-    def _set_command_result(result, unpicklable=False):
+    def deploy_ami(self, command_context, deployment_request):
         """
-        Serializes output as JSON and writes it to console output wrapped with special prefix and suffix
-        :param result: Result to return
-        :param unpicklable: If True adds JSON can be deserialized as real object.
-                            When False will be deserialized as dictionary
+        Will deploy Amazon Image on the cloud provider
         """
-        json = jsonpickle.encode(result, unpicklable=unpicklable)
-        result_for_output = str(json)
-        return result_for_output
+        aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
+                                                                        command_context.connectivity.admin_auth_token,
+                                                                        command_context.reservation.domain)
+        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
+
+        reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
+
+        deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
+                                                       s3_session=s3_session,
+                                                       name=name,
+                                                       reservation=reservation_model,
+                                                       aws_ec2_cp_resource_model=aws_ec2_resource_model,
+                                                       ami_deployment_model=aws_ami_deployment_model)
+
+        return self.command_result_parser.set_command_result(deploy_data)

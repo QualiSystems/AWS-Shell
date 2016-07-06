@@ -12,11 +12,11 @@ class SubnetService(object):
         self.tag_service = tag_service
         self.subnet_waiter = subnet_waiter
 
-    def create_subnet_for_vpc(self, vpc, cidr, vpc_name, reservation_id):
+    def create_subnet_for_vpc(self, vpc, cidr, vpc_name, reservation):
         """
         Will create a subnet for the given vpc
-        :param reservation_id: Reservation ID
-        :type reservation_id: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param vpc: VPC instanve
         :param cidr: CIDR
         :type cidr: str
@@ -28,7 +28,7 @@ class SubnetService(object):
         self.subnet_waiter.wait(subnet, self.subnet_waiter.AVAILABLE)
 
         subnet_name = self._get_subnet_name(vpc_name)
-        tags = self.tag_service.get_default_tags(subnet_name, reservation_id)
+        tags = self.tag_service.get_default_tags(subnet_name, reservation)
 
         self.tag_service.set_ec2_resource_tags(subnet, tags)
         return subnet

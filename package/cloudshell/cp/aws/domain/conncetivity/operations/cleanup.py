@@ -20,9 +20,9 @@ class CleanupConnectivityOperation(object):
 
             self.vpc_service.delete_all_instances(vpc)
             self.key_pair_service.remove_key_pair_for_reservation(s3_session, bucket_name, reservation_id)
+            self.vpc_service.remove_all_internet_gateways(vpc)
             self.vpc_service.remove_all_security_groups(vpc)
             self.vpc_service.remove_all_subnets(vpc)
-            self.vpc_service.remove_all_internet_gateways(vpc)
             self.vpc_service.remove_all_peering(vpc)
 
             self.vpc_service.delete_vpc(vpc)
