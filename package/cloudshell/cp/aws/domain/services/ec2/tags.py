@@ -1,6 +1,9 @@
 class TagNames(object):
     CreatedBy = 'CreatedBy'
+    Owner = 'Owner'
+    Blueprint = 'Blueprint'
     ReservationId = 'ReservationId'
+    Domain = 'Domain'
     Name = 'Name'
     Isolation = 'Isolation'
 
@@ -11,33 +14,41 @@ class IsolationTagValues(object):
 
 
 class TagService(object):
-    CREATED_BY_QUALI = "Quali"
+    CREATED_BY_QUALI = "Cloudshell"
 
     def __init__(self):
         pass
 
-    def get_security_group_tags(self, name, isolation, reservation_id):
+    def get_security_group_tags(self, name, isolation, reservation):
         """
         returns the default tags with the isolation tag
-        :param str name: the name of the resource
-        :param str isolation: the isolation level of the resource
-        :param str reservation_id: reservation id
+        :param name: the name of the resource
+        :type name: str
+        :param isolation: the isolation level of the resource
+        :type isolation: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :return: list[dict]
         """
-        tags = self.get_default_tags(name, reservation_id)
+        tags = self.get_default_tags(name, reservation)
         tags.append(self._get_kvp(TagNames.Isolation, isolation))
         return tags
 
-    def get_default_tags(self, name, reservation_id):
+    def get_default_tags(self, name, reservation):
         """
         returns the default tags of a resource. Name,reservationId,createdBy
         :param str name: the name of the resource
-        :param str reservation_id: reservation id
+        :type name: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :return: list[dict]
         """
         return [self.get_name_tag(name),
                 self.get_created_by_kvp(),
-                self.get_reservation_tag(reservation_id)]
+                self._get_kvp(TagNames.Blueprint, reservation.blueprint),
+                self._get_kvp(TagNames.Owner, reservation.owner),
+                self._get_kvp(TagNames.Domain, reservation.domain),
+                self.get_reservation_tag(reservation.reservation_id)]
 
     def get_name_tag(self, name):
         return self._get_kvp(TagNames.Name, name)

@@ -11,13 +11,13 @@ class InstanceService(object):
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
-    def create_instance(self, ec2_session, name, reservation_id, ami_deployment_info):
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info):
         """
         Deploys an AMI
         :param name: Will assign the deployed vm with the name
         :type name: str
-        :param reservation_id:
-        :type reservation_id: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param ec2_session:
         :type ec2_session: boto3.ec2.session
         :param ami_deployment_info: request details of the AMI
@@ -41,7 +41,7 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        self._set_tags(instance, name, reservation_id)
+        self._set_tags(instance, name, reservation)
 
         self.instance_waiter.wait(instance, state=self.instance_waiter.RUNNING)
 
@@ -75,10 +75,10 @@ class InstanceService(object):
         else:
             raise ValueError("Failed to find elastic ip {0} allocation id".format(elastic_ip))
 
-    def _set_tags(self, instance, name, reservation_id):
+    def _set_tags(self, instance, name, reservation):
         # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id
-        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation_id)
+        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation)
         self.tags_creator_service.set_ec2_resource_tags(instance, default_tags)
 
     @staticmethod

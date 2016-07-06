@@ -35,14 +35,14 @@ class DeployAMIOperation(object):
         self.key_pair_service = key_pair_service
         self.subnet_serivce = subnet_service
 
-    def deploy(self, ec2_session, s3_session, name, reservation_id, aws_ec2_cp_resource_model, ami_deployment_model):
+    def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model, ami_deployment_model):
         """
         :param ec2_session: EC2 session
         :param s3_session: S3 Session
         :param name: The name of the deployed ami
         :type name: str
-        :param reservation_id:
-        :type reservation_id: str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param aws_ec2_cp_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_cp_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
@@ -50,15 +50,16 @@ class DeployAMIOperation(object):
         :return:
         """
 
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
+                                                        reservation_id=reservation.reservation_id)
         if not vpc:
             raise ValueError('VPC is not set for this reservation')
 
-        key_name = self.key_pair_service.get_reservation_key_name(reservation_id=reservation_id)
+        key_name = self.key_pair_service.get_reservation_key_name(reservation_id=reservation.reservation_id)
 
         security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                   ec2_session=ec2_session,
-                                                                  reservation_id=reservation_id,
+                                                                  reservation=reservation,
                                                                   vpc=vpc)
 
         ami_deployment_info = self._create_deployment_parameters(aws_ec2_resource_model=aws_ec2_cp_resource_model,
@@ -66,11 +67,11 @@ class DeployAMIOperation(object):
                                                                  vpc=vpc,
                                                                  security_group=security_group,
                                                                  key_pair=key_name,
-                                                                 reservation_id=reservation_id)
+                                                                 reservation=reservation)
 
         instance = self.instance_service.create_instance(ec2_session=ec2_session,
                                                          name=name,
-                                                         reservation_id=reservation_id,
+                                                         reservation=reservation,
                                                          ami_deployment_info=ami_deployment_info)
 
         self._set_elastic_ip(ec2_session=ec2_session, instance=instance, ami_deployment_model=ami_deployment_model)
@@ -78,7 +79,7 @@ class DeployAMIOperation(object):
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
                                                     instance=instance,
-                                                    reservation_id=reservation_id,
+                                                    reservation_id=reservation,
                                                     s3_session=s3_session)
 
         deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
@@ -129,7 +130,7 @@ class DeployAMIOperation(object):
     def _create_security_group_for_instance(self,
                                             ami_deployment_model,
                                             ec2_session,
-                                            reservation_id,
+                                            reservation,
                                             vpc):
 
         if not ami_deployment_model.inbound_ports and not ami_deployment_model.outbound_ports:
@@ -148,7 +149,7 @@ class DeployAMIOperation(object):
 
         tags = self.tag_service.get_security_group_tags(name=security_group_name,
                                                         isolation=IsolationTagValues.Exclusive,
-                                                        reservation_id=reservation_id)
+                                                        reservation=reservation)
 
         self.tag_service.set_ec2_resource_tags(security_group, tags)
 
@@ -164,7 +165,7 @@ class DeployAMIOperation(object):
                                       vpc,
                                       security_group,
                                       key_pair,
-                                      reservation_id):
+                                      reservation):
         """
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
@@ -175,8 +176,8 @@ class DeployAMIOperation(object):
         :type security_group : securityGroup
         :param key_pair : The Key pair name
         :type key_pair : str
-        :param reservation_id : The reservation Id
-        :type reservation_id : str
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         """
         aws_model = AMIDeploymentModel()
         if not ami_deployment_model.aws_ami_id:
@@ -194,12 +195,12 @@ class DeployAMIOperation(object):
         subnet = self.subnet_serivce.get_subnet_from_vpc(vpc)
         aws_model.subnet_id = subnet.id
 
-        self._set_security_group_param(aws_model, reservation_id, security_group, vpc)
+        self._set_security_group_param(aws_model, reservation, security_group, vpc)
 
         return aws_model
 
-    def _set_security_group_param(self, aws_model, reservation_id, security_group, vpc):
-        default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation_id)
+    def _set_security_group_param(self, aws_model, reservation, security_group, vpc):
+        default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
         default_sg = self.security_group_service.get_security_group_by_name(vpc, default_sg_name)
 
         aws_model.security_group_ids = [default_sg.id]

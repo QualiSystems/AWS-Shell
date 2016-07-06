@@ -16,7 +16,7 @@ class TestVPCService(TestCase):
         self.vpc = Mock()
         self.ec2_session.create_vpc = Mock(return_value=self.vpc)
         self.s3_session = Mock()
-        self.reservation_id = 'id'
+        self.reservation = Mock()
         self.cidr = Mock()
         self.vpc_waiter = Mock()
         self.vpc_peering_waiter = Mock()
@@ -30,35 +30,35 @@ class TestVPCService(TestCase):
                                       sg_service=self.sg_service)
 
     def test_create_vpc_for_reservation(self):
-        vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation_id, self.cidr)
+        vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation, self.cidr)
 
-        vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation_id)
+        vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation)
 
         self.assertTrue(self.vpc_waiter.wait.called_with(vpc, 'available'))
         self.assertEqual(self.vpc, vpc)
         self.assertTrue(self.ec2_session.create_vpc.called_with(self.cidr))
         self.assertTrue(
             self.tag_service.get_default_tags.called_with(vpc_name,
-                                                          self.reservation_id))
+                                                          self.reservation))
         self.assertTrue(self.tag_service.set_ec2_resource_tags.called_with(self.vpc, self.tags))
         self.assertTrue(self.subnet_service.create_subnet_for_vpc(self.vpc, self.cidr, vpc_name))
 
     def test_find_vpc_for_reservation(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[self.vpc])
-        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation)
         self.assertEqual(vpc, self.vpc)
 
     def test_find_vpc_for_reservation_no_vpc(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[])
-        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation)
         self.assertIsNone(vpc)
 
     def test_find_vpc_for_reservation_too_many(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[1, 2])
-        self.assertRaises(ValueError, self.vpc_service.find_vpc_for_reservation, self.ec2_session, self.reservation_id)
+        self.assertRaises(ValueError, self.vpc_service.find_vpc_for_reservation, self.ec2_session, self.reservation)
 
     def test_peer_vpc(self):
         def change_to_active(vpc_peering_connection):
