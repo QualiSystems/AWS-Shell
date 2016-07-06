@@ -82,6 +82,18 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['autoload'], deploymock.autoload)
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider_resource)
 
+    def test_cleanup_connectivity(self):
+        self.aws_shell_api.clean_up_operation.cleanup = Mock(return_value=True)
+
+        self.aws_shell_api.cleanup_connectivity(self.command_context)
+
+        self.assertTrue(self.aws_shell_api.clean_up_operation.cleanup.called_with(
+            self.aws_shell_api.aws_session_manager.get_ec2_session(),
+            self.aws_shell_api.aws_session_manager.get_s3_session(),
+            self.aws_shell_api.model_parser.convert_to_aws_resource_model().key_pairs_location,
+            self.command_context.reservation.reservation_id
+        ))
+
     def test_prepare_connectivity(self):
         req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
         self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
