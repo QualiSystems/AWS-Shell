@@ -29,6 +29,36 @@ class TestVPCService(TestCase):
                                       vpc_peering_waiter=self.vpc_peering_waiter,
                                       sg_service=self.sg_service)
 
+    def test_get_all_internet_gateways(self):
+        internet_gate = Mock()
+        self.vpc.internet_gateways = Mock()
+        self.vpc.internet_gateways.all = Mock(return_value=[internet_gate])
+        res = self.vpc_service.get_all_internet_gateways(self.vpc)
+
+        self.assertEqual(res, [internet_gate])
+
+    def test_remove_all_internet_gateways(self):
+        internet_gate = Mock()
+        self.vpc.internet_gateways = Mock()
+        self.vpc.internet_gateways.all = Mock(return_value=[internet_gate])
+        self.vpc_service.remove_all_internet_gateways(self.vpc)
+
+        self.assertTrue(internet_gate.detach_from_vpc.called_with(VpcId=self.vpc.id))
+        self.assertTrue(internet_gate.delete.called)
+
+    def test_create_and_attach_internet_gateway(self):
+        self.vpc_service.create_and_attach_internet_gateway(self.ec2_session, self.vpc, self.reservation)
+
+        self.assertTrue(self.ec2_session.create_internet_gateway.called)
+        ig = self.ec2_session.create_internet_gateway()
+        self.assertTrue(ig.reload.called)
+        self.assertTrue(self.tag_service.get_default_tags.called_with(
+            "IGW {0}".format(self.reservation.reservation_id),
+            self.reservation))
+        self.assertTrue(self.tag_service.set_ec2_resource_tags(
+                resource=ig,
+                tags=self.tag_service.get_default_tags()))
+
     def test_create_vpc_for_reservation(self):
         vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation, self.cidr)
 
