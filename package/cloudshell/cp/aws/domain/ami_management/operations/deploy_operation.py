@@ -79,7 +79,7 @@ class DeployAMIOperation(object):
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
                                                     instance=instance,
-                                                    reservation_id=reservation,
+                                                    reservation=reservation,
                                                     s3_session=s3_session)
 
         deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
@@ -99,12 +99,13 @@ class DeployAMIOperation(object):
                             public_ip=instance.public_ip_address if ami_deployment_model.add_public_ip else None,
                             elastic_ip=ami_deployment_model.add_elastic_ip)
 
-    def _get_ami_credentials(self, s3_session, key_pair_location, reservation_id, wait_for_credentials, instance):
+    def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance):
         """
         Will load win
         :param s3_session:
         :param key_pair_location:
-        :param reservation_id:
+        :param reservation: reservation model
+        :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param wait_for_credentials:
         :param instance:
         :return:
@@ -114,7 +115,7 @@ class DeployAMIOperation(object):
         if instance.platform:
             key_value = self.key_pair_service.load_key_pair_by_name(s3_session=s3_session,
                                                                     bucket_name=key_pair_location,
-                                                                    reservation_id=reservation_id)
+                                                                    reservation_id=reservation.reservation_id)
 
             ami_credentials = self.credentials_service.get_windows_credentials(instance=instance,
                                                                                key_value=key_value,
