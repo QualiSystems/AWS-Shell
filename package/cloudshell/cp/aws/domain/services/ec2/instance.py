@@ -41,9 +41,9 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        self._set_tags(instance, name, reservation)
-
         self.instance_waiter.wait(instance, state=self.instance_waiter.RUNNING)
+
+        self._set_tags(instance, name, reservation)
 
         # Reload the instance attributes
         instance.load()
