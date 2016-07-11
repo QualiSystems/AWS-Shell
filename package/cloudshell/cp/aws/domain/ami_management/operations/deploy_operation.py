@@ -187,7 +187,7 @@ class DeployAMIOperation(object):
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.min_count = 1
         aws_model.max_count = 1
-        aws_model.instance_type = ami_deployment_model.instance_type or aws_ec2_resource_model.default_instance_type
+        aws_model.instance_type = ami_deployment_model.instance_type
         aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = key_pair
@@ -213,11 +213,11 @@ class DeployAMIOperation(object):
     def _get_block_device_mappings(ami_rm, aws_ec2_rm):
         block_device_mappings = [
             {
-                'DeviceName': ami_rm.device_name if ami_rm.device_name else aws_ec2_rm.device_name,
+                'DeviceName': ami_rm.root_volume_name if ami_rm.root_volume_name else aws_ec2_rm.root_volume_name,
                 'Ebs': {
-                    'VolumeSize': int(ami_rm.storage_size or aws_ec2_rm.default_storage_size),
+                    'VolumeSize': int(ami_rm.storage_size),
                     'DeleteOnTermination': True,
-                    'VolumeType': ami_rm.storage_type or aws_ec2_rm.default_storage_type
+                    'VolumeType': ami_rm.storage_type
                 }
             }]
         return block_device_mappings

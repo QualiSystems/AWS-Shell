@@ -8,7 +8,6 @@ from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import 
 class TestDeployOperation(TestCase):
     def setUp(self):
         self.ec2_datamodel = Mock()
-        self.ec2_datamodel.default_storage_size = 1
         self.ec2_session = Mock()
         self.s3_session = Mock()
         self.ec2_serv = Mock()
@@ -71,29 +70,28 @@ class TestDeployOperation(TestCase):
 
     def test_get_block_device_mappings_not_defaults(self):
         ami = Mock()
-        ami.device_name = 'name'
+        ami.root_volume_name = 'name'
         ami.storage_size = '0'
         ami.delete_on_termination = True
         ami.storage_type = 'type'
         res = self.deploy_operation._get_block_device_mappings(ami, Mock())
-        self.assertEqual(res[0]['DeviceName'], ami.device_name)
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ami.storage_size)
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ami.delete_on_termination)
         self.assertEqual(res[0]['Ebs']['VolumeType'], ami.storage_type)
 
     def test_get_block_device_mappings_defaults(self):
         ec_model = Mock()
-        ec_model.device_name = 'name'
-        ec_model.default_storage_size = '0'
+        ec_model.root_volume_name = 'name'
         ec_model.delete_on_termination = True
-        ec_model.default_storage_type = 'type'
+
         ami = Mock()
-        ami.device_name = ''
+        ami.root_volume_name = ''
         ami.storage_size = ''
         ami.delete_on_termination = None
         ami.storage_type = ''
         res = self.deploy_operation._get_block_device_mappings(ami, ec_model)
-        self.assertEqual(res[0]['DeviceName'], ec_model.device_name)
+        self.assertEqual(res[0]['DeviceName'], ec_model.root_volume_name)
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ec_model.default_storage_size)
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
         self.assertEqual(res[0]['Ebs']['VolumeType'], ec_model.default_storage_type)

@@ -11,7 +11,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.instance_type = ''  # type: str
         self.security_group_ids = None  # type: str
         self.private_ip_address = ''  # type: str
-        self.device_name = ''  # type: str
+        self.root_volume_name = ''  # type: str
         self.delete_on_termination = True  # type: bool
         self.auto_power_on = False  # type: bool
         self.auto_power_off = False  # type: bool

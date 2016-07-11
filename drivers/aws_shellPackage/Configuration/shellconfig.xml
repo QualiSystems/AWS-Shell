@@ -11,18 +11,11 @@
             </AutoLoad>
             <Attributes>
                 <Attribute Name="Region" Value="" />
-                <Attribute Name="Management VPC CIDR" Value="" />
-                <Attribute Name="Management SG ID" Value="" />
-                <Attribute Name="Management VPC ID" Value="" />
+                <Attribute Name="AWS Management SG ID" Value="" />
+                <Attribute Name="AWS Management VPC ID" Value="" />
                 <Attribute Name="Keypairs Location" Value="" />
-                <Attribute Name="Device Name" Value="" />
-                <Attribute Name="Default Storage Size" Value="30" />
-                <Attribute Name="Default Storage IOPS" Value="1500" />
                 <Attribute Name="Max Storage Size" Value="30" />
                 <Attribute Name="Max Storage IOPS" Value="1500" />
-                <Attribute Value="" Name="AWS Access Key ID"/>
-                <Attribute Value="" Name="AWS Secret Access Key"/>
-                <Attribute Value="" Name="Default Instance Type"/>
                 <Attribute Value="" Name="Networks In Use"/>
             </Attributes>
         </ResourceTemplate>
