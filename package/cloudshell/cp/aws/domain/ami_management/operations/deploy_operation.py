@@ -87,7 +87,6 @@ class DeployAMIOperation(object):
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
                             cloud_provider_resource_name=ami_deployment_model.cloud_provider_resource,
-                            auto_power_on=ami_deployment_model.auto_power_on,
                             auto_power_off=ami_deployment_model.auto_power_off,
                             wait_for_ip=ami_deployment_model.wait_for_ip,
                             auto_delete=ami_deployment_model.auto_delete,
@@ -213,7 +212,7 @@ class DeployAMIOperation(object):
     def _get_block_device_mappings(ami_rm, aws_ec2_rm):
         block_device_mappings = [
             {
-                'DeviceName': ami_rm.root_volume_name ,
+                'DeviceName': ami_rm.root_volume_name if ami_rm.root_volume_name else "/dev/sda1",#will get from server
                 'Ebs': {
                     'VolumeSize': int(ami_rm.storage_size),
                     'DeleteOnTermination': True,

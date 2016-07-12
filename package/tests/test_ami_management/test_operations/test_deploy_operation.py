@@ -45,7 +45,6 @@ class TestDeployOperation(TestCase):
 
         self.assertEqual(res.vm_name, 'my name')
         self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider_resource)
-        self.assertEqual(res.auto_power_on, ami_datamodel.auto_power_on)
         self.assertEqual(res.auto_power_off, ami_datamodel.auto_power_off)
         self.assertEqual(res.wait_for_ip, ami_datamodel.wait_for_ip)
         self.assertEqual(res.auto_delete, ami_datamodel.auto_delete)
@@ -82,16 +81,15 @@ class TestDeployOperation(TestCase):
 
     def test_get_block_device_mappings_defaults(self):
         ec_model = Mock()
-        ec_model.root_volume_name = 'name'
         ec_model.delete_on_termination = True
 
         ami = Mock()
-        ami.root_volume_name = ''
+        ami.root_volume_name = 'name'
         ami.storage_size = 30
         ami.delete_on_termination = None
         ami.storage_type = ''
         res = self.deploy_operation._get_block_device_mappings(ami, ec_model)
-        self.assertEqual(res[0]['DeviceName'], ec_model.root_volume_name)
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
         self.assertTrue(res[0]['Ebs']['VolumeType'] is not None, "Volume type should not be empty.")

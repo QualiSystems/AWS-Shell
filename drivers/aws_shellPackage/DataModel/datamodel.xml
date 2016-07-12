@@ -70,12 +70,6 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="false" Description="" IsReadOnly="false" Name="Auto Power On" Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo  Description="" IsReadOnly="false" Name="Inbound Ports"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -291,9 +285,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Outbound Ports" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power On" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power Off" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -320,7 +311,6 @@
             </AttachedAttribute>
           </AttachedAttributes>
           <AttributeValues>
-            <AttributeValue Name="Auto Power On" Value="true"/>
             <AttributeValue Name="Auto Power Off" Value="true"/>
             <AttributeValue Name="Auto Delete" Value="true"/>
             <AttributeValue Name="Autoload" Value="true"/>
