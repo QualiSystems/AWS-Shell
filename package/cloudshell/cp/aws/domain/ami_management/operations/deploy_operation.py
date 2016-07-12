@@ -213,7 +213,7 @@ class DeployAMIOperation(object):
     def _get_block_device_mappings(ami_rm, aws_ec2_rm):
         block_device_mappings = [
             {
-                'DeviceName': ami_rm.root_volume_name if ami_rm.root_volume_name else aws_ec2_rm.root_volume_name,
+                'DeviceName': ami_rm.root_volume_name ,
                 'Ebs': {
                     'VolumeSize': int(ami_rm.storage_size),
                     'DeleteOnTermination': True,

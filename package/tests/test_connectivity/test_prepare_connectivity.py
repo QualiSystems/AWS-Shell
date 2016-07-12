@@ -43,7 +43,7 @@ class TestPrepareConnectivity(TestCase):
     def test_prepare_conn_command_no_management_vpc(self):
         request = Mock()
         aws_dm = Mock()
-        aws_dm.management_vpc_id = None
+        aws_dm.aws_management_vpc_id = None
         self.assertRaises(ValueError,
                           self.prepare_conn.prepare_connectivity,
                           self.ec2_session,

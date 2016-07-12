@@ -17,7 +17,6 @@ class AWSModelsParser(object):
         resource_context = resource.attributes
         aws_ec2_resource_model = AWSEc2CloudProviderResourceModel()
         aws_ec2_resource_model.region = resource_context['Region']
-        aws_ec2_resource_model.root_volume_name = resource_context['Root Volume Name']
         aws_ec2_resource_model.max_storage_iops = resource_context['Max Storage IOPS']
         aws_ec2_resource_model.max_storage_size = resource_context['Max Storage Size']
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']

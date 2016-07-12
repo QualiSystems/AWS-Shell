@@ -6,7 +6,6 @@ class AWSEc2CloudProviderResourceModel(object):
         # storage data
         self.max_storage_size = ''  # type: int
         self.max_storage_iops = ''  # type: int
-        self.root_volume_name = ''  # type: str
         self.region = ''  # type : str
         self.aws_access_key_id = ''  # type: str
         self.aws_secret_access_key = ''  # type: str

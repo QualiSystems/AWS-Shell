@@ -27,7 +27,7 @@ class TestDeployOperation(TestCase):
 
     def test_deploy(self):
         ami_datamodel = Mock()
-        ami_datamodel.storage_size = None
+        ami_datamodel.storage_size = 30
         ami_datamodel.inbound_ports = "80"
         ami_datamodel.outbound_ports = None
         ami_datamodel.add_public_ip = None
@@ -87,14 +87,15 @@ class TestDeployOperation(TestCase):
 
         ami = Mock()
         ami.root_volume_name = ''
-        ami.storage_size = ''
+        ami.storage_size = 30
         ami.delete_on_termination = None
         ami.storage_type = ''
         res = self.deploy_operation._get_block_device_mappings(ami, ec_model)
         self.assertEqual(res[0]['DeviceName'], ec_model.root_volume_name)
-        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ec_model.default_storage_size)
+        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
-        self.assertEqual(res[0]['Ebs']['VolumeType'], ec_model.default_storage_type)
+        self.assertTrue(res[0]['Ebs']['VolumeType'] is not None, "Volume type should not be empty.")
+
 
     def test_create_deployment_parameters_no_ami_id(self):
         ami = Mock()
