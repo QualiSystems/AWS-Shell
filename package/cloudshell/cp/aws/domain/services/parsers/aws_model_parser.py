@@ -44,7 +44,6 @@ class AWSModelsParser(object):
         deployment_resource_model.private_ip_address = data_holder.ami_params.private_ip_address
         deployment_resource_model.root_volume_name = data_holder.ami_params.root_volume_name
         deployment_resource_model.delete_on_termination = AWSModelsParser.convert_to_bool(data_holder.ami_params.delete_on_termination)
-        deployment_resource_model.auto_power_on = AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_power_on)
         deployment_resource_model.auto_power_off = \
             AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_power_off)
         deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_ip)

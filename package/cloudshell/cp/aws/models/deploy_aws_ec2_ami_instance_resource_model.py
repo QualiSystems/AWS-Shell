@@ -13,7 +13,6 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.private_ip_address = ''  # type: str
         self.root_volume_name = ''  # type: str
         self.delete_on_termination = True  # type: bool
-        self.auto_power_on = False  # type: bool
         self.auto_power_off = False  # type: bool
         self.wait_for_ip = False  # type: bool
         self.auto_delete = False  # type: bool
