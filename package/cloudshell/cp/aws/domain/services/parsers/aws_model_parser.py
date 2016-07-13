@@ -24,6 +24,7 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.key_pairs_location = resource_context['Keypairs Location']
         aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Management VPC ID']
         aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Management SG ID']
+        aws_ec2_resource_model.instance_type = resource_context['Instance Type']
 
         return aws_ec2_resource_model
 
@@ -32,7 +33,7 @@ class AWSModelsParser(object):
         data = jsonpickle.decode(deployment_request)
         data_holder = DeployDataHolder(data)
         deployment_resource_model = DeployAWSEc2AMIInstanceResourceModel()
-        deployment_resource_model.cloud_provider_resource = data_holder.ami_params.cloud_provider_resource
+        deployment_resource_model.cloud_provider = data_holder.ami_params.cloud_provider
         deployment_resource_model.aws_ami_id = data_holder.ami_params.aws_ami_id
         deployment_resource_model.storage_size = data_holder.ami_params.storage_size
         deployment_resource_model.storage_iops = data_holder.ami_params.storage_iops

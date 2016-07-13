@@ -1,6 +1,6 @@
 class DeployAWSEc2AMIInstanceResourceModel(object):
     def __init__(self):
-        self.cloud_provider_resource = ''
+        self.cloud_provider = ''
         self.aws_ami_id = ''
         self.storage_size = ''
         self.storage_iops = ''

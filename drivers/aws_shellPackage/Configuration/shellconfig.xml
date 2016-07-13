@@ -16,7 +16,8 @@
                 <Attribute Name="Keypairs Location" Value="" />
                 <Attribute Name="Max Storage Size" Value="30" />
                 <Attribute Name="Max Storage IOPS" Value="1500" />
-                <Attribute Value="" Name="Networks In Use"/>
+                <Attribute Name="Networks In Use" Value="" />
+                <Attribute Name="Instance Type" Value="" />
             </Attributes>
         </ResourceTemplate>
     </ResourceTemplates>

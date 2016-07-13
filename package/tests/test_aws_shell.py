@@ -46,11 +46,11 @@ class TestAWSShell(TestCase):
         deploymock.wait_for_ip = "True"
         deploymock.auto_delete = "True"
         deploymock.autoload = "True"
-        deploymock.cloud_provider_resource = "some_name"
+        deploymock.cloud_provider = "some_name"
 
         result = DeployResult(vm_name=name,
                               vm_uuid='my instance id',
-                              cloud_provider_resource_name=deploymock.cloud_provider_resource,
+                              cloud_provider_resource_name=deploymock.cloud_provider,
                               autoload=deploymock.autoload,
                               auto_delete=deploymock.auto_delete,
                               wait_for_ip=deploymock.wait_for_ip,
@@ -78,7 +78,7 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['wait_for_ip'], deploymock.wait_for_ip)
         self.assertEqual(decoded_res['auto_delete'], deploymock.auto_delete)
         self.assertEqual(decoded_res['autoload'], deploymock.autoload)
-        self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider_resource)
+        self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider)
 
     def test_cleanup_connectivity(self):
         self.aws_shell_api.clean_up_operation.cleanup = Mock(return_value=True)
