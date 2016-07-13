@@ -1,5 +1,6 @@
 import jsonpickle
 
+from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
@@ -60,7 +61,8 @@ class AWSShell(object):
             PrepareConnectivityOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
                                          key_pair_service=self.key_pair_service,
-                                         tag_service=self.tag_service)
+                                         tag_service=self.tag_service,
+                                         route_table_service=RouteTablesService())
 
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,

@@ -6,21 +6,24 @@ INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
 class PrepareConnectivityOperation(object):
-    def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service):
+    def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service):
         """
         :param vpc_service: VPC Service
-        :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc_service.VPCService
+        :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
         :param security_group_service:
         :type security_group_service: clousdhell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         :param key_pair_service:
         :type key_pair_service: cloudshell.cp.aws.domain.services.ec2.keypair.KeyPairService
         :param tag_service:
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
+        :param route_table_service:
+        :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
         self.key_pair_service = key_pair_service
         self.tag_service = tag_service
+        self.route_table_service = route_table_service
 
     def prepare_connectivity(self, ec2_session, s3_session, reservation, aws_ec2_datamodel, request):
         """
@@ -45,12 +48,20 @@ class PrepareConnectivityOperation(object):
         results = []
         for action in request.actions:
             try:
-                # will get or create a vpc for the reservation
-                vpc = self._get_or_create_vpc(action, ec2_session, reservation)
+                cidr = self._extract_cidr(action)
 
+                # will get or create a vpc for the reservation
+                vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
+
+                # will create an IG if not exist
                 self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
-                self._peer_vpcs(ec2_session, aws_ec2_datamodel.aws_management_vpc_id, vpc.id)
+                # will try to peer sandbox VPC to mgmt VPC if not exist
+                self._peer_vpcs(ec2_session=ec2_session,
+                                management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
+                                vpc_id=vpc.id,
+                                sandbox_vpc_cidr=cidr,
+                                reservation_model=reservation)
 
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
                                                                     reservation=reservation,
@@ -73,10 +84,30 @@ class PrepareConnectivityOperation(object):
                                                   bucket=bucket,
                                                   reservation_id=reservation_id)
 
-    def _peer_vpcs(self, ec2_session, management_vpc_id, vpc_id):
-        self.vpc_service.peer_vpcs(ec2_session=ec2_session,
-                                   vpc_id1=management_vpc_id,
-                                   vpc_id2=vpc_id)
+    def _peer_vpcs(self, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, reservation_model):
+
+        # check if a peering connection already exist
+        if self.vpc_service.get_peering_connection_by_reservation_id(ec2_session, reservation_model.reservation_id):
+            return
+
+        # create vpc peering connection
+        vpc_peer_connection_id = self.vpc_service.peer_vpcs(ec2_session=ec2_session,
+                                                            vpc_id1=management_vpc_id,
+                                                            vpc_id2=vpc_id)
+        # get mgmt vpc cidr
+        mgmt_cidr = self.vpc_service.get_vpc_cidr(ec2_session=ec2_session, vpc_id=management_vpc_id)
+
+        # add route in management route table to the new sandbox vpc
+        mgmt_rt = self.route_table_service.get_main_route_table(ec2_session=ec2_session, vpc_id=management_vpc_id)
+        self.route_table_service.add_route_to_peered_vpc(route_table=mgmt_rt,
+                                                         target_peering_id=vpc_peer_connection_id,
+                                                         target_vpc_cidr=sandbox_vpc_cidr)
+
+        # add route in sandbox route table to the management vpc
+        sandbox_rt = self.route_table_service.get_main_route_table(ec2_session=ec2_session, vpc_id=vpc_id)
+        self.route_table_service.add_route_to_peered_vpc(route_table=sandbox_rt,
+                                                         target_peering_id=vpc_peer_connection_id,
+                                                         target_vpc_cidr=management_vpc_id)
 
     def _get_or_create_security_group(self, ec2_session, reservation, vpc, management_sg_id):
         sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
@@ -98,8 +129,7 @@ class PrepareConnectivityOperation(object):
 
         return security_group
 
-    def _get_or_create_vpc(self, action, ec2_session, reservation):
-        cidr = self._extract_cidr(action)
+    def _get_or_create_vpc(self, cidr, ec2_session, reservation):
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
                                                         reservation_id=reservation.reservation_id)
         if not vpc:
