@@ -8,7 +8,6 @@ from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import 
 class TestDeployOperation(TestCase):
     def setUp(self):
         self.ec2_datamodel = Mock()
-        self.ec2_datamodel.default_storage_size = 1
         self.ec2_session = Mock()
         self.s3_session = Mock()
         self.ec2_serv = Mock()
@@ -28,7 +27,7 @@ class TestDeployOperation(TestCase):
 
     def test_deploy(self):
         ami_datamodel = Mock()
-        ami_datamodel.storage_size = None
+        ami_datamodel.storage_size = 30
         ami_datamodel.inbound_ports = "80"
         ami_datamodel.outbound_ports = None
         ami_datamodel.add_public_ip = None
@@ -45,8 +44,7 @@ class TestDeployOperation(TestCase):
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
         self.assertEqual(res.vm_name, 'my name')
-        self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider_resource)
-        self.assertEqual(res.auto_power_on, ami_datamodel.auto_power_on)
+        self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider)
         self.assertEqual(res.auto_power_off, ami_datamodel.auto_power_off)
         self.assertEqual(res.wait_for_ip, ami_datamodel.wait_for_ip)
         self.assertEqual(res.auto_delete, ami_datamodel.auto_delete)
@@ -71,32 +69,31 @@ class TestDeployOperation(TestCase):
 
     def test_get_block_device_mappings_not_defaults(self):
         ami = Mock()
-        ami.device_name = 'name'
+        ami.root_volume_name = 'name'
         ami.storage_size = '0'
         ami.delete_on_termination = True
         ami.storage_type = 'type'
         res = self.deploy_operation._get_block_device_mappings(ami, Mock())
-        self.assertEqual(res[0]['DeviceName'], ami.device_name)
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ami.storage_size)
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ami.delete_on_termination)
         self.assertEqual(res[0]['Ebs']['VolumeType'], ami.storage_type)
 
     def test_get_block_device_mappings_defaults(self):
         ec_model = Mock()
-        ec_model.device_name = 'name'
-        ec_model.default_storage_size = '0'
         ec_model.delete_on_termination = True
-        ec_model.default_storage_type = 'type'
+
         ami = Mock()
-        ami.device_name = ''
-        ami.storage_size = ''
+        ami.root_volume_name = 'name'
+        ami.storage_size = 30
         ami.delete_on_termination = None
         ami.storage_type = ''
         res = self.deploy_operation._get_block_device_mappings(ami, ec_model)
-        self.assertEqual(res[0]['DeviceName'], ec_model.device_name)
-        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ec_model.default_storage_size)
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
+        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
-        self.assertEqual(res[0]['Ebs']['VolumeType'], ec_model.default_storage_type)
+        self.assertTrue(res[0]['Ebs']['VolumeType'] is not None, "Volume type should not be empty.")
+
 
     def test_create_deployment_parameters_no_ami_id(self):
         ami = Mock()

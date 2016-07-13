@@ -86,8 +86,7 @@ class DeployAMIOperation(object):
 
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
-                            cloud_provider_resource_name=ami_deployment_model.cloud_provider_resource,
-                            auto_power_on=ami_deployment_model.auto_power_on,
+                            cloud_provider_resource_name=ami_deployment_model.cloud_provider,
                             auto_power_off=ami_deployment_model.auto_power_off,
                             wait_for_ip=ami_deployment_model.wait_for_ip,
                             auto_delete=ami_deployment_model.auto_delete,
@@ -187,7 +186,7 @@ class DeployAMIOperation(object):
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.min_count = 1
         aws_model.max_count = 1
-        aws_model.instance_type = ami_deployment_model.instance_type or aws_ec2_resource_model.default_instance_type
+        aws_model.instance_type = self._get_instance_item(ami_deployment_model, aws_ec2_resource_model)
         aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
         aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = key_pair
@@ -199,6 +198,9 @@ class DeployAMIOperation(object):
         self._set_security_group_param(aws_model, reservation, security_group, vpc)
 
         return aws_model
+
+    def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
+        return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
 
     def _set_security_group_param(self, aws_model, reservation, security_group, vpc):
         default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
@@ -213,11 +215,12 @@ class DeployAMIOperation(object):
     def _get_block_device_mappings(ami_rm, aws_ec2_rm):
         block_device_mappings = [
             {
-                'DeviceName': ami_rm.device_name if ami_rm.device_name else aws_ec2_rm.device_name,
+                'DeviceName': ami_rm.root_volume_name if ami_rm.root_volume_name else "/dev/sda1",
+                # will get from server
                 'Ebs': {
-                    'VolumeSize': int(ami_rm.storage_size or aws_ec2_rm.default_storage_size),
+                    'VolumeSize': int(ami_rm.storage_size),
                     'DeleteOnTermination': True,
-                    'VolumeType': ami_rm.storage_type or aws_ec2_rm.default_storage_type
+                    'VolumeType': ami_rm.storage_type
                 }
             }]
         return block_device_mappings

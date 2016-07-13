@@ -25,7 +25,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management VPC ID" Type="String">
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS Management VPC ID" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -46,19 +46,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management VPC CIDR" Type="String">
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="AWS Management SG ID" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Management SG ID" Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Device Name" Type="String">
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Root Volume Name" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -71,12 +65,6 @@
       </Rules>
     </AttributeInfo>
     <AttributeInfo DefaultValue="30" Description="" IsReadOnly="false" Name="Storage Size" Type="Numeric">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="false" Description="" IsReadOnly="false" Name="Auto Power On" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -130,12 +118,6 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Default Instance Type" Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Max Storage IOPS" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
@@ -148,19 +130,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="1500" Description="" IsReadOnly="false" Name="Default Storage IOPS" Type="Numeric">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="30" Description="" IsReadOnly="false" Name="Default Storage Size" Type="Numeric">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Cloud Provider Resource" Type="String">
+    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Cloud Provider" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -207,25 +177,13 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC CIDR">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Management SG ID">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management SG ID">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Management VPC ID">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Device Name">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Management VPC ID">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Keypairs Location">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Default Storage Size">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Default Storage IOPS">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Max Storage Size">
@@ -240,16 +198,13 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Secret Access Key">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Default Instance Type">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Networks In Use">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Instance Type">
+              <AllowedValues />
+            </AttachedAttribute>
           </AttachedAttributes>
-          <AttributeValues>
-            <AttributeValue Name="Device Name" Value="/dev/sda1" />
-          </AttributeValues>
           <ParentModels />
           <Drivers>
             <DriverName>AWS Shell Driver</DriverName>
@@ -312,7 +267,7 @@
       <Models>
         <ResourceModel Description="" Name="AWS EC2 Instance" SupportsConcurrentCommands="false">
           <AttachedAttributes>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider Resource" UserInput="true">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
@@ -333,9 +288,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Outbound Ports" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power On" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power Off" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -351,15 +303,17 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for Credentials" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Public IP" UserInput="false">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Public IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Elastic IP" UserInput="false">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Elastic IP" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
           <AttributeValues>
-            <AttributeValue Name="Auto Power On" Value="true"/>
             <AttributeValue Name="Auto Power Off" Value="true"/>
             <AttributeValue Name="Auto Delete" Value="true"/>
             <AttributeValue Name="Autoload" Value="true"/>

@@ -35,8 +35,8 @@ class PrepareConnectivityOperation(object):
         :param request: Parsed prepare connectivity request
         :return:
         """
-        if not aws_ec2_datamodel.management_vpc_id:
-            raise ValueError('Management VPC ID must be set!')
+        if not aws_ec2_datamodel.aws_management_vpc_id:
+            raise ValueError('AWS Management VPC ID must be set!')
 
         self._create_key_pair(ec2_session=ec2_session,
                               s3_session=s3_session,
@@ -50,12 +50,12 @@ class PrepareConnectivityOperation(object):
 
                 self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
-                self._peer_vpcs(ec2_session, aws_ec2_datamodel.management_vpc_id, vpc.id)
+                self._peer_vpcs(ec2_session, aws_ec2_datamodel.aws_management_vpc_id, vpc.id)
 
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
                                                                     reservation=reservation,
                                                                     vpc=vpc,
-                                                                    management_sg_id=aws_ec2_datamodel.management_sg_id)
+                                                                    management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
 
                 results.append(self._create_action_result(action, security_group, vpc))
 
