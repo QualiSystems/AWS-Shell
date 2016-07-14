@@ -101,7 +101,9 @@ class TestVPCService(TestCase):
         peered.accept = Mock(side_effect=change_to_active(peered))
         self.ec2_session.create_vpc_peering_connection = Mock(return_value=peered)
 
-        res = self.vpc_service.peer_vpcs(self.ec2_session, vpc1, vpc2)
+        reservation_model = Mock()
+
+        res = self.vpc_service.peer_vpcs(self.ec2_session, vpc1, vpc2, reservation_model)
 
         self.assertTrue(self.ec2_session.create_vpc_peering_connection.called_with(vpc1, vpc2))
         self.assertEquals(peered.status['Code'], VpcPeeringConnectionWaiter.ACTIVE)
