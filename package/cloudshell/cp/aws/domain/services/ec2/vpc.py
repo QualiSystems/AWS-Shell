@@ -77,7 +77,7 @@ class VPCService(object):
         # set tags on peering connection
         tags = self.tag_service.get_default_tags(self._get_peering_connection_name(reservation_model),
                                                  reservation_model)
-        self.tag_service.set_ec2_resource_tags(vpc_peer_connection, tags)
+        ec2_session.create_tags(Resources=[vpc_peer_connection.id], Tags=tags)
 
         # wait until pending acceptance
         self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
@@ -130,7 +130,7 @@ class VPCService(object):
         :param vpc:
         :param reservation: reservation model
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
-        :return:
+        :return: returns the IG id
         """
         internet_gateway = ec2_session.create_internet_gateway()
 
@@ -144,6 +144,8 @@ class VPCService(object):
                 tags=tags)
 
         vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
+
+        return internet_gateway.id
 
     def remove_all_peering(self, vpc):
         """

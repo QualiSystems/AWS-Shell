@@ -50,6 +50,7 @@ class AWSShell(object):
         self.vpc_peering_waiter = VpcPeeringConnectionWaiter()
         self.key_pair_service = KeyPairService(self.s3_service)
         self.vpc_waiter = VPCWaiter()
+        self.route_tables_service = RouteTablesService()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -62,7 +63,7 @@ class AWSShell(object):
                                          security_group_service=self.security_group_service,
                                          key_pair_service=self.key_pair_service,
                                          tag_service=self.tag_service,
-                                         route_table_service=RouteTablesService())
+                                         route_table_service=self.route_tables_service)
 
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
@@ -80,7 +81,8 @@ class AWSShell(object):
                                                        security_group_service=self.security_group_service)
 
         self.clean_up_operation = CleanupConnectivityOperation(vpc_service=self.vpc_service,
-                                                               key_pair_service=self.key_pair_service)
+                                                               key_pair_service=self.key_pair_service,
+                                                               route_table_service=self.route_tables_service)
 
         self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
 
@@ -94,7 +96,7 @@ class AWSShell(object):
         s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
         result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
                                                  s3_session=s3_session,
-                                                 bucket_name=aws_ec2_resource_model.key_pairs_location,
+                                                 aws_ec2_data_model=aws_ec2_resource_model,
                                                  reservation_id=command_context.reservation.reservation_id)
 
         return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})

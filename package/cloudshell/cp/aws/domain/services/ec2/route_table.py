@@ -28,7 +28,6 @@ class RouteTablesService(object):
 
     def add_route_to_peered_vpc(self, route_table, target_peering_id, target_vpc_cidr):
         """
-
         :param route_table: RouteTable ec2 object
         :param str target_peering_id: VPC Peering Connection Id for the route target
         :param str target_vpc_cidr: CIDR block for the route destination
@@ -36,9 +35,37 @@ class RouteTablesService(object):
         """
         route_table.create_route(DestinationCidrBlock=target_vpc_cidr, VpcPeeringConnectionId=target_peering_id)
 
+    def add_route_to_internet_gateway(self, route_table, target_internet_gateway_id):
+        """
+        :param route_table: RouteTable ec2 object
+        :param str target_internet_gateway_id: Id for the route target
+        :param str target_vpc_cidr: CIDR block for the route destination
+        :return:
+        """
+        route_table.create_route(GatewayId=target_internet_gateway_id, DestinationCidrBlock='0.0.0.0/0')
 
+    def find_first_route(self, route_table, filters):
+        """
+        :param route_table:
+        :param dict filters:
+        :return: return a route object
+        """
+        for route in route_table.routes:
+            all_filter_ok = True
+            for key in filters:
+                if not(hasattr(route, key) and getattr(route, key) == filters[key]):
+                    all_filter_ok = False
+                    break
+            if all_filter_ok:
+                return route
+        return None
 
-
-
-
-
+    def delete_blackhole_routes(self, route_table):
+        """
+        Removes all routes in in route_table that have status blackhole
+        :param route_table:
+        :return:
+        """
+        for route in route_table.routes:
+            if route.state == 'blackhole':
+                route.delete()
