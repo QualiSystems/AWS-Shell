@@ -44,7 +44,8 @@ class AWSModelsParser(object):
         deployment_resource_model.security_group_ids = data_holder.ami_params.security_group_ids
         deployment_resource_model.private_ip_address = data_holder.ami_params.private_ip_address
         deployment_resource_model.root_volume_name = data_holder.ami_params.root_volume_name
-        deployment_resource_model.delete_on_termination = AWSModelsParser.convert_to_bool(data_holder.ami_params.delete_on_termination)
+        deployment_resource_model.delete_on_termination = AWSModelsParser.convert_to_bool(
+            data_holder.ami_params.delete_on_termination)
         deployment_resource_model.auto_power_off = \
             AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_power_off)
         deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_ip)
@@ -69,3 +70,36 @@ class AWSModelsParser(object):
         if isinstance(string, bool):
             return string
         return string in ['true', 'True', '1']
+
+    @staticmethod
+    def get_public_ip_from_connected_resource_details(resource_context):
+        public_ip_on_resource = ""
+        public_ip = 'Public IP'
+        if resource_context.remote_endpoints is not None and public_ip in resource_context.remote_endpoints[
+            0].attributes:
+            public_ip_on_resource = resource_context.remote_endpoints[0].attributes[public_ip]
+        return public_ip_on_resource
+
+    @staticmethod
+    def get_private_ip_from_connected_resource_details(resource_context):
+        private_ip_on_resource = ""
+        if resource_context.remote_endpoints is not None:
+            private_ip_on_resource = resource_context.remote_endpoints[0].address
+        return private_ip_on_resource
+
+    @staticmethod
+    def try_get_deployed_connected_resource_instance_id(resource_context):
+        try:
+            deployed_instance_id = str(
+                jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
+                    'uid'])
+        except Exception as e:
+            raise ValueError('Could not find an ID of the AWS Deployed instance' + e.message)
+        return deployed_instance_id
+
+    @staticmethod
+    def get_connectd_resource_fullname(resource_context):
+        if resource_context.remote_endpoints[0]:
+            return resource_context.remote_endpoints[0].fullname
+        else:
+            raise ValueError('Could not find resource fullname on the deployed app.')
