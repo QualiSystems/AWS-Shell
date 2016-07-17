@@ -34,7 +34,13 @@ class TestCleanupConnectivity(TestCase):
         self.assertTrue(self.vpc_serv.remove_all_security_groups.called_with(vpc))
         self.assertTrue(self.vpc_serv.remove_all_subnets.called_with(vpc))
         self.assertTrue(self.vpc_serv.remove_all_peering.called_with(vpc))
+
+        self.assertTrue(self.route_table_service.get_main_route_table.called_with(self.ec2_session,
+                                                                  self.aws_ec2_data_model.aws_management_vpc_id))
+        self.assertTrue(self.route_table_service.delete_blackhole_routes.called)
+
         self.assertTrue(self.vpc_serv.delete_vpc.called_with(vpc))
+
 
     def test_cleanup_no_vpc(self):
         vpc_serv = Mock()
