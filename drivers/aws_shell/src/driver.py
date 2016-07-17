@@ -1,3 +1,4 @@
+from cloudshell.shell.core.driver_context import AutoLoadDetails
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 
 from cloudshell.cp.aws.aws_shell import AWSShell
@@ -30,7 +31,8 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def remote_refresh_ip(self, context, ports, cancellation_context):
-        pass
+        return self.aws_shell.refresh_ip(context)
+
 
     def destroy_vm_only(self, context, ports):
         return self.aws_shell.delete_ami(context)
@@ -50,4 +52,4 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.get_application_ports(context)
 
     def get_inventory(self, context):
-        pass
+        return AutoLoadDetails([], [])
