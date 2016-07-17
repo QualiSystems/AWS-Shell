@@ -1,7 +1,6 @@
-
-
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
+    PEERING_CONNECTION = "Peering connection for {0} with management vpc"
 
     def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service):
         """
@@ -59,7 +58,7 @@ class VPCService(object):
 
         return vpcs[0]
 
-    def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2):
+    def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2, reservation_model):
         """
         Will create a peering request between 2 vpc's and approve it
         :param ec2_session: EC2 session
@@ -67,9 +66,18 @@ class VPCService(object):
         :type vpc_id1: str
         :param vpc_id2: VPC Id
         :type vpc_id2: str
+        :param reservation_model:
+        :type reservation_model: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :return: vpc peering id
         """
+
+        # create peering connection
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
+
+        # set tags on peering connection
+        tags = self.tag_service.get_default_tags(self._get_peering_connection_name(reservation_model),
+                                                 reservation_model)
+        ec2_session.create_tags(Resources=[vpc_peer_connection.id], Tags=tags)
 
         # wait until pending acceptance
         self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
@@ -80,6 +88,18 @@ class VPCService(object):
         self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.ACTIVE)
 
         return vpc_peer_connection.id
+
+    def get_peering_connection_by_reservation_id(self, ec2_session, reservation_id):
+        """
+        :param ec2_session:
+        :param str reservation_id:
+        :return:
+        """
+        return list(ec2_session.vpc_peering_connections.filter(Filters=[{'Name': 'tag:ReservationId',
+                                                                         'Values': [reservation_id]}]))
+
+    def _get_peering_connection_name(self, reservation_model):
+        return self.PEERING_CONNECTION.format(reservation_model.reservation_id)
 
     def _set_tags(self, vpc_name, reservation, vpc):
         tags = self.tag_service.get_default_tags(vpc_name, reservation)
@@ -110,7 +130,7 @@ class VPCService(object):
         :param vpc:
         :param reservation: reservation model
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
-        :return:
+        :return: returns the IG id
         """
         internet_gateway = ec2_session.create_internet_gateway()
 
@@ -124,6 +144,8 @@ class VPCService(object):
                 tags=tags)
 
         vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
+
+        return internet_gateway.id
 
     def remove_all_peering(self, vpc):
         """
@@ -172,3 +194,7 @@ class VPCService(object):
         """
         vpc.delete()
         return True
+
+    def get_vpc_cidr(self, ec2_session, vpc_id):
+        vpc = ec2_session.Vpc(vpc_id)
+        return vpc.cidr_block
