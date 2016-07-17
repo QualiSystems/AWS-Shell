@@ -37,11 +37,6 @@ class AWSShellDriver(ResourceDriverInterface):
     def destroy_vm_only(self, context, ports):
         return self.aws_shell.delete_ami(context)
 
-    def ApplyConnectivityChanges(self, context, request):
-        raise DeprecationWarning('AWS EC2 Apps don\'t support this type of connectivity. '
-                                 'All AWS EC2 Apps in the same Sandbox are on the same isolated subnet '
-                                 'and can interact with each other')
-
     def PrepareConnectivity(self, context, request):
         return self.aws_shell.prepare_connectivity(context, request)
 
