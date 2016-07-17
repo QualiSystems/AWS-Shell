@@ -1,6 +1,7 @@
 import jsonpickle
 
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
+from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
@@ -228,7 +229,7 @@ class AWSShell(object):
 
     def refresh_ip(self, resource_context):
 
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
+
 
         # Get private ip on deployed resource
         private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(resource_context)
