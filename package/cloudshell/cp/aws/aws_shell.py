@@ -1,5 +1,6 @@
 import jsonpickle
 
+from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
@@ -69,6 +70,8 @@ class AWSShell(object):
                                                        vpc_service=self.vpc_service,
                                                        key_pair_service=self.key_pair_service,
                                                        subnet_service=self.subnet_service)
+
+        self.refresh_ip_operation = RefreshIpOperation()
 
         self.power_management_operation = PowerOperation(instance_service=self.instance_service,
                                                          instance_waiter=self.ec2_instance_waiter)
@@ -222,40 +225,32 @@ class AWSShell(object):
 
     def refresh_ip(self, resource_context):
 
-        # Get private ip on deployed resource
+        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
 
-        private_ip_on_resource = ""
-        if resource_context.remote_endpoints is not None:
-            private_ip_on_resource = resource_context.remote_endpoints[0].address
+        # Get private ip on deployed resource
+        private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(resource_context)
 
         # Get Public IP on deployed resource
+        public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(resource_context)
 
-        public_ip_on_resource = ""
-        public_ip = 'Public IP'
-        if resource_context.remote_endpoints is not None and \
-                        public_ip in resource_context.remote_endpoints[0].attributes:
-            public_ip_on_resource = resource_context.remote_endpoints[0].attributes[public_ip]
-
-        try:
-            deployed_instance_id = str(jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails']['uid'])
-        except Exception as e:
-            raise ValueError('Could not find an ID of the AWS Deployed instance' + e.message)
+        deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(resource_context)
 
         cloudshell_session = self.cloudshell_session_helper.get_session(resource_context.connectivity.server_address,
                                                                         resource_context.connectivity.admin_auth_token,
                                                                         resource_context.remote_reservation.domain)
 
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
 
-        deployed_instance = ec2_session.Instance(deployed_instance_id)
-        public_ip_on_aws = deployed_instance.public_ip_address
-        private_ip_on_aws = deployed_instance.private_ip_address
+        resource_fullname = AWSModelsParser.get_connectd_resource_fullname(resource_context)
 
-        resource_fullname = resource_context.remote_endpoints[0].fullname
-        if public_ip_on_aws != public_ip_on_resource:
-            cloudshell_session.SetAttributeValue(resource_fullname, "Public IP",
-                                                 public_ip_on_aws if public_ip_on_aws is not None else "")
+        self.refresh_ip_operation.refresh_ip(cloudshell_session=cloudshell_session,
+                                             ec2_session=ec2_session,
+                                             deployed_instance_id=deployed_instance_id,
+                                             private_ip_on_resource=private_ip_on_resource,
+                                             public_ip_on_resource=public_ip_on_resource,
+                                             resource_fullname=resource_fullname)
 
-        if private_ip_on_aws != private_ip_on_resource:
-            cloudshell_session.UpdateResourceAddress(resource_fullname, private_ip_on_aws)
+
+
+
+
