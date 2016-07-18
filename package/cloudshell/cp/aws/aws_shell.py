@@ -229,9 +229,6 @@ class AWSShell(object):
         return self.command_result_parser.set_command_result(deploy_data)
 
     def refresh_ip(self, resource_context):
-
-
-
         # Get private ip on deployed resource
         private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(resource_context)
 
@@ -255,8 +252,3 @@ class AWSShell(object):
                                              private_ip_on_resource=private_ip_on_resource,
                                              public_ip_on_resource=public_ip_on_resource,
                                              resource_fullname=resource_fullname)
-
-
-
-
-
