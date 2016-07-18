@@ -53,6 +53,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.cloud_provider = resource.attributes['Cloud Provider']
         deployedResource.storage_iops = resource.attributes['Storage IOPS']
         deployedResource.storage_size = resource.attributes['Storage Size']
+        deployedResource.storage_size = resource.attributes['Storage Type']
         deployedResource.instance_type = resource.attributes['Instance Type']
         deployedResource.auto_power_off = resource.attributes['Auto Power Off']
         deployedResource.wait_for_ip = resource.attributes['Wait for IP']

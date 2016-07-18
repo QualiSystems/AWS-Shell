@@ -62,7 +62,8 @@ class DeployAMIOperation(object):
                                                                   reservation=reservation,
                                                                   vpc=vpc)
 
-        ami_deployment_info = self._create_deployment_parameters(aws_ec2_resource_model=aws_ec2_cp_resource_model,
+        ami_deployment_info = self._create_deployment_parameters(ec2_session=ec2_session,
+                                                                 aws_ec2_resource_model=aws_ec2_cp_resource_model,
                                                                  ami_deployment_model=ami_deployment_model,
                                                                  vpc=vpc,
                                                                  security_group=security_group,
@@ -157,6 +158,7 @@ class DeployAMIOperation(object):
         return security_group
 
     def _create_deployment_parameters(self,
+                                      ec2_session,
                                       aws_ec2_resource_model,
                                       ami_deployment_model,
                                       vpc,
@@ -164,6 +166,7 @@ class DeployAMIOperation(object):
                                       key_pair,
                                       reservation):
         """
+        :param ec2_session:
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
         :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
@@ -180,12 +183,14 @@ class DeployAMIOperation(object):
         if not ami_deployment_model.aws_ami_id:
             raise ValueError('AWS Image Id cannot be empty')
 
+        image = ec2_session.Image(ami_deployment_model.aws_ami_id)
+
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.min_count = 1
         aws_model.max_count = 1
         aws_model.instance_type = self._get_instance_item(ami_deployment_model, aws_ec2_resource_model)
         aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
-        aws_model.block_device_mappings = self._get_block_device_mappings(ami_deployment_model, aws_ec2_resource_model)
+        aws_model.block_device_mappings = self._get_block_device_mappings(image, ami_deployment_model, aws_ec2_resource_model)
         aws_model.aws_key = key_pair
         aws_model.add_public_ip = ami_deployment_model.add_public_ip
 
@@ -209,17 +214,56 @@ class DeployAMIOperation(object):
             aws_model.security_group_ids.append(security_group.group_id)
 
     @staticmethod
-    def _get_block_device_mappings(ami_rm, aws_ec2_rm):
-        block_device_mappings = [
-            {
-                'DeviceName': ami_rm.root_volume_name if ami_rm.root_volume_name else "/dev/sda1",
-                # will get from server
+    def _get_block_device_mappings(image, ami_deployment_model, aws_ec2_resource_model):
+        """
+        :param image: A resource representing an EC2 image
+        :param aws_ec2_resource_model: The resource model of the AMI deployment option
+        :type aws_ec2_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
+        :param ami_deployment_model: The resource model on which the AMI will be deployed on
+        :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
+        :return:
+        """
+
+        # find the root device default settings
+        root_device = filter(lambda x: x['DeviceName'] == image.root_device_name , image.block_device_mappings)[0]
+
+        # get storage size
+        storage_size = ami_deployment_model.storage_size
+        if not ami_deployment_model.storage_size:
+            storage_size = root_device['VolumeSize']
+        if aws_ec2_resource_model.max_storage_size and storage_size > aws_ec2_resource_model.max_storage_size:
+            raise ValueError("Storage size is bigger than the max allowed storage size of {0}"
+                             .format(aws_ec2_resource_model.max_storage_size))
+
+        # get storage type
+        storage_type = ami_deployment_model.storage_type
+        if not storage_type:
+            storage_type = root_device['VolumeType']
+
+        # create mappings obj
+        block_device_mappings = [{
+                'DeviceName': ami_deployment_model.root_volume_name if ami_deployment_model.root_volume_name else image.root_device_name,
                 'Ebs': {
-                    'VolumeSize': int(ami_rm.storage_size),
+                    'VolumeSize': int(storage_size),
                     'DeleteOnTermination': True,
-                    'VolumeType': ami_rm.storage_type
+                    'VolumeType': storage_type,
                 }
             }]
+
+        # add iops if needed - storage_iops is required for requests to create io1 volumes only
+        if storage_type == 'io1':
+            storage_iops = ami_deployment_model.storage_iops
+            if not ami_deployment_model.storage_iops:
+                if 'Iops' in root_device:
+                    storage_iops = root_device['Iops']
+                else:
+                    storage_iops = '1500'
+            if aws_ec2_resource_model.max_storage_iops and storage_iops > aws_ec2_resource_model.max_storage_iops:
+                raise ValueError("Storage IOPS is bigger than the max allowed storage IOPS of {0}"
+                                 .format(aws_ec2_resource_model.max_storage_iops))
+
+            block_device_mappings[0]['Ebs']['Iops'] = storage_iops
+
         return block_device_mappings
 
     def _set_elastic_ip(self, ec2_session, instance, ami_deployment_model):
