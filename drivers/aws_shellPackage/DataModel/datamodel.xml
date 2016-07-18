@@ -175,7 +175,15 @@
         <ResourceModel Description="" ImagePath="AWS.png" Name="AWS EC2" SupportsConcurrentCommands="true">
           <AttachedAttributes>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
-              <AllowedValues />
+              <AllowedValues>
+                <AllowedValue>us-east-1</AllowedValue>
+                <AllowedValue>us-west-2</AllowedValue>
+                <AllowedValue>ap-southeast-1</AllowedValue>
+                <AllowedValue>ap-southeast-2</AllowedValue>
+                <AllowedValue>ap-northeast-1</AllowedValue>
+                <AllowedValue>eu-central-1</AllowedValue>
+                <AllowedValue>eu-west-1</AllowedValue>
+              </AllowedValues>
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Management SG ID">
               <AllowedValues />
@@ -193,7 +201,7 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Access Key ID">
-              <AllowedValues />
+              <AllowedValues />w
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Secret Access Key">
               <AllowedValues />
@@ -205,6 +213,9 @@
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
+          <AttributeValues>
+            <AttributeValue Name="Region" Value="us-east-1" />
+          </AttributeValues>
           <ParentModels />
           <Drivers>
             <DriverName>AWS Shell Driver</DriverName>
