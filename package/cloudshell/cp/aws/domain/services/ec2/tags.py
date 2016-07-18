@@ -34,6 +34,12 @@ class TagService(object):
         tags.append(self._get_kvp(TagNames.Isolation, isolation))
         return tags
 
+    def find_isolation_tag_value(self, tags):
+        for tag in tags:
+            if tag['Key'] == TagNames.Isolation:
+                return tag['Value']
+        return None
+
     def get_default_tags(self, name, reservation):
         """
         returns the default tags of a resource. Name,reservationId,createdBy
