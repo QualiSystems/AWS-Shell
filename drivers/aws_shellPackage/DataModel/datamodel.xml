@@ -201,7 +201,7 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Access Key ID">
-              <AllowedValues />w
+              <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Secret Access Key">
               <AllowedValues />
