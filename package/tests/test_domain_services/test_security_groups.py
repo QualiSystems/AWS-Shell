@@ -133,3 +133,17 @@ class TestSecurityGroups(TestCase):
             sg.security_group.authorize_egress.called_with([self.sg_service.get_ip_permission_object(port_data_out)]))
         self.assertTrue(
             sg.security_group.authorize_ingress.called_with([self.sg_service.get_ip_permission_object(port_data_in)]))
+
+    def test_remove_allow_all_outbound_rule(self):
+        sg = Mock()
+        self.sg_service.remove_allow_all_outbound_rule(security_group=sg)
+        sg.revoke_egress.assert_called_with(IpPermissions=[{
+            'IpProtocol': '-1',
+            'FromPort': 0,
+            'ToPort': 65535,
+            'IpRanges': [
+                {
+                    'CidrIp': '0.0.0.0/0'
+                }
+            ]
+        }])
