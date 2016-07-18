@@ -127,12 +127,7 @@ class DeployAMIOperation(object):
     def _get_name_from_tags(result):
         return [tag['Value'] for tag in result.tags if tag['Key'] == 'Name'][0]
 
-    def _create_security_group_for_instance(self,
-                                            ami_deployment_model,
-                                            ec2_session,
-                                            reservation,
-                                            vpc):
-
+    def _create_security_group_for_instance(self, ami_deployment_model, ec2_session, reservation, vpc):
         if not ami_deployment_model.inbound_ports and not ami_deployment_model.outbound_ports:
             return None
 
@@ -156,6 +151,8 @@ class DeployAMIOperation(object):
         self.security_group_service.set_security_group_rules(security_group=security_group,
                                                              inbound_ports=inbound_ports,
                                                              outbound_ports=outbound_ports)
+        if outbound_ports:
+            self.security_group_service.remove_allow_all_outbound_rule(security_group=security_group)
 
         return security_group
 

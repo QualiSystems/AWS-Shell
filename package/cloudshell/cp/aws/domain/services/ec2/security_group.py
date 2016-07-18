@@ -105,6 +105,18 @@ class SecurityGroupService(object):
             ip_permissions = [self.get_ip_permission_object(port) for port in inbound_ports if port is not None]
             security_group.authorize_ingress(IpPermissions=ip_permissions)
 
+    def remove_allow_all_outbound_rule(self, security_group):
+        security_group.revoke_egress(IpPermissions=[{
+            'IpProtocol': '-1',
+            'FromPort': 0,
+            'ToPort': 65535,
+            'IpRanges': [
+                {
+                    'CidrIp': '0.0.0.0/0'
+                }
+            ]
+        }])
+
     @staticmethod
     def get_ip_permission_object(port_data):
         return {

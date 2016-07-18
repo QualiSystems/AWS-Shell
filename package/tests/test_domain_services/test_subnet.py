@@ -17,10 +17,15 @@ class TestSubnetService(TestCase):
         self.subnet_srv = SubnetService(self.tag_srv, self.subnet_waiter)
 
     def test_create_subnet_for_vpc(self):
-        subnet = self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.reservation_id)
-        self.assertTrue(self.vpc.create_subnet.called_with(self.cidr))
-        self.assertTrue(self.subnet_waiter.wait.called_with(subnet, 'available'))
-        self.assertTrue(self.tag_srv.get_default_tags.called_with(self.vpc_name, self.reservation_id))
+        subnet = Mock()
+        self.vpc.create_subnet = Mock(return_value=subnet)
+        self.subnet_srv._get_subnet_name=Mock(return_value=self.vpc_name)
+
+        self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.reservation_id)
+
+        self.vpc.create_subnet.assert_called_with(CidrBlock=self.cidr)
+        self.subnet_waiter.wait.assert_called_with(subnet, self.subnet_waiter.AVAILABLE)
+        self.tag_srv.get_default_tags.assert_called_with(self.vpc_name, self.reservation_id)
         self.assertEqual(subnet, self.vpc.create_subnet())
 
     def test_get_subnet_from_vpc(self):
@@ -41,3 +46,7 @@ class TestSubnetService(TestCase):
         res = self.subnet_srv.detele_subnet(subnet)
         self.assertTrue(res)
         self.assertTrue(subnet.delete.called)
+
+    def test_get_subnet_name(self):
+        subnet_name = self.subnet_srv._get_subnet_name('some_subnet')
+        self.assertEquals(subnet_name, 'VPC Name: some_subnet')
