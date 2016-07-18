@@ -29,12 +29,16 @@ class TestDeployOperation(TestCase):
         ami_datamodel = Mock()
         ami_datamodel.storage_size = 30
         ami_datamodel.inbound_ports = "80"
-        ami_datamodel.outbound_ports = None
+        ami_datamodel.outbound_ports = "20"
         ami_datamodel.add_public_ip = None
         ami_datamodel.add_elastic_ip = None
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.ec2_serv.create_instance = Mock(return_value=instance)
+        sg = Mock()
+        self.security_group_service.create_security_group = Mock(return_value=sg)
+
+        # act
         res = self.deploy_operation.deploy(self.ec2_session,
                                            self.s3_session,
                                            'my name',
@@ -43,6 +47,7 @@ class TestDeployOperation(TestCase):
                                            ami_datamodel)
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
+        # assert
         self.assertEqual(res.vm_name, 'my name')
         self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider)
         self.assertEqual(res.auto_power_off, ami_datamodel.auto_power_off)
@@ -57,15 +62,17 @@ class TestDeployOperation(TestCase):
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
-            self.security_group_service.create_security_group()),
-            self.tag_service.get_security_group_tags())
+                self.security_group_service.create_security_group()),
+                self.tag_service.get_security_group_tags())
 
         self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
                                                        instance.key_pair.key_name,
                                                        self.key_pair.FILE_SYSTEM))
 
         self.assertTrue(self.security_group_service.set_security_group_rules.called_with(
-            ami_datamodel, self.security_group_service.create_security_group()))
+                ami_datamodel, self.security_group_service.create_security_group()))
+
+        self.security_group_service.remove_allow_all_outbound_rule.assert_called_with(security_group=sg)
 
     def test_get_block_device_mappings_not_defaults(self):
         ami = Mock()
@@ -93,7 +100,6 @@ class TestDeployOperation(TestCase):
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
         self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
         self.assertTrue(res[0]['Ebs']['VolumeType'] is not None, "Volume type should not be empty.")
-
 
     def test_create_deployment_parameters_no_ami_id(self):
         ami = Mock()
