@@ -195,8 +195,8 @@ class AWSShell(object):
 
         result = False
         try:
-            # result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
-            result = self.delete_ami_operation.delete_instance(ec2_session, "i-0a93e3a1da79f0281")
+            result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
+
 
         except ClientError as clientErr:
             error = 'Error'
