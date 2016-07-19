@@ -301,6 +301,7 @@
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Type" UserInput="false">
               <AllowedValues>
+                <AllowedValue>auto</AllowedValue>
                 <AllowedValue>gp2</AllowedValue>
                 <AllowedValue>io1</AllowedValue>
                 <AllowedValue>st1</AllowedValue>
@@ -346,7 +347,7 @@
             <AttributeValue Name="Wait for IP" Value="false"/>
             <AttributeValue Name="Wait for Credentials" Value="true"/>
             <AttributeValue Name="Add Public IP" Value="false"/>
-            <AttributeValue Name="Storage Type" Value="standard"/>
+            <AttributeValue Name="Storage Type" Value="auto"/>
           </AttributeValues>
           <ParentModels />
           <Drivers>

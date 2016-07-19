@@ -128,7 +128,7 @@ class TestDeployOperation(TestCase):
         ami.root_volume_name = 'name'
         ami.storage_size = 0
         ami.storage_iops = 0
-        ami.storage_type = ''
+        ami.storage_type = 'auto'
 
         image = Mock()
         image.root_device_name = '/sda'
@@ -136,7 +136,7 @@ class TestDeployOperation(TestCase):
                        'Ebs': {
                            'VolumeSize': '40',
                            'VolumeType': 'io1',
-                           'Iops': '240'
+                           'Iops': '240',
                        }}
         image.block_device_mappings = [root_device]
 
@@ -150,7 +150,7 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res[0]['Ebs']['VolumeType'], 'io1')
         self.assertEqual(res[0]['Ebs']['Iops'], 240)
 
-    def test_get_block_device_mappings_from_ami(self):
+    def test_get_block_device_mappings_from_app(self):
         ec_model = Mock()
         ec_model.max_storage_size = 0
         ec_model.max_storage_iops = 0
@@ -176,7 +176,7 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res[0]['Ebs']['VolumeType'], 'standart')
         self.assertFalse('Iops' in res[0]['Ebs'])
 
-    def test_get_block_device_mappings_from_ami_with_iops(self):
+    def test_get_block_device_mappings_from_app_with_iops(self):
         ec_model = Mock()
         ec_model.max_storage_size = 0
         ec_model.max_storage_iops = 0

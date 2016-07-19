@@ -235,7 +235,7 @@ class DeployAMIOperation(object):
 
         # get storage type
         storage_type = ami_deployment_model.storage_type
-        if not storage_type:
+        if not storage_type or storage_type.lower() == 'auto':
             storage_type = root_device['Ebs']['VolumeType']
 
         # create mappings obj
