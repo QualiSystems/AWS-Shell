@@ -1,4 +1,6 @@
+import botocore
 import jsonpickle
+from botocore.exceptions import ClientError
 
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
@@ -190,7 +192,23 @@ class AWSShell(object):
 
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
+
+        result = False
+        try:
+            # result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
+            result = self.delete_ami_operation.delete_instance(ec2_session, "i-0a93e3a1da79f0281")
+
+        except ClientError as clientErr:
+            is_malformed_ = 'Error' in clientErr.response and \
+                            'Code' in clientErr.response['Error'] and \
+                            clientErr.response['Error']['Code'] == 'InvalidInstanceID.Malformed'
+
+            if not is_malformed_:
+                raise
+            else:
+                result = True
+        except Exception as e:
+            raise
 
         return self.command_result_parser.set_command_result(result)
 
