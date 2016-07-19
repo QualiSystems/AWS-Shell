@@ -119,10 +119,11 @@ class DeployAMIOperation(object):
                                                                     bucket_name=key_pair_location,
                                                                     reservation_id=reservation.reservation_id)
 
-            ami_credentials = self.credentials_service.get_windows_credentials(instance=instance,
+            return self.credentials_service.get_windows_credentials(instance=instance,
                                                                                key_value=key_value,
                                                                                wait_for_password=wait_for_credentials)
-            return ami_credentials
+        else:
+            return self.credentials_service.get_default_linux_credentials()
 
         return None
 
@@ -301,7 +302,8 @@ class DeployAMIOperation(object):
         deployed_app_attr = {}
 
         if ami_credentials:
-            deployed_app_attr['Password'] = ami_credentials.password
+            if ami_credentials.password:
+                deployed_app_attr['Password'] = ami_credentials.password
             deployed_app_attr['User'] = ami_credentials.user_name
 
         if ami_deployment_model.add_public_ip:

@@ -76,3 +76,6 @@ class InstanceCredentialsService(object):
             # see http://stackoverflow.com/a/931095/309233
             s = s[::-1]
         return s
+
+    def get_default_linux_credentials(self):
+        return AMICredentials('root', '')

@@ -23,3 +23,9 @@ class TestAmiCredentialsService(TestCase):
         res = self.credentials_service.get_windows_credentials(instance, ''.join(self.pem))
         self.assertEquals(self.decrypted, self.credentials_service.decrypt_password(self.pem, self.encrypted), res.password)
         self.assertEquals('Administrator', res.user_name, InstanceCredentialsService.DEFAULT_USER_NAME)
+
+    def test_get_default_linux_credentials(self):
+        cred = self.credentials_service.get_default_linux_credentials()
+
+        self.assertEquals(cred.user_name, 'root')
+        self.assertFalse(cred.password)
