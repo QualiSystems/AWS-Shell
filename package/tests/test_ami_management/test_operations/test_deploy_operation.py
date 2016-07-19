@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 
@@ -37,6 +37,7 @@ class TestDeployOperation(TestCase):
         self.ec2_serv.create_instance = Mock(return_value=instance)
         sg = Mock()
         self.security_group_service.create_security_group = Mock(return_value=sg)
+        self.deploy_operation._get_block_device_mappings = Mock()
 
         # act
         res = self.deploy_operation.deploy(self.ec2_session,
@@ -74,38 +75,140 @@ class TestDeployOperation(TestCase):
 
         self.security_group_service.remove_allow_all_outbound_rule.assert_called_with(security_group=sg)
 
-    def test_get_block_device_mappings_not_defaults(self):
+    def test_get_block_device_mappings_throws_max_storage_error(self):
+        ec_model = Mock()
+        ec_model.max_storage_size = 30
+        ec_model.max_storage_iops = 0
+
         ami = Mock()
         ami.root_volume_name = 'name'
-        ami.storage_size = '0'
-        ami.delete_on_termination = True
-        ami.storage_type = 'type'
-        res = self.deploy_operation._get_block_device_mappings(ami, Mock())
-        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
-        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), ami.storage_size)
-        self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ami.delete_on_termination)
-        self.assertEqual(res[0]['Ebs']['VolumeType'], ami.storage_type)
+        ami.storage_size = 50
+        ami.storage_iops = 0
+        ami.storage_type = ''
 
-    def test_get_block_device_mappings_defaults(self):
+        image = Mock()
+        image.root_device_name = '/sda'
+        root_device = {'DeviceName': image.root_device_name,
+                       'Ebs': {}}
+        image.block_device_mappings = [root_device]
+
+        with self.assertRaisesRegexp(ValueError, 'Requested storage size is bigger than the max allowed storage size of 30'):
+            self.deploy_operation._get_block_device_mappings(image=image,
+                                                             ami_deployment_model=ami,
+                                                             aws_ec2_resource_model=ec_model)
+
+    def test_get_block_device_mappings_throws_max_iops_error(self):
         ec_model = Mock()
-        ec_model.delete_on_termination = True
+        ec_model.max_storage_size = 30
+        ec_model.max_storage_iops = 100
 
         ami = Mock()
         ami.root_volume_name = 'name'
         ami.storage_size = 30
-        ami.delete_on_termination = None
+        ami.storage_iops = 200
+        ami.storage_type = 'io1'
+
+        image = Mock()
+        image.root_device_name = '/sda'
+        root_device = {'DeviceName': image.root_device_name,
+                       'Ebs': {}}
+        image.block_device_mappings = [root_device]
+
+        with self.assertRaisesRegexp(ValueError, 'Requested storage IOPS is bigger than the max allowed storage IOPS of 100'):
+            self.deploy_operation._get_block_device_mappings(image=image,
+                                                             ami_deployment_model=ami,
+                                                             aws_ec2_resource_model=ec_model)
+
+    def test_get_block_device_mappings_from_image(self):
+        ec_model = Mock()
+        ec_model.max_storage_size = 0
+        ec_model.max_storage_iops = 0
+
+        ami = Mock()
+        ami.root_volume_name = 'name'
+        ami.storage_size = 0
+        ami.storage_iops = 0
         ami.storage_type = ''
-        res = self.deploy_operation._get_block_device_mappings(ami, ec_model)
+
+        image = Mock()
+        image.root_device_name = '/sda'
+        root_device = {'DeviceName': image.root_device_name,
+                       'Ebs': {
+                           'VolumeSize': '40',
+                           'VolumeType': 'io1',
+                           'Iops': '240'
+                       }}
+        image.block_device_mappings = [root_device]
+
+        res = self.deploy_operation._get_block_device_mappings(image=image,
+                                                               ami_deployment_model=ami,
+                                                               aws_ec2_resource_model=ec_model)
+
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
+        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(40))
+        self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], True)
+        self.assertEqual(res[0]['Ebs']['VolumeType'], 'io1')
+        self.assertEqual(res[0]['Ebs']['Iops'], 240)
+
+    def test_get_block_device_mappings_from_ami(self):
+        ec_model = Mock()
+        ec_model.max_storage_size = 0
+        ec_model.max_storage_iops = 0
+
+        ami = Mock()
+        ami.root_volume_name = 'name'
+        ami.storage_size = 30
+        ami.storage_type = 'standart'
+
+        image = Mock()
+        image.root_device_name = '/sda'
+        root_device = {'DeviceName': image.root_device_name,
+                       'Ebs': {}}
+        image.block_device_mappings = [root_device]
+
+        res = self.deploy_operation._get_block_device_mappings(image=image,
+                                                               ami_deployment_model=ami,
+                                                               aws_ec2_resource_model=ec_model)
+
         self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
         self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
-        self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], ec_model.delete_on_termination)
-        self.assertTrue(res[0]['Ebs']['VolumeType'] is not None, "Volume type should not be empty.")
+        self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], True)
+        self.assertEqual(res[0]['Ebs']['VolumeType'], 'standart')
+        self.assertFalse('Iops' in res[0]['Ebs'])
+
+    def test_get_block_device_mappings_from_ami_with_iops(self):
+        ec_model = Mock()
+        ec_model.max_storage_size = 0
+        ec_model.max_storage_iops = 0
+
+        ami = Mock()
+        ami.root_volume_name = 'name'
+        ami.storage_size = 30
+        ami.storage_iops = 300
+        ami.storage_type = 'io1'
+
+        image = Mock()
+        image.root_device_name = '/sda'
+        root_device = {'DeviceName': image.root_device_name,
+                       'Ebs': {}}
+        image.block_device_mappings = [root_device]
+
+        res = self.deploy_operation._get_block_device_mappings(image=image,
+                                                               ami_deployment_model=ami,
+                                                               aws_ec2_resource_model=ec_model)
+
+        self.assertEqual(res[0]['DeviceName'], ami.root_volume_name)
+        self.assertEqual(str(res[0]['Ebs']['VolumeSize']), str(30))
+        self.assertEqual(res[0]['Ebs']['DeleteOnTermination'], True)
+        self.assertEqual(res[0]['Ebs']['VolumeType'], 'io1')
+        self.assertEqual(res[0]['Ebs']['Iops'], 300)
 
     def test_create_deployment_parameters_no_ami_id(self):
         ami = Mock()
         ami.aws_ami_id = None
         self.assertRaises(ValueError,
                           self.deploy_operation._create_deployment_parameters,
+                          ec2_session=Mock(),
                           aws_ec2_resource_model=self.ec2_datamodel,
                           ami_deployment_model=ami,
                           vpc=Mock(),
@@ -118,7 +221,10 @@ class TestDeployOperation(TestCase):
         ami.aws_ami_id = 'asd'
         ami.storage_size = '0'
         vpc = Mock()
-        aws_model = self.deploy_operation._create_deployment_parameters(aws_ec2_resource_model=self.ec2_datamodel,
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=Mock(),
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
                                                                         ami_deployment_model=ami,
                                                                         vpc=vpc,
                                                                         security_group=None,

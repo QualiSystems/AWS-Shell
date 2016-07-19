@@ -251,14 +251,16 @@ class DeployAMIOperation(object):
         # add iops if needed - storage_iops is required for requests to create io1 volumes only
         if storage_type == 'io1':
             storage_iops = int(ami_deployment_model.storage_iops)
+
             if not storage_iops:
                 if 'Iops' in root_device['Ebs']:
                     storage_iops = int(root_device['Ebs']['Iops'])
                 else:
                     storage_iops = self._suggested_iops(storage_size) if \
                         self._suggested_iops(storage_size) < self.MAX_IO1_IOPS else self.MAX_IO1_IOPS
-            if int(aws_ec2_resource_model.max_storage_iops) and storage_iops > int(
-                    aws_ec2_resource_model.max_storage_iops):
+
+            if int(aws_ec2_resource_model.max_storage_iops) and storage_iops > \
+                    int(aws_ec2_resource_model.max_storage_iops):
                 raise ValueError("Requested storage IOPS is bigger than the max allowed storage IOPS of {0}"
                                  .format(aws_ec2_resource_model.max_storage_iops))
 
