@@ -199,9 +199,13 @@ class AWSShell(object):
             result = self.delete_ami_operation.delete_instance(ec2_session, "i-0a93e3a1da79f0281")
 
         except ClientError as clientErr:
-            is_malformed_ = 'Error' in clientErr.response and \
-                            'Code' in clientErr.response['Error'] and \
-                            clientErr.response['Error']['Code'] == 'InvalidInstanceID.Malformed'
+            error = 'Error'
+            code = 'Code'
+            malformed = 'InvalidInstanceID.Malformed'
+
+            is_malformed_ = error in clientErr.response and \
+                            code in clientErr.response[error] and \
+                            clientErr.response[error][code] == malformed
 
             if not is_malformed_:
                 raise
