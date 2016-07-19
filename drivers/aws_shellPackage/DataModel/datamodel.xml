@@ -64,7 +64,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="0" Description="The root volume size. The value must be greater then zero or the size of the snapshot used. If left empty the default defined in the image will be used. For example: 30." IsReadOnly="false" Name="Storage Size" Type="Numeric">
+    <AttributeInfo DefaultValue="0" Description="The root volume size. The value must be greater or equal to the size of the root snapshot used. If set to zero the default defined in the image will be used. For example: 30." IsReadOnly="false" Name="Storage Size" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -106,13 +106,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="0" Description="The default number of I/O operations per second that the root volume can support. For Provisioned IOPS (SSD) volumes, you can provision up to 30 IOPS per GiB. If left empty the default in the AMI will be used. For example 240." IsReadOnly="false"  Name="Storage IOPS" Type="Numeric">
+    <AttributeInfo DefaultValue="0" Description="The default number of I/O operations per second that the root volume can support. This parameter is used only for storage of type io1, in which you can provision up to 30 IOPS per GiB. If set to zero the default in the image will be used. For example: 240." IsReadOnly="false"  Name="Storage IOPS" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="" IsReadOnly="false"  Name="Storage Type" Type="String">
+    <AttributeInfo DefaultValue="The type of the storage volume. In AWS there are few EBS Volume types that can be used, gp2 and io1 for SSD, st1 and sc1 for HDD or the standard type which is the old generation EBS volume type. If auto is selected the storage type defined in the image will be used." Description="" IsReadOnly="false"  Name="Storage Type" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
