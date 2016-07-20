@@ -1,4 +1,5 @@
 import time
+from multiprocessing import TimeoutError
 
 
 class PasswordWaiter(object):
@@ -11,6 +12,8 @@ class PasswordWaiter(object):
         """
         self.delay = delay
         self.timeout = timeout * 60
+
+
 
     def wait(self, instance):
         """
@@ -26,7 +29,7 @@ class PasswordWaiter(object):
         password_data = self._get_password(instance)
         while not password_data:
             if time.time() - start_time >= self.timeout:
-                raise Exception('Timeout: Waiting for instance to get password')
+                raise TimeoutError('Timeout: Waiting for instance to get password')
             time.sleep(self.delay)
             password_data = self._get_password(instance)
 
