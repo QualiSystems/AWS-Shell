@@ -119,11 +119,11 @@ class DeployAMIOperation(object):
             key_value = self.key_pair_service.load_key_pair_by_name(s3_session=s3_session,
                                                                     bucket_name=key_pair_location,
                                                                     reservation_id=reservation.reservation_id)
-
+            result = None
             try:
-                self.credentials_service.get_windows_credentials(instance=instance,
-                                                                 key_value=key_value,
-                                                                 wait_for_password=wait_for_credentials)
+                result = self.credentials_service.get_windows_credentials(instance=instance,
+                                                                          key_value=key_value,
+                                                                          wait_for_password=wait_for_credentials)
             except TimeoutError as te:
                 return None
             except Exception as e:
@@ -132,7 +132,7 @@ class DeployAMIOperation(object):
         else:
             return self.credentials_service.get_default_linux_credentials()
 
-        return None
+        return result
 
     @staticmethod
     def _get_name_from_tags(result):
