@@ -11,8 +11,8 @@ class PasswordWaiter(object):
         :type timeout: int
         """
         self.delay = delay
-        # self.timeout = timeout * 60
-        self.timeout = timeout * 2
+        self.timeout = timeout * 60
+
 
 
     def wait(self, instance):
