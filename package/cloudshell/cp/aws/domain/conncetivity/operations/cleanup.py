@@ -1,5 +1,6 @@
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
+
 class CleanupConnectivityOperation(object):
     def __init__(self, vpc_service, key_pair_service, route_table_service):
         """
@@ -13,7 +14,6 @@ class CleanupConnectivityOperation(object):
         self.vpc_service = vpc_service
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
-
 
     def cleanup(self, ec2_session, s3_session, aws_ec2_data_model, reservation_id):
         """
@@ -31,9 +31,12 @@ class CleanupConnectivityOperation(object):
                 raise ValueError('No VPC was created for this reservation')
 
             self.vpc_service.delete_all_instances(vpc)
-            self.key_pair_service.remove_key_pair_for_reservation(s3_session,
-                                                                  aws_ec2_data_model.key_pairs_location,
-                                                                  reservation_id)
+            self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
+                                                                        aws_ec2_data_model.key_pairs_location,
+                                                                        reservation_id)
+
+            self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
+                                                                         reservation_id=reservation_id)
             self.vpc_service.remove_all_internet_gateways(vpc)
             self.vpc_service.remove_all_security_groups(vpc)
             self.vpc_service.remove_all_subnets(vpc)
