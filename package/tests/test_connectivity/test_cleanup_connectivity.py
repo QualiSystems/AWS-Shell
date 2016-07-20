@@ -27,7 +27,7 @@ class TestCleanupConnectivity(TestCase):
                                        reservation_id=self.reservation_id)
 
         self.assertTrue(self.vpc_serv.find_vpc_for_reservation.called_with(self.ec2_session, self.reservation_id))
-        self.assertTrue(self.key_pair_serv.remove_key_pair_for_reservation.called_with(self.s3_session,
+        self.assertTrue(self.key_pair_serv.remove_key_pair_for_reservation_in_s3.called_with(self.s3_session,
                                                                                        self.aws_ec2_data_model,
                                                                                        self.reservation_id))
         self.assertTrue(self.vpc_serv.delete_all_instances.called_with(vpc))

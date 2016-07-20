@@ -1,3 +1,5 @@
+from boto3 import ec2
+
 RESERVATION_KEY_PAIR = 'reservation key pair {0}'
 KEY_FORMAT = 'reservation-id-{0}/{1}.pem'
 
@@ -51,6 +53,13 @@ class KeyPairService(object):
     def get_reservation_key_name(reservation_id):
         return RESERVATION_KEY_PAIR.format(reservation_id)
 
-    def remove_key_pair_for_reservation(self, s3_session, bucket, reservation_id):
+    def remove_key_pair_for_reservation_in_s3(self, s3_session, bucket, reservation_id):
         key = self.get_key_for_reservation(s3_session, bucket, reservation_id)
         return self.s3_service.delete_key(s3_session=s3_session, bucket=bucket, key=key)
+
+    def remove_key_pair_for_reservation_in_ec2(self, ec2_session, reservation_id):
+        reservation_key_name = self.get_reservation_key_name(reservation_id=reservation_id)
+        key_pair = ec2_session.KeyPair(reservation_key_name)
+        if key_pair:
+            key_pair.delete()
+
