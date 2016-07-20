@@ -1,4 +1,5 @@
 import uuid
+from multiprocessing import TimeoutError
 
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
@@ -119,9 +120,15 @@ class DeployAMIOperation(object):
                                                                     bucket_name=key_pair_location,
                                                                     reservation_id=reservation.reservation_id)
 
-            return self.credentials_service.get_windows_credentials(instance=instance,
-                                                                               key_value=key_value,
-                                                                               wait_for_password=wait_for_credentials)
+            try:
+                self.credentials_service.get_windows_credentials(instance=instance,
+                                                                 key_value=key_value,
+                                                                 wait_for_password=wait_for_credentials)
+            except TimeoutError as te:
+                return None
+            except Exception as e:
+                raise
+
         else:
             return self.credentials_service.get_default_linux_credentials()
 
