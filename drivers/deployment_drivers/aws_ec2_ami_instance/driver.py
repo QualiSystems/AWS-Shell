@@ -25,7 +25,10 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
                                              context.reservation.domain)
 
         # create deployment resource model and serialize it to json
-        aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource)
+
+        aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource,
+                                                                                      self.get_deployment_credentials(
+                                                                                          context))
 
         ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
 
@@ -42,12 +45,20 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
                                         False)
         return result.Output
 
+    def get_deployment_credentials(self, context):
+        logical_resource_attributes = \
+            jsonpickle.decode(context.resource.app_context.app_request_json)['logicalResource']['attributes']
+        password_attribute = [att['value'] for att in logical_resource_attributes if att['name'] == 'Password']
+        user_attribute = [att['value'] for att in logical_resource_attributes if att['name'] == 'User']
+        return {'password': password_attribute[0],
+                'user': user_attribute[0]}
+
     def vaidate_deployment_ami_model(self, aws_ami_deployment_model):
         if aws_ami_deployment_model.cloud_provider == '':
             raise Exception("The name of the Cloud Provider is empty.")
 
     # todo: remove this to a common place
-    def _convert_context_to_deployment_resource_model(self, resource):
+    def _convert_context_to_deployment_resource_model(self, resource, deployment_credentiales):
         deployedResource = DeployAWSEc2AMIInstanceResourceModel()
         deployedResource.aws_ami_id = resource.attributes['AWS AMI Id']
         deployedResource.cloud_provider = resource.attributes['Cloud Provider']
@@ -65,6 +76,8 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.add_public_ip = self._convert_to_bool(resource.attributes['Add Public IP'])
         deployedResource.add_elastic_ip = resource.attributes['Add Elastic IP']
         deployedResource.root_volume_name = resource.attributes['Root Volume Name']
+        deployedResource.password = deployment_credentiales['password']
+        deployedResource.user = deployment_credentiales['user']
 
         return deployedResource
 
@@ -80,10 +93,10 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
     def _get_deployment_info(self, image_model, name):
         """
         :type image_model: vCenterVMFromImageResourceModel
+        :type deployment_credentials: dict
         """
         return DeployDataHolder({'app_name': name,
-                                 'ami_params': image_model
-                                 })
+                                 'ami_params': image_model})
 
     def _get_command_inputs_list(self, data_holder):
         return [InputNameValue('request', jsonpickle.encode(data_holder, unpicklable=False))]
