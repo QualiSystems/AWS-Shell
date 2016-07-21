@@ -35,7 +35,7 @@ class AWSShellDriver(ResourceDriverInterface):
 
 
     def destroy_vm_only(self, context, ports):
-        return self.aws_shell.delete_ami(context)
+        return self.aws_shell.delete_instance(context)
 
     def PrepareConnectivity(self, context, request):
         return self.aws_shell.prepare_connectivity(context, request)

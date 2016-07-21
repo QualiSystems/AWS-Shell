@@ -150,7 +150,7 @@ class AWSShell(object):
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
         cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
                                                                         command_context.connectivity.admin_auth_token,
-                                                                        command_context.remote_reservation.domain)
+                                                                        self._get_domain_name(command_context))
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
 
         resource = command_context.remote_endpoints[0]
@@ -168,7 +168,7 @@ class AWSShell(object):
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
         cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
                                                                         command_context.connectivity.admin_auth_token,
-                                                                        command_context.remote_reservation.domain)
+                                                                        self._get_domain_name(command_context))
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
 
         resource = command_context.remote_endpoints[0]
@@ -177,7 +177,7 @@ class AWSShell(object):
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
         return self.command_result_parser.set_command_result(result)
 
-    def delete_ami(self, command_context):
+    def delete_instance(self, command_context):
         """
         Will delete the ami instance
         :param bool delete_resource:
@@ -187,17 +187,14 @@ class AWSShell(object):
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
         cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
                                                                         command_context.connectivity.admin_auth_token,
-                                                                        command_context.remote_reservation.domain)
+                                                                        self._get_domain_name(command_context))
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
 
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-        result = False
         try:
-            result = self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
-
-
+            self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
         except ClientError as clientErr:
             error = 'Error'
             code = 'Code'
@@ -211,10 +208,11 @@ class AWSShell(object):
                 raise
             else:
                 result = True
-        except Exception as e:
+        except Exception:
             raise
 
-        return self.command_result_parser.set_command_result(result)
+    def _get_domain_name(self, command_context):
+        return command_context.remote_reservation.domain if command_context.remote_reservation else 'Global'
 
     def get_application_ports(self, command_context):
         """
@@ -261,7 +259,7 @@ class AWSShell(object):
 
         cloudshell_session = self.cloudshell_session_helper.get_session(resource_context.connectivity.server_address,
                                                                         resource_context.connectivity.admin_auth_token,
-                                                                        resource_context.remote_reservation.domain)
+                                                                        self._get_domain_name(resource_context))
 
         aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
