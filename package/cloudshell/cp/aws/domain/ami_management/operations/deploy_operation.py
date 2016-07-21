@@ -84,7 +84,8 @@ class DeployAMIOperation(object):
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
                                                     instance=instance,
                                                     reservation=reservation,
-                                                    s3_session=s3_session)
+                                                    s3_session=s3_session,
+                                                    ami_deployment_model=ami_deployment_model)
 
         deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
 
@@ -102,7 +103,8 @@ class DeployAMIOperation(object):
                             public_ip=instance.public_ip_address if ami_deployment_model.add_public_ip else None,
                             elastic_ip=ami_deployment_model.add_elastic_ip)
 
-    def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance):
+    def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance,
+                             ami_deployment_model):
         """
         Will load win
         :param s3_session:
@@ -130,7 +132,7 @@ class DeployAMIOperation(object):
                 raise
 
         else:
-            return self.credentials_service.get_default_linux_credentials()
+            return None if ami_deployment_model.user else self.credentials_service.get_default_linux_credentials()
 
         return result
 
