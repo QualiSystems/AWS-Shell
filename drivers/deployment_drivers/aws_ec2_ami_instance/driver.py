@@ -48,10 +48,8 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
     def get_deployment_credentials(self, context):
         logical_resource_attributes = \
             jsonpickle.decode(context.resource.app_context.app_request_json)['logicalResource']['attributes']
-        password_attribute = [att['value'] for att in logical_resource_attributes if att['name'] == 'Password']
         user_attribute = [att['value'] for att in logical_resource_attributes if att['name'] == 'User']
-        return {'password': password_attribute[0],
-                'user': user_attribute[0]}
+        return {'user': user_attribute[0]}
 
     def vaidate_deployment_ami_model(self, aws_ami_deployment_model):
         if aws_ami_deployment_model.cloud_provider == '':
@@ -76,7 +74,6 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.add_public_ip = self._convert_to_bool(resource.attributes['Add Public IP'])
         deployedResource.add_elastic_ip = resource.attributes['Add Elastic IP']
         deployedResource.root_volume_name = resource.attributes['Root Volume Name']
-        deployedResource.password = deployment_credentiales['password']
         deployedResource.user = deployment_credentiales['user']
 
         return deployedResource

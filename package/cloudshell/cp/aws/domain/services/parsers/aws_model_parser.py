@@ -57,7 +57,6 @@ class AWSModelsParser(object):
             AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_credentials)
         deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.add_public_ip)
         deployment_resource_model.add_elastic_ip = data_holder.ami_params.add_elastic_ip
-        deployment_resource_model.password = data_holder.ami_params.password
         deployment_resource_model.user = data_holder.ami_params.user
 
         return deployment_resource_model, data_holder.app_name
