@@ -346,7 +346,7 @@
             <AttributeValue Name="Autoload" Value="true"/>
             <AttributeValue Name="Wait for IP" Value="false"/>
             <AttributeValue Name="Wait for Credentials" Value="true"/>
-            <AttributeValue Name="Add Public IP" Value="false"/>
+            <AttributeValue Name="Add Public IP" Value="true"/>
             <AttributeValue Name="Storage Type" Value="auto"/>
           </AttributeValues>
           <ParentModels />
