@@ -90,7 +90,6 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
     def _get_deployment_info(self, image_model, name):
         """
         :type image_model: vCenterVMFromImageResourceModel
-        :type deployment_credentials: dict
         """
         return DeployDataHolder({'app_name': name,
                                  'ami_params': image_model})
