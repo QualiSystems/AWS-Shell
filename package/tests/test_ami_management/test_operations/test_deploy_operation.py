@@ -51,9 +51,9 @@ class TestDeployOperation(TestCase):
         # assert
         self.assertEqual(res.vm_name, 'my name')
         self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider)
-        self.assertEqual(res.auto_power_off, ami_datamodel.auto_power_off)
+        self.assertEqual(res.auto_power_off, True)
         self.assertEqual(res.wait_for_ip, ami_datamodel.wait_for_ip)
-        self.assertEqual(res.auto_delete, ami_datamodel.auto_delete)
+        self.assertEqual(res.auto_delete, True)
         self.assertEqual(res.autoload, ami_datamodel.autoload)
         self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
         self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
