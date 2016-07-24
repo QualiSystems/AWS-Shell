@@ -155,9 +155,8 @@ class AWSShell(object):
 
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        result = self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
+        self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
-        return self.command_result_parser.set_command_result(result)
 
     def power_off_ami(self, command_context):
         """
@@ -173,9 +172,8 @@ class AWSShell(object):
 
         resource = command_context.remote_endpoints[0]
         data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        result = self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
+        self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
         cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
-        return self.command_result_parser.set_command_result(result)
 
     def delete_instance(self, command_context):
         """

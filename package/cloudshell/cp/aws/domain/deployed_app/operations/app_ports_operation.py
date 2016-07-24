@@ -20,7 +20,7 @@ class DeployedAppPortsOperation(object):
         outbound_ports_value = self.vm_custom_params_extractor.get_custom_param_value(custom_params, "outbound_ports")
 
         if not inbound_ports_value and not outbound_ports_value:
-            return ""
+            return "No ports are open for inbound and outbound traffic outside of the Sandbox"
 
         result_str_list = []
 
