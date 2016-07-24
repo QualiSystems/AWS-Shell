@@ -60,4 +60,14 @@ class TestDeployedAppPortsOperation(TestCase):
                          'Inbound ports:\nPort 80 tcp\nPorts 1200-2300 udp\nPort 26 tcp\n\n'
                          'Outbound ports:\nPort 1433 tcp\nPorts 3000-3010 udp\nPort 30 tcp\nPort 26 udp')
 
+    def test_no_inbound_or_outbound_ports(self):
+        json_str = '{"vmCustomParams":[]}'
+        dict = jsonpickle.decode(json_str)
+        vmdetails = DeployDataHolder(dict)
+
+        result = self.operation.get_formated_deployed_app_ports(vmdetails.vmCustomParams)
+
+        self.assertEquals(result, "No ports are open for inbound and outbound traffic outside of the Sandbox")
+
+
 
