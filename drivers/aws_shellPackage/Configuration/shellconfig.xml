@@ -4,7 +4,7 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xmlns="http://schemas.qualisystems.com/ResourceManagement/ShellsConfigurationSchema.xsd">
     <ResourceTemplates>
-        <ResourceTemplate Name="AWS EC2" Model="AWS EC2" Driver="AWS Shell Driver">
+        <ResourceTemplate Name="AWS EC2" Model="AWS EC2" Driver="AWS Shell Driver" AddressRequired="false">
             <Description>AWS EC2 template will create a AWS EC2 resource in CloudShell. Once the AWS EC2 is modeled correctly in CloudShell it will be possible to deploy Apps on this AWS EC2.</Description>
             <AutoLoad Enable="true">
                 <Description>After filling in all the inputs click Start Discovery to complete the cloud provider creation process</Description>

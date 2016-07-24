@@ -82,25 +82,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="false" Description="Enables the automatic power off of an app during reservation Teardown." IsReadOnly="false" Name="Auto Power Off"  Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="false" Description="If set to False the deployment will not wait for the VM to get an ip" IsReadOnly="false" Name="Wait for IP"  Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="false" Description="Enables automatic deletion of an app during reservation Teardown." IsReadOnly="false" Name="Auto Delete" Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="false" Description="Enables the automatic execution of the Autoload command during reservation Setup." IsReadOnly="false" Name="Autoload" Type="Boolean">
+    <AttributeInfo DefaultValue="true" Description="Enables the automatic execution of the Autoload command during reservation Setup." IsReadOnly="false" Name="Autoload" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -315,13 +303,7 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Outbound Ports" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power Off" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for IP" UserInput="false">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Delete" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Autoload" UserInput="false">
@@ -341,8 +323,6 @@
             </AttachedAttribute>
           </AttachedAttributes>
           <AttributeValues>
-            <AttributeValue Name="Auto Power Off" Value="true"/>
-            <AttributeValue Name="Auto Delete" Value="true"/>
             <AttributeValue Name="Autoload" Value="true"/>
             <AttributeValue Name="Wait for IP" Value="false"/>
             <AttributeValue Name="Wait for Credentials" Value="true"/>
