@@ -1,3 +1,5 @@
+import botocore
+from botocore.exceptions import WaiterError
 
 
 class InstanceService(object):
@@ -11,9 +13,10 @@ class InstanceService(object):
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
-    def create_instance(self, ec2_session, name, reservation, ami_deployment_info):
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client):
         """
         Deploys an AMI
+        :param ec2_client: boto3.ec2.client
         :param name: Will assign the deployed vm with the name
         :type name: str
         :param reservation: reservation model
@@ -41,7 +44,16 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        instance.wait_until_running()
+        try:
+            ec2_client.get_waiter('instance_status_ok') \
+                .wait(InstanceIds=[instance.instance_id],
+                      Filters=[
+                          {'Name': 'instance-status.reachability', 'Values': ['passed']},
+                          {'Name': 'system-status.reachability', 'Values': ['passed']},
+                          {'Name': 'instance-state-name', 'Values': ['running']},
+                      ])
+        except WaiterError as e:
+            raise e
 
         self._set_tags(instance, name, reservation)
 

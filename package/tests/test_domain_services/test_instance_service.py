@@ -10,6 +10,7 @@ class TestInstanceService(TestCase):
         self.tag_service = Mock()
         self.instance_waiter = Mock()
         self.ec2_session = Mock()
+        self.ec2_client = Mock()
         self.name = 'name'
         self.reservation_id = 'res_id'
         self.instance = Mock()
@@ -24,7 +25,9 @@ class TestInstanceService(TestCase):
         res = self.instance_service.create_instance(ec2_session=self.ec2_session,
                                                     name=self.name,
                                                     reservation=self.reservation_id,
-                                                    ami_deployment_info=ami_dep)
+                                                    ami_deployment_info=ami_dep,
+                                                    ec2_client=self.ec2_client)
+
         self.assertTrue(self.ec2_session.create_instances.called_with(ami_dep.aws_ami_id,
                                                                       ami_dep.min_count,
                                                                       ami_dep.max_count,

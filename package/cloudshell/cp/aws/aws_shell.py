@@ -233,6 +233,7 @@ class AWSShell(object):
                                                                         command_context.connectivity.admin_auth_token,
                                                                         command_context.reservation.domain)
         ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        ec2_client = self.aws_session_manager.get_ec2_client(cloudshell_session, aws_ec2_resource_model)
         s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
 
         reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
@@ -242,7 +243,8 @@ class AWSShell(object):
                                                        name=name,
                                                        reservation=reservation_model,
                                                        aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                       ami_deployment_model=aws_ami_deployment_model)
+                                                       ami_deployment_model=aws_ami_deployment_model,
+                                                       ec2_client=ec2_client)
 
         return self.command_result_parser.set_command_result(deploy_data)
 

@@ -9,6 +9,7 @@ class TestDeployOperation(TestCase):
     def setUp(self):
         self.ec2_datamodel = Mock()
         self.ec2_session = Mock()
+        self.ec2_client = Mock()
         self.s3_session = Mock()
         self.ec2_serv = Mock()
         self.security_group_service = Mock()
@@ -45,7 +46,9 @@ class TestDeployOperation(TestCase):
                                            'my name',
                                            Mock(),
                                            self.ec2_datamodel,
-                                           ami_datamodel)
+                                           ami_datamodel,
+                                           ec2_client=self.ec2_client)
+
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
         # assert
@@ -63,15 +66,15 @@ class TestDeployOperation(TestCase):
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
-                self.security_group_service.create_security_group()),
-                self.tag_service.get_security_group_tags())
+            self.security_group_service.create_security_group()),
+            self.tag_service.get_security_group_tags())
 
         self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
                                                        instance.key_pair.key_name,
                                                        self.key_pair.FILE_SYSTEM))
 
         self.assertTrue(self.security_group_service.set_security_group_rules.called_with(
-                ami_datamodel, self.security_group_service.create_security_group()))
+            ami_datamodel, self.security_group_service.create_security_group()))
 
         self.security_group_service.remove_allow_all_outbound_rule.assert_called_with(security_group=sg)
 
@@ -92,7 +95,8 @@ class TestDeployOperation(TestCase):
                        'Ebs': {}}
         image.block_device_mappings = [root_device]
 
-        with self.assertRaisesRegexp(ValueError, 'Requested storage size is bigger than the max allowed storage size of 30'):
+        with self.assertRaisesRegexp(ValueError,
+                                     'Requested storage size is bigger than the max allowed storage size of 30'):
             self.deploy_operation._get_block_device_mappings(image=image,
                                                              ami_deployment_model=ami,
                                                              aws_ec2_resource_model=ec_model)
@@ -114,7 +118,8 @@ class TestDeployOperation(TestCase):
                        'Ebs': {}}
         image.block_device_mappings = [root_device]
 
-        with self.assertRaisesRegexp(ValueError, 'Requested storage IOPS is bigger than the max allowed storage IOPS of 100'):
+        with self.assertRaisesRegexp(ValueError,
+                                     'Requested storage IOPS is bigger than the max allowed storage IOPS of 100'):
             self.deploy_operation._get_block_device_mappings(image=image,
                                                              ami_deployment_model=ami,
                                                              aws_ec2_resource_model=ec_model)
