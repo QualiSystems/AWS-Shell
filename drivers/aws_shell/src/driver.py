@@ -48,3 +48,6 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def get_inventory(self, context):
         return AutoLoadDetails([], [])
+
+    def GetAccessKey(self, context, ports):
+        return self.aws_shell.GetAccessKey(context)
