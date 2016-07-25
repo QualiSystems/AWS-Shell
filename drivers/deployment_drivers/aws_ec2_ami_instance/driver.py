@@ -5,6 +5,8 @@ from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterf
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
+from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
+from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
 
 class DeployAWSEC2AMIInstance(ResourceDriverInterface):
@@ -19,31 +21,28 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         pass
 
     def Deploy(self, context, Name=None):
-        # Create cloudshell session
-        session = self.cs_helper.get_session(context.connectivity.server_address,
-                                             context.connectivity.admin_auth_token,
-                                             context.reservation.domain)
+        with LoggingSessionContext(context) as logger:
+            with CloudShellSessionContext(context) as session:
+                logger.info('Deploy started')
+                # create deployment resource model and serialize it to json
+                aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource,
+                                                                                              self.get_deployment_credentials(
+                                                                                                  context))
 
-        # create deployment resource model and serialize it to json
+                ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
 
-        aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource,
-                                                                                      self.get_deployment_credentials(
-                                                                                          context))
+                deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
 
-        ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
+                self.vaidate_deployment_ami_model(aws_ami_deployment_model)
 
-        deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
-
-        self.vaidate_deployment_ami_model(aws_ami_deployment_model)
-
-        # Calls command on the AWS cloud provider
-        result = session.ExecuteCommand(context.reservation.reservation_id,
-                                        aws_ami_deployment_model.cloud_provider,
-                                        "Resource",
-                                        "deploy_ami",
-                                        self._get_command_inputs_list(deployment_info),
-                                        False)
-        return result.Output
+                # Calls command on the AWS cloud provider
+                result = session.ExecuteCommand(context.reservation.reservation_id,
+                                                aws_ami_deployment_model.cloud_provider,
+                                                "Resource",
+                                                "deploy_ami",
+                                                self._get_command_inputs_list(deployment_info),
+                                                False)
+                return result.Output
 
     def get_deployment_credentials(self, context):
         logical_resource_attributes = \
