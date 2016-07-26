@@ -49,6 +49,8 @@ class AWSModelsParser(object):
         deployment_resource_model.auto_power_off = \
             AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_power_off)
         deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_ip)
+        deployment_resource_model.wait_for_status_check = AWSModelsParser.convert_to_bool(
+            data_holder.ami_params.wait_for_status_check)
         deployment_resource_model.auto_delete = AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_delete)
         deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data_holder.ami_params.autoload)
         deployment_resource_model.inbound_ports = data_holder.ami_params.inbound_ports

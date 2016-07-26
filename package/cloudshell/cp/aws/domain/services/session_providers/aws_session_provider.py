@@ -27,6 +27,13 @@ class AWSSessionProvider(object):
             raise ValueError('Could not create AWS Session')
         return aws_session.resource(self.EC2)
 
+    def get_ec2_client(self, cloudshell_session, aws_ec2_data_model):
+        aws_session = self._get_aws_session(aws_ec2_data_model, cloudshell_session)
+
+        if not aws_session:
+            raise ValueError('Could not create AWS Client')
+        return aws_session.client(self.EC2)
+
     def _get_aws_session(self, aws_ec2_data_model, cloudshell_session):
         credentials = self._get_aws_credentials(cloudshell_session, aws_ec2_data_model)
         aws_session = self._create_aws_session(aws_ec2_data_model, credentials)
