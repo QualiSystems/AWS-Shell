@@ -3,11 +3,11 @@ python:
     - "2.7"
 
 install:
-  - bash ./install_dependencies.sh
+  - pip install -r external_requirements.txt  --index-url https://pypi.python.org/simple
+  - pip install -r internal_requirements.txt  --index-url https://testpypi.python.org/pypi
 
 script:
     - pushd package
-    - pip install "cloudshell-automation-api>=7.1.0.0,<7.2.0.0"  --index-url https://testpypi.python.org/simple
     - python setup.py develop
     - popd
     - python runtests.py --with-coverage  --cover-package=package --exclude setup.py

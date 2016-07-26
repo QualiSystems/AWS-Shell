@@ -266,7 +266,6 @@ class AWSShell(object):
             with ErrorHandlingContext(logger):
                 with CloudShellSessionContext(resource_context) as session:
                     logger.info('Refresh IP')
-
                     # Get private ip on deployed resource
                     private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(
                         resource_context)
@@ -294,10 +293,10 @@ class AWSShell(object):
         """
         Returns the pem file for the connected resource
         """
-        with LoggingSessionContext(resource_context) as logger:
+        with LoggingSessionContext(command_context) as logger:
             with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(resource_context) as session:
-                    logger.info('Refresh IP')
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('GetAccessKey')
                     aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
                     s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
                     reservation_id = command_context.remote_reservation.reservation_id
