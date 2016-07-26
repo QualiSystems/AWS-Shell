@@ -178,6 +178,7 @@ class AWSShell(object):
         with LoggingSessionContext(command_context) as logger:
             with ErrorHandlingContext(logger):
                 with CloudShellSessionContext(command_context) as session:
+                    logger.info('Power Off')
                     aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
                     ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
 
@@ -221,19 +222,19 @@ class AWSShell(object):
                     except Exception:
                         raise
 
-    def _get_domain_name(self, command_context):
-        return command_context.remote_reservation.domain if command_context.remote_reservation else 'Global'
-
     def get_application_ports(self, command_context):
         """
         Will return the application ports in a nicely formated manner
         :param command_context: RemoteCommandContext
         :return:
         """
-        resource = command_context.remote_endpoints[0]
-        data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                logger.info('Get Application Ports')
+                resource = command_context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-        return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
+                return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request):
         """
