@@ -243,11 +243,11 @@ class AWSShell(object):
             with ErrorHandlingContext(logger):
                 with CloudShellSessionContext(command_context) as session:
                     logger.info('Deploying AMI')
-                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(
-                        deployment_request)
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
 
+                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
                     ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
                     s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
 
                     reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
@@ -257,7 +257,8 @@ class AWSShell(object):
                                                                    name=name,
                                                                    reservation=reservation_model,
                                                                    aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                                   ami_deployment_model=aws_ami_deployment_model)
+                                                                   ami_deployment_model=aws_ami_deployment_model,
+                                                                   ec2_client=ec2_client)
 
                     return self.command_result_parser.set_command_result(deploy_data)
 

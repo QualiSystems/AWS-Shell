@@ -19,6 +19,7 @@ class TestAWSShell(TestCase):
         self.aws_shell_api.cloudshell_session_helper = Mock()
         self.aws_shell_api.aws_session_manager.get_ec2_session = Mock(return_value=Mock())
         self.aws_shell_api.aws_session_manager.get_s3_session = Mock(return_value=Mock())
+        self.aws_shell_api.aws_session_manager.get_ec2_client = Mock(return_value=Mock())
 
         self.command_context = Mock()
         self.command_context.resource = Mock()

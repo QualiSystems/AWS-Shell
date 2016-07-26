@@ -1,3 +1,6 @@
+import botocore
+from botocore.exceptions import WaiterError
+from concurrent.futures._base import wait
 
 
 class InstanceService(object):
@@ -11,9 +14,11 @@ class InstanceService(object):
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
-    def create_instance(self, ec2_session, name, reservation, ami_deployment_info):
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check):
         """
         Deploys an AMI
+        :param wait_for_status_check: bool
+        :param ec2_client: boto3.ec2.client
         :param name: Will assign the deployed vm with the name
         :type name: str
         :param reservation: reservation model
@@ -41,13 +46,23 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        instance.wait_until_running()
+        self.wait_for_instance_to_run_in_aws(ec2_client, instance, wait_for_status_check)
 
         self._set_tags(instance, name, reservation)
 
         # Reload the instance attributes
         instance.load()
         return instance
+
+    def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check):
+        if wait_for_status_check:
+            try:
+                ec2_client.get_waiter('instance_status_ok') \
+                    .wait(InstanceIds=[instance.instance_id])
+            except WaiterError as e:
+                raise e
+        else:
+            instance.wait_until_running()
 
     def terminate_instance(self, instance):
         return self.terminate_instances([instance])[0]

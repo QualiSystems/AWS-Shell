@@ -88,6 +88,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="false"  Name="Wait for Status Check"  Description="If enabled the app deployment will end successfully only after instance status checks has passed. The status checks include network connectivity, physical host status, system status and more." IsReadOnly="false" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="true" Description="Enables the automatic execution of the Autoload command during reservation Setup." IsReadOnly="false" Name="Autoload" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
@@ -304,6 +310,9 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for IP" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for Status Check" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Autoload" UserInput="false">
