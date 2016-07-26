@@ -79,7 +79,8 @@ class DeployAMIOperation(object):
                                                          name=name,
                                                          reservation=reservation,
                                                          ami_deployment_info=ami_deployment_info,
-                                                         ec2_client=ec2_client)
+                                                         ec2_client=ec2_client,
+                                                         wait_for_status_check=ami_deployment_model.wait_for_status_check)
 
         self._set_elastic_ip(ec2_session=ec2_session, instance=instance, ami_deployment_model=ami_deployment_model)
 

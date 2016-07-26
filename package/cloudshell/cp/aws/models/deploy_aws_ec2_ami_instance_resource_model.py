@@ -15,6 +15,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.delete_on_termination = True  # type: bool
         self.auto_power_off = False  # type: bool
         self.wait_for_ip = False  # type: bool
+        self.wait_for_status_check = False  # type: bool
         self.auto_delete = False  # type: bool
         self.autoload = False  # type: bool
         self.outbound_ports = ''  # type: str
