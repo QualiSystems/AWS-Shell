@@ -26,7 +26,8 @@ class TestInstanceService(TestCase):
                                                     name=self.name,
                                                     reservation=self.reservation_id,
                                                     ami_deployment_info=ami_dep,
-                                                    ec2_client=self.ec2_client)
+                                                    ec2_client=self.ec2_client,
+                                                    wait_for_status_check=False)
 
         self.assertTrue(self.ec2_session.create_instances.called_with(ami_dep.aws_ami_id,
                                                                       ami_dep.min_count,
