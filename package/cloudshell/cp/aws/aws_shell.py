@@ -5,6 +5,7 @@ from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
+from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
@@ -94,6 +95,8 @@ class AWSShell(object):
                                                                route_table_service=self.route_tables_service)
 
         self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
+
+        self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
     def cleanup_connectivity(self, command_context):
         with LoggingSessionContext(command_context) as logger:
@@ -286,3 +289,20 @@ class AWSShell(object):
                                                          private_ip_on_resource=private_ip_on_resource,
                                                          public_ip_on_resource=public_ip_on_resource,
                                                          resource_fullname=resource_fullname)
+
+    def GetAccessKey(self, command_context):
+        """
+        Returns the pem file for the connected resource
+        """
+        with LoggingSessionContext(resource_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(resource_context) as session:
+                    logger.info('Refresh IP')
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
+                    reservation_id = command_context.remote_reservation.reservation_id
+
+                    return self.access_key_operation.get_access_key(s3_session=s3_session,
+                                                                    aws_ec2_resource_model=aws_ec2_resource_model,
+                                                                    reservation_id=reservation_id)
+
