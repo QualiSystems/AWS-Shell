@@ -1,3 +1,5 @@
+import traceback
+
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
 
@@ -15,13 +17,13 @@ class CleanupConnectivityOperation(object):
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
 
-    def cleanup(self, ec2_session, s3_session, aws_ec2_data_model, reservation_id):
+    def cleanup(self, ec2_session, s3_session, aws_ec2_data_model, reservation_id, logger):
         """
-
         :param ec2_session:
         :param s3_session:
         :param AWSEc2CloudProviderResourceModel aws_ec2_data_model: The AWS EC2 data model
         :param str reservation_id:
+        :param logging.Logger logger:
         :return:
         """
         result = {'success': True}
@@ -30,13 +32,18 @@ class CleanupConnectivityOperation(object):
             if not vpc:
                 raise ValueError('No VPC was created for this reservation')
 
+            logger.info("Deleting all instances")
             self.vpc_service.delete_all_instances(vpc)
+
+            logger.info("Removing private key (pem file) from s3")
             self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
                                                                         aws_ec2_data_model.key_pairs_location,
                                                                         reservation_id)
-
+            logger.info("Removing key pair from ec2")
             self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
                                                                          reservation_id=reservation_id)
+
+            logger.info("Deleting vpc and removing dependencies")
             self.vpc_service.remove_all_internet_gateways(vpc)
             self.vpc_service.remove_all_security_groups(vpc)
             self.vpc_service.remove_all_subnets(vpc)
@@ -45,8 +52,9 @@ class CleanupConnectivityOperation(object):
 
             self.vpc_service.delete_vpc(vpc)
         except Exception as exc:
+            logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
             result['success'] = False
-            result['errorMessage'] = 'PrepareConnectivity ended with the error: {0}'.format(exc)
+            result['errorMessage'] = 'CleanupConnectivity ended with the error: {0}'.format(exc)
 
         return result
 

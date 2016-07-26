@@ -35,7 +35,8 @@ class TestPrepareConnectivity(TestCase):
                                                          self.s3_session,
                                                          self.reservation,
                                                          self.aws_dm,
-                                                         request)
+                                                         request,
+                                                         Mock())
 
         self.assertEqual(request.actions[0].actionId, results[0].actionId)
         self.assertEqual(results[0].type, 'PrepareNetwork')
@@ -53,7 +54,8 @@ class TestPrepareConnectivity(TestCase):
                           self.s3_session,
                           self.reservation,
                           aws_dm,
-                          request)
+                          request,
+                          Mock())
 
     def test_prepare_conn_command_fault_res(self):
         request = DeployDataHolder({"actions": [
@@ -64,7 +66,8 @@ class TestPrepareConnectivity(TestCase):
                                                          self.s3_session,
                                                          self.reservation,
                                                          self.aws_dm,
-                                                         request)
+                                                         request,
+                                                         Mock())
 
         self.assertEqual(request.actions[0].actionId, results[0].actionId)
         self.assertEqual(results[0].type, 'PrepareNetwork')

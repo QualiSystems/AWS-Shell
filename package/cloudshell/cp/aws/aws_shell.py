@@ -110,7 +110,8 @@ class AWSShell(object):
                     result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
                                                              s3_session=s3_session,
                                                              aws_ec2_data_model=aws_ec2_resource_model,
-                                                             reservation_id=command_context.reservation.reservation_id)
+                                                             reservation_id=command_context.reservation.reservation_id,
+                                                             logger=logger)
 
                     return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})
 
@@ -146,7 +147,8 @@ class AWSShell(object):
                         s3_session=s3_session,
                         reservation=reservation_model,
                         aws_ec2_datamodel=aws_ec2_resource_model,
-                        request=prepare_connectivity_request)
+                        request=prepare_connectivity_request,
+                        logger=logger)
 
                     return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
@@ -218,7 +220,8 @@ class AWSShell(object):
                         if not is_malformed_:
                             raise
                         else:
-                            result = True
+                            logger.info("Aws instance {0} was already terminated".format(data_holder.vmdetails.uid))
+                            return
                     except Exception:
                         raise
 
@@ -259,7 +262,8 @@ class AWSShell(object):
                                                                    reservation=reservation_model,
                                                                    aws_ec2_cp_resource_model=aws_ec2_resource_model,
                                                                    ami_deployment_model=aws_ami_deployment_model,
-                                                                   ec2_client=ec2_client)
+                                                                   ec2_client=ec2_client,
+                                                                   logger=logger)
 
                     return self.command_result_parser.set_command_result(deploy_data)
 

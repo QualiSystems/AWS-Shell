@@ -1,3 +1,5 @@
+import traceback
+
 from cloudshell.cp.aws.domain.services.ec2 import route_table
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
@@ -27,7 +29,7 @@ class PrepareConnectivityOperation(object):
         self.tag_service = tag_service
         self.route_table_service = route_table_service
 
-    def prepare_connectivity(self, ec2_session, s3_session, reservation, aws_ec2_datamodel, request):
+    def prepare_connectivity(self, ec2_session, s3_session, reservation, aws_ec2_datamodel, request, logger):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
         also will create a key pair for that reservation
@@ -38,11 +40,13 @@ class PrepareConnectivityOperation(object):
         :param aws_ec2_datamodel: The AWS EC2 data model
         :type aws_ec2_datamodel: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param request: Parsed prepare connectivity request
+        :param logging.Logger logger:
         :return:
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Management VPC ID must be set!')
 
+        logger.info("Creating or getting existing key pair")
         self._create_key_pair(ec2_session=ec2_session,
                               s3_session=s3_session,
                               bucket=aws_ec2_datamodel.key_pairs_location,
@@ -51,14 +55,18 @@ class PrepareConnectivityOperation(object):
         for action in request.actions:
             try:
                 cidr = self._extract_cidr(action)
+                logger.info("Received CIDR {0} from server".format(cidr))
 
                 # will get or create a vpc for the reservation
+                logger.info("Get or create existing VPC")
                 vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
 
                 # will create an IG if not exist
+                logger.info("Get or create adn attach existing internet gateway")
                 internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
                 # will try to peer sandbox VPC to mgmt VPC if not exist
+                logger.info("Create VPC Peering with management vpc")
                 self._peer_vpcs(ec2_session=ec2_session,
                                 management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
                                 vpc_id=vpc.id,
@@ -66,6 +74,7 @@ class PrepareConnectivityOperation(object):
                                 internet_gateway_id=internet_gateway_id,
                                 reservation_model=reservation)
 
+                logger.info("Get or create default Security Group")
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
                                                                     reservation=reservation,
                                                                     vpc=vpc,
@@ -74,6 +83,7 @@ class PrepareConnectivityOperation(object):
                 results.append(self._create_action_result(action, security_group, vpc))
 
             except Exception as e:
+                logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
                 results.append(self._create_fault_action_result(action, e))
         return results
 
