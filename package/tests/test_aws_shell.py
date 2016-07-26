@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import jsonpickle
-from mock import Mock
+from mock import Mock, mock
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
@@ -81,16 +81,21 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider)
 
     def test_cleanup_connectivity(self):
-        self.aws_shell_api.clean_up_operation.cleanup = Mock(return_value=True)
+        with mock.patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
+            with mock.patch('cloudshell.cp.aws.aws_shell.ErrorHandlingContext'):
+                with mock.patch('cloudshell.cp.aws.aws_shell.CloudShellSessionContext'):
+                    self.aws_shell_api.cleanup_connectivity(self.command_context)
 
-        self.aws_shell_api.cleanup_connectivity(self.command_context)
+                    self.aws_shell_api.clean_up_operation.cleanup = Mock(return_value=True)
 
-        self.assertTrue(self.aws_shell_api.clean_up_operation.cleanup.called_with(
-            self.aws_shell_api.aws_session_manager.get_ec2_session(),
-            self.aws_shell_api.aws_session_manager.get_s3_session(),
-            self.aws_shell_api.model_parser.convert_to_aws_resource_model().key_pairs_location,
-            self.command_context.reservation.reservation_id
-        ))
+                    self.aws_shell_api.cleanup_connectivity(self.command_context)
+
+                    self.assertTrue(self.aws_shell_api.clean_up_operation.cleanup.called_with(
+                        self.aws_shell_api.aws_session_manager.get_ec2_session(),
+                        self.aws_shell_api.aws_session_manager.get_s3_session(),
+                        self.aws_shell_api.model_parser.convert_to_aws_resource_model().key_pairs_location,
+                        self.command_context.reservation.reservation_id
+                    ))
 
     def test_prepare_connectivity(self):
         req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
