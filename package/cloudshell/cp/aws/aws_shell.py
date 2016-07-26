@@ -1,6 +1,9 @@
 import botocore
 import jsonpickle
 from botocore.exceptions import ClientError
+from cloudshell.core.context.error_handling_context import ErrorHandlingContext
+from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
+from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
@@ -96,19 +99,20 @@ class AWSShell(object):
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
     def cleanup_connectivity(self, command_context):
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        command_context.reservation.domain)
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('Cleanup Connectivity')
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
 
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
-        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
-        result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
-                                                 s3_session=s3_session,
-                                                 aws_ec2_data_model=aws_ec2_resource_model,
-                                                 reservation_id=command_context.reservation.reservation_id)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
+                    result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
+                                                             s3_session=s3_session,
+                                                             aws_ec2_data_model=aws_ec2_resource_model,
+                                                             reservation_id=command_context.reservation.reservation_id)
 
-        return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})
+                    return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request):
         """
@@ -118,31 +122,33 @@ class AWSShell(object):
         :type request: str
         :return:
         """
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        command_context.reservation.domain)
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('Prepare Connectivity')
 
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
-        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
 
-        # parse request
-        prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
-        prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
 
-        reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
+                    # parse request
+                    prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
+                    prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
 
-        if not prepare_connectivity_request:
-            raise ValueError('Invalid prepare connectivity request')
+                    reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
 
-        results = self.prepare_connectivity_operation.prepare_connectivity(
-            ec2_session=ec2_session,
-            s3_session=s3_session,
-            reservation=reservation_model,
-            aws_ec2_datamodel=aws_ec2_resource_model,
-            request=prepare_connectivity_request)
+                    if not prepare_connectivity_request:
+                        raise ValueError('Invalid prepare connectivity request')
 
-        return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
+                    results = self.prepare_connectivity_operation.prepare_connectivity(
+                        ec2_session=ec2_session,
+                        s3_session=s3_session,
+                        reservation=reservation_model,
+                        aws_ec2_datamodel=aws_ec2_resource_model,
+                        request=prepare_connectivity_request)
+
+                    return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
     def power_on_ami(self, command_context):
         """
@@ -150,16 +156,18 @@ class AWSShell(object):
         :param command_context: RemoteCommandContext
         :return:
         """
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        self._get_domain_name(command_context))
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('Power On')
 
-        resource = command_context.remote_endpoints[0]
-        data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
-        cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+
+                    resource = command_context.remote_endpoints[0]
+                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                    self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
+                    session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
 
     def power_off_ami(self, command_context):
         """
@@ -167,16 +175,16 @@ class AWSShell(object):
         :param command_context: RemoteCommandContext
         :return:
         """
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        self._get_domain_name(command_context))
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
 
-        resource = command_context.remote_endpoints[0]
-        data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-        self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
-        cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
+                    resource = command_context.remote_endpoints[0]
+                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                    self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
+                    session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
 
     def delete_instance(self, command_context):
         """
@@ -185,32 +193,33 @@ class AWSShell(object):
         :param command_context: RemoteCommandContext
         :return:
         """
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        self._get_domain_name(command_context))
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('Delete instance')
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
 
-        resource = command_context.remote_endpoints[0]
-        data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                    resource = command_context.remote_endpoints[0]
+                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-        try:
-            self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
-        except ClientError as clientErr:
-            error = 'Error'
-            code = 'Code'
-            malformed = 'InvalidInstanceID.Malformed'
+                    try:
+                        self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
+                    except ClientError as clientErr:
+                        error = 'Error'
+                        code = 'Code'
+                        malformed = 'InvalidInstanceID.Malformed'
 
-            is_malformed_ = error in clientErr.response and \
-                            code in clientErr.response[error] and \
-                            clientErr.response[error][code] == malformed
+                        is_malformed_ = error in clientErr.response and \
+                                        code in clientErr.response[error] and \
+                                        clientErr.response[error][code] == malformed
 
-            if not is_malformed_:
-                raise
-            else:
-                result = True
-        except Exception:
-            raise
+                        if not is_malformed_:
+                            raise
+                        else:
+                            result = True
+                    except Exception:
+                        raise
 
     def _get_domain_name(self, command_context):
         return command_context.remote_reservation.domain if command_context.remote_reservation else 'Global'
@@ -230,63 +239,70 @@ class AWSShell(object):
         """
         Will deploy Amazon Image on the cloud provider
         """
-        aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        command_context.reservation.domain)
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
-        ec2_client = self.aws_session_manager.get_ec2_client(cloudshell_session, aws_ec2_resource_model)
-        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('Deploying AMI')
 
-        reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
+                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
+                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
 
-        deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
-                                                       s3_session=s3_session,
-                                                       name=name,
-                                                       reservation=reservation_model,
-                                                       aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                       ami_deployment_model=aws_ami_deployment_model,
-                                                       ec2_client=ec2_client)
+                    reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
 
-        return self.command_result_parser.set_command_result(deploy_data)
+                    deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
+                                                                   s3_session=s3_session,
+                                                                   name=name,
+                                                                   reservation=reservation_model,
+                                                                   aws_ec2_cp_resource_model=aws_ec2_resource_model,
+                                                                   ami_deployment_model=aws_ami_deployment_model,
+                                                                   ec2_client=ec2_client)
+
+                    return self.command_result_parser.set_command_result(deploy_data)
 
     def refresh_ip(self, resource_context):
-        # Get private ip on deployed resource
-        private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(resource_context)
+        with LoggingSessionContext(resource_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(resource_context) as session:
+                    logger.info('Refresh IP')
+                    # Get private ip on deployed resource
+                    private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(
+                        resource_context)
 
-        # Get Public IP on deployed resource
-        public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(resource_context)
+                    # Get Public IP on deployed resource
+                    public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(
+                        resource_context)
 
-        deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(resource_context)
+                    deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(
+                        resource_context)
 
-        cloudshell_session = self.cloudshell_session_helper.get_session(resource_context.connectivity.server_address,
-                                                                        resource_context.connectivity.admin_auth_token,
-                                                                        self._get_domain_name(resource_context))
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
+                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
 
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
-        ec2_session = self.aws_session_manager.get_ec2_session(cloudshell_session, aws_ec2_resource_model)
+                    resource_fullname = AWSModelsParser.get_connectd_resource_fullname(resource_context)
 
-        resource_fullname = AWSModelsParser.get_connectd_resource_fullname(resource_context)
-
-        self.refresh_ip_operation.refresh_ip(cloudshell_session=cloudshell_session,
-                                             ec2_session=ec2_session,
-                                             deployed_instance_id=deployed_instance_id,
-                                             private_ip_on_resource=private_ip_on_resource,
-                                             public_ip_on_resource=public_ip_on_resource,
-                                             resource_fullname=resource_fullname)
+                    self.refresh_ip_operation.refresh_ip(cloudshell_session=session,
+                                                         ec2_session=ec2_session,
+                                                         deployed_instance_id=deployed_instance_id,
+                                                         private_ip_on_resource=private_ip_on_resource,
+                                                         public_ip_on_resource=public_ip_on_resource,
+                                                         resource_fullname=resource_fullname)
 
     def GetAccessKey(self, command_context):
         """
         Returns the pem file for the connected resource
         """
-        aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-        cloudshell_session = self.cloudshell_session_helper.get_session(command_context.connectivity.server_address,
-                                                                        command_context.connectivity.admin_auth_token,
-                                                                        command_context.remote_reservation.domain)
-        s3_session = self.aws_session_manager.get_s3_session(cloudshell_session, aws_ec2_resource_model)
-        reservation_id = command_context.remote_reservation.reservation_id
+        with LoggingSessionContext(command_context) as logger:
+            with ErrorHandlingContext(logger):
+                with CloudShellSessionContext(command_context) as session:
+                    logger.info('GetAccessKey')
+                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
+                    reservation_id = command_context.remote_reservation.reservation_id
 
-        return self.access_key_operation.get_access_key(s3_session=s3_session,
-                                                        aws_ec2_resource_model=aws_ec2_resource_model,
-                                                        reservation_id=reservation_id)
+                    return self.access_key_operation.get_access_key(s3_session=s3_session,
+                                                                    aws_ec2_resource_model=aws_ec2_resource_model,
+                                                                    reservation_id=reservation_id)
+

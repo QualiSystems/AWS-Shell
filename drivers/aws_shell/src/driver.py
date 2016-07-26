@@ -33,7 +33,6 @@ class AWSShellDriver(ResourceDriverInterface):
     def remote_refresh_ip(self, context, ports, cancellation_context):
         return self.aws_shell.refresh_ip(context)
 
-
     def destroy_vm_only(self, context, ports):
         return self.aws_shell.delete_instance(context)
 
