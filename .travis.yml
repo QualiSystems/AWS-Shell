@@ -3,9 +3,11 @@ python:
     - "2.7"
 
 install:
-  - pip install -r external_requirements.txt  --index-url https://pypi.python.org/simple
+  - pip install -r external_requirements.txt --extra-index-url https://pypi.python.org/simple
+  - pip install -r test_requirements.txt --extra-index-url https://pypi.python.org/simple
+  - pip install "cloudshell-core>=2.1.0,<2.2.0" --extra-index-url https://testpypi.python.org/simple
+  - pip install "cloudshell-shell-core>=2.2.0,<2.3.0" --extra-index-url https://testpypi.python.org/simple
   - pip install "cloudshell-automation-api>=7.1.0.0,<7.2.0.0" --extra-index-url https://testpypi.python.org/simple
-  - pip install -r internal_requirements.txt  --index-url https://testpypi.python.org/pypi
 
 script:
     - pushd package
