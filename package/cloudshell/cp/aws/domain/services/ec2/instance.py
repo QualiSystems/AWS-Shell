@@ -55,18 +55,14 @@ class InstanceService(object):
         return instance
 
     def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check):
-
-        filters = [{'Name': 'instance-state-name', 'Values': ['running']}]
-
         if wait_for_status_check:
-            filters.append({'Name': 'instance-status.reachability', 'Values': ['passed']})
-            filters.append({'Name': 'system-status.reachability', 'Values': ['passed']})
-        try:
-            ec2_client.get_waiter('instance_status_ok') \
-                .wait(InstanceIds=[instance.instance_id],
-                      Filters=filters)
-        except WaiterError as e:
-            raise e
+            try:
+                ec2_client.get_waiter('instance_status_ok') \
+                    .wait(InstanceIds=[instance.instance_id])
+            except WaiterError as e:
+                raise e
+        else:
+            instance.wait_until_running()
 
     def terminate_instance(self, instance):
         return self.terminate_instances([instance])[0]
