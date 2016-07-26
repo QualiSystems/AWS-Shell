@@ -270,7 +270,7 @@
       <AttachedAttributes />
       <AttributeValues />
       <Models>
-        <ResourceModel Description="" Name="AWS EC2 Instance" SupportsConcurrentCommands="false">
+        <ResourceModel Description="" Name="AWS EC2 Instance" ImagePath="DeploymentTypes-AWS-EC2.png" SupportsConcurrentCommands="false">
           <AttachedAttributes>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider" UserInput="true">
               <AllowedValues />

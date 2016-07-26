@@ -21,8 +21,11 @@ class PowerOperation(object):
         :return:
         """
         instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        if instance.state['Name'] == 'running':
+            return True
+
         instance.start()
-        self.instance_waiter.wait(instance, self.instance_waiter.RUNNING)
+        instance.wait_until_running()
         return True
 
     def power_off(self, ec2_session, ami_id):
@@ -35,6 +38,9 @@ class PowerOperation(object):
         :return:
         """
         instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        if instance.state['Name'] == 'stopped':
+            return True
+
         instance.stop()
-        self.instance_waiter.wait(instance, self.instance_waiter.STOPPED)
+        instance.wait_until_stopped()
         return True
