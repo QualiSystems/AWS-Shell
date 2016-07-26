@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import jsonpickle
-from mock import Mock, mock
+from mock import Mock, patch
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
@@ -81,9 +81,9 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider)
 
     def test_cleanup_connectivity(self):
-        with mock.patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
-            with mock.patch('cloudshell.cp.aws.aws_shell.ErrorHandlingContext'):
-                with mock.patch('cloudshell.cp.aws.aws_shell.CloudShellSessionContext'):
+        with patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
+            with patch('cloudshell.cp.aws.aws_shell.ErrorHandlingContext'):
+                with patch('cloudshell.cp.aws.aws_shell.CloudShellSessionContext'):
                     self.aws_shell_api.cleanup_connectivity(self.command_context)
 
                     self.aws_shell_api.clean_up_operation.cleanup = Mock(return_value=True)
