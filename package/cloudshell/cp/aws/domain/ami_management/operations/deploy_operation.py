@@ -1,3 +1,4 @@
+import traceback
 import uuid
 from multiprocessing import TimeoutError
 
@@ -38,8 +39,8 @@ class DeployAMIOperation(object):
         self.key_pair_service = key_pair_service
         self.subnet_serivce = subnet_service
 
-    def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model, ami_deployment_model,
-               ec2_client):
+    def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model,
+               ami_deployment_model, ec2_client, logger):
         """
         :param ec2_client: boto3.ec2.client
         :param ec2_session: EC2 session
@@ -52,6 +53,7 @@ class DeployAMIOperation(object):
         :type aws_ec2_cp_resource_model: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
+        :param logging.Logger logger:
         :return:
         """
 
@@ -61,6 +63,7 @@ class DeployAMIOperation(object):
             raise ValueError('VPC is not set for this reservation')
 
         key_name = self.key_pair_service.get_reservation_key_name(reservation_id=reservation.reservation_id)
+        logger.info("Found shared sandbox key pair '{0}'".format(key_name))
 
         security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                   ec2_session=ec2_session,
@@ -90,7 +93,8 @@ class DeployAMIOperation(object):
                                                     instance=instance,
                                                     reservation=reservation,
                                                     s3_session=s3_session,
-                                                    ami_deployment_model=ami_deployment_model)
+                                                    ami_deployment_model=ami_deployment_model,
+                                                    logger=logger)
 
         deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
 
@@ -109,7 +113,7 @@ class DeployAMIOperation(object):
                             elastic_ip=ami_deployment_model.add_elastic_ip)
 
     def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance,
-                             ami_deployment_model):
+                             ami_deployment_model, logger):
         """
         Will load win
         :param s3_session:
@@ -118,6 +122,7 @@ class DeployAMIOperation(object):
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param wait_for_credentials:
         :param instance:
+        :param logging.Logger logger:
         :return:
         :rtype: cloudshell.cp.aws.models.ami_credentials.AMICredentials
         """
@@ -131,11 +136,12 @@ class DeployAMIOperation(object):
                 result = self.credentials_service.get_windows_credentials(instance=instance,
                                                                           key_value=key_value,
                                                                           wait_for_password=wait_for_credentials)
-            except TimeoutError as te:
+            except TimeoutError:
+                logger.info(
+                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
             except Exception as e:
                 raise
-
         else:
             return None if ami_deployment_model.user else self.credentials_service.get_default_linux_credentials()
 

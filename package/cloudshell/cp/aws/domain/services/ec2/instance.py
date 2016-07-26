@@ -60,7 +60,7 @@ class InstanceService(object):
                 ec2_client.get_waiter('instance_status_ok') \
                     .wait(InstanceIds=[instance.instance_id])
             except WaiterError as e:
-                raise e
+                raise
         else:
             instance.wait_until_running()
 

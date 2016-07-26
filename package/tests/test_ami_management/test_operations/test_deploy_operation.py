@@ -47,7 +47,8 @@ class TestDeployOperation(TestCase):
                                            Mock(),
                                            self.ec2_datamodel,
                                            ami_datamodel,
-                                           ec2_client=self.ec2_client)
+                                           self.ec2_client,
+                                           Mock())
 
         ami_credentials = self.credentials_manager.get_windows_credentials()
 

@@ -24,7 +24,8 @@ class TestCleanupConnectivity(TestCase):
         self.cleanup_operation.cleanup(ec2_session=self.ec2_session,
                                        s3_session=self.s3_session,
                                        aws_ec2_data_model=self.aws_ec2_data_model,
-                                       reservation_id=self.reservation_id)
+                                       reservation_id=self.reservation_id,
+                                       logger=Mock())
 
         self.assertTrue(self.vpc_serv.find_vpc_for_reservation.called_with(self.ec2_session, self.reservation_id))
         self.assertTrue(self.key_pair_serv.remove_key_pair_for_reservation_in_s3.called_with(self.s3_session,
@@ -44,6 +45,7 @@ class TestCleanupConnectivity(TestCase):
                           ec2_session=self.ec2_session,
                           s3_session=self.s3_session,
                           aws_ec2_data_model=self.aws_ec2_data_model,
-                          reservation_id=self.reservation_id)
+                          reservation_id=self.reservation_id,
+                        logger=Mock())
 
         self.assertFalse(result['success'])
