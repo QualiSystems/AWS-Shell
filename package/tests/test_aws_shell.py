@@ -100,19 +100,22 @@ class TestAWSShell(TestCase):
                     ))
 
     def test_prepare_connectivity(self):
-        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
-        self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
+        with patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
+            with patch('cloudshell.cp.aws.aws_shell.ErrorHandlingContext'):
+                with patch('cloudshell.cp.aws.aws_shell.CloudShellSessionContext'):
+                    req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+                    self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
 
-        res = self.aws_shell_api.prepare_connectivity(self.command_context, req)
+                    res = self.aws_shell_api.prepare_connectivity(self.command_context, req)
 
-        self.assertTrue(self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity.called_with(
-            self.aws_shell_api.aws_session_manager.get_ec2_session(),
-            self.aws_shell_api.aws_session_manager.get_s3_session(),
-            self.command_context.reservation.reservation_id,
-            self.aws_shell_api.model_parser.convert_to_aws_resource_model,
-            DeployDataHolder(jsonpickle.decode(req)).driverRequest
-        ))
-        self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
+                    self.assertTrue(self.aws_shell_api.prepare_connectivity_operation.prepare_connectivity.called_with(
+                        self.aws_shell_api.aws_session_manager.get_ec2_session(),
+                        self.aws_shell_api.aws_session_manager.get_s3_session(),
+                        self.command_context.reservation.reservation_id,
+                        self.aws_shell_api.model_parser.convert_to_aws_resource_model,
+                        DeployDataHolder(jsonpickle.decode(req)).driverRequest
+                    ))
+                    self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
 
     def test_prepare_connectivity_invalid_req(self):
         with patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
