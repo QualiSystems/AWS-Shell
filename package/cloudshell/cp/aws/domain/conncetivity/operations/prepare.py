@@ -139,12 +139,14 @@ class PrepareConnectivityOperation(object):
 
     def _update_route_to_peered_vpc(self, route_table, peer_connection_id, target_vpc_cidr):
         route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': target_vpc_cidr})
-        add_new_route = True
+        add_new_route = False
         if route:
-            if not (route.state == 'active' and route.vpc_peering_connection_id == peer_connection_id):
-                route.delete()
-            else:
-                add_new_route = False
+            route.delete()
+            add_new_route = True
+            # if not (route.state == 'active' and route.vpc_peering_connection_id == peer_connection_id):
+            #     route.delete()
+            # else:
+            #     add_new_route = False
 
         if add_new_route:
             self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
