@@ -67,5 +67,5 @@ class RouteTablesService(object):
         :return:
         """
         for route in route_table.routes:
-            if route.state == 'blackhole':
+            if hasattr(route, 'state') and route.state == 'blackhole':
                 route.delete()
