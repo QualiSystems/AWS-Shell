@@ -113,7 +113,8 @@ class AWSShell(object):
                                                              reservation_id=command_context.reservation.reservation_id,
                                                              logger=logger)
 
-                    return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': [result]}})
+                    return self.command_result_parser.set_command_result(
+                        {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request):
         """
@@ -215,7 +216,8 @@ class AWSShell(object):
 
                         is_malformed_ = error in clientErr.response and \
                                         code in clientErr.response[error] and \
-                                        clientErr.response[error][code] == malformed
+                                        (clientErr.response[error][code] == malformed or clientErr.response[error][
+                                            code] == 'InvalidInstanceID.NotFound')
 
                         if not is_malformed_:
                             raise
@@ -237,7 +239,8 @@ class AWSShell(object):
                 resource = command_context.remote_endpoints[0]
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                return self.deployed_app_ports_operation.get_formated_deployed_app_ports(data_holder.vmdetails.vmCustomParams)
+                return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
+                    data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request):
         """
@@ -248,7 +251,8 @@ class AWSShell(object):
                 with CloudShellSessionContext(command_context) as session:
                     logger.info('Deploying AMI')
 
-                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(
+                        deployment_request)
                     aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
                     ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
                     ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
@@ -310,4 +314,3 @@ class AWSShell(object):
                     return self.access_key_operation.get_access_key(s3_session=s3_session,
                                                                     aws_ec2_resource_model=aws_ec2_resource_model,
                                                                     reservation_id=reservation_id)
-
