@@ -72,7 +72,8 @@ class PrepareConnectivityOperation(object):
                                 vpc_id=vpc.id,
                                 sandbox_vpc_cidr=cidr,
                                 internet_gateway_id=internet_gateway_id,
-                                reservation_model=reservation)
+                                reservation_model=reservation,
+                                logger=logger)
 
                 logger.info("Get or create default Security Group")
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
@@ -98,7 +99,17 @@ class PrepareConnectivityOperation(object):
                                                   reservation_id=reservation_id)
 
     def _peer_vpcs(self, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
-                   reservation_model):
+                   reservation_model, logger):
+        """
+        :param ec2_session:
+        :param management_vpc_id:
+        :param vpc_id:
+        :param sandbox_vpc_cidr:
+        :param internet_gateway_id:
+        :param reservation_model:
+        :param logging.Logger logger:
+        :return:
+        """
         # check if a peering connection already exist
         vpc_peer_connection_id = None
         peerings = \
@@ -122,14 +133,16 @@ class PrepareConnectivityOperation(object):
                                                                          vpc_id=management_vpc_id)
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
                                          route_table=mgmt_route_table,
-                                         target_vpc_cidr=sandbox_vpc_cidr)
+                                         target_vpc_cidr=sandbox_vpc_cidr,
+                                         logger=logger)
 
         # add route in sandbox route table to the management vpc
         sandbox_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
                                                                             vpc_id=vpc_id)
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
                                          route_table=sandbox_route_table,
-                                         target_vpc_cidr=mgmt_cidr)
+                                         target_vpc_cidr=mgmt_cidr,
+                                         logger=logger)
 
         # add route in sandbox route table to the internet gateway
         route_igw = self.route_table_service.find_first_route(sandbox_route_table, {'gateway_id': internet_gateway_id})
@@ -137,14 +150,25 @@ class PrepareConnectivityOperation(object):
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
 
-    def _update_route_to_peered_vpc(self, route_table, peer_connection_id, target_vpc_cidr):
+    def _update_route_to_peered_vpc(self, route_table, peer_connection_id, target_vpc_cidr, logger):
+        """
+        :param route_table:
+        :param peer_connection_id:
+        :param target_vpc_cidr:
+        :param logging.Logger logger:
+        :return:
+        """
+        logger.info("_update_route_to_peered_vpc :: route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
+                    .format(route_table.id, peer_connection_id, target_vpc_cidr))
         route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': target_vpc_cidr})
         if route:
-            route.delete()
-
-        self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
-                                                         target_peering_id=peer_connection_id,
-                                                         target_vpc_cidr=target_vpc_cidr)
+            logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
+            route.replace(VpcPeeringConnectionId=peer_connection_id)
+        else:
+            logger.info("_update_route_to_peered_vpc :: route not found, creating it")
+            self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
+                                                             target_peering_id=peer_connection_id,
+                                                             target_vpc_cidr=target_vpc_cidr)
 
     def _get_or_create_security_group(self, ec2_session, reservation, vpc, management_sg_id):
         sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
