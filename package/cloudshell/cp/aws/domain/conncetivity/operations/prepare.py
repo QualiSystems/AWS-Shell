@@ -29,10 +29,11 @@ class PrepareConnectivityOperation(object):
         self.tag_service = tag_service
         self.route_table_service = route_table_service
 
-    def prepare_connectivity(self, ec2_session, s3_session, reservation, aws_ec2_datamodel, request, logger):
+    def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, request, logger):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
         also will create a key pair for that reservation
+        :param ec2_client: ec2 client
         :param ec2_session: EC2 Session
         :param s3_session: S3 Session
         :param reservation: reservation model
@@ -67,7 +68,8 @@ class PrepareConnectivityOperation(object):
 
                 # will try to peer sandbox VPC to mgmt VPC if not exist
                 logger.info("Create VPC Peering with management vpc")
-                self._peer_vpcs(ec2_session=ec2_session,
+                self._peer_vpcs(ec2_client=ec2_client,
+                                ec2_session=ec2_session,
                                 management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
                                 vpc_id=vpc.id,
                                 sandbox_vpc_cidr=cidr,
@@ -98,9 +100,10 @@ class PrepareConnectivityOperation(object):
                                                   bucket=bucket,
                                                   reservation_id=reservation_id)
 
-    def _peer_vpcs(self, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
+    def _peer_vpcs(self, ec2_client, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
                    reservation_model, logger):
         """
+        :param ec2_client
         :param ec2_session:
         :param management_vpc_id:
         :param vpc_id:
@@ -134,7 +137,9 @@ class PrepareConnectivityOperation(object):
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
                                          route_table=mgmt_route_table,
                                          target_vpc_cidr=sandbox_vpc_cidr,
-                                         logger=logger)
+                                         logger=logger,
+                                         ec2_session=ec2_session,
+                                         ec2_client=ec2_client)
 
         # add route in sandbox route table to the management vpc
         sandbox_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
@@ -142,7 +147,9 @@ class PrepareConnectivityOperation(object):
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
                                          route_table=sandbox_route_table,
                                          target_vpc_cidr=mgmt_cidr,
-                                         logger=logger)
+                                         logger=logger,
+                                         ec2_session=ec2_session,
+                                         ec2_client=ec2_client)
 
         # add route in sandbox route table to the internet gateway
         route_igw = self.route_table_service.find_first_route(sandbox_route_table, {'gateway_id': internet_gateway_id})
@@ -150,8 +157,11 @@ class PrepareConnectivityOperation(object):
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
 
-    def _update_route_to_peered_vpc(self, route_table, peer_connection_id, target_vpc_cidr, logger):
+    def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
+                                    target_vpc_cidr, logger):
         """
+        :param ec2_client:
+        :param ec2_session:
         :param route_table:
         :param peer_connection_id:
         :param target_vpc_cidr:
@@ -160,10 +170,18 @@ class PrepareConnectivityOperation(object):
         """
         logger.info("_update_route_to_peered_vpc :: route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
                     .format(route_table.id, peer_connection_id, target_vpc_cidr))
-        route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': target_vpc_cidr})
+
+        # need to check for both possibilities since the amazon api for Route is unpredictable
+        route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': str(target_vpc_cidr)})
+        if not route:
+            route = self.route_table_service.find_first_route(route_table, {'DestinationCidrBlock': str(target_vpc_cidr)})
+
         if route:
             logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
-            route.replace(VpcPeeringConnectionId=peer_connection_id)
+            self.route_table_service.replace_route(route_table=route_table,
+                                                   route=route,
+                                                   peer_connection_id=peer_connection_id,
+                                                   ec2_client=ec2_client)
         else:
             logger.info("_update_route_to_peered_vpc :: route not found, creating it")
             self.route_table_service.add_route_to_peered_vpc(route_table=route_table,

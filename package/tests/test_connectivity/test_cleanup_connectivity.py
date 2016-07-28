@@ -25,12 +25,13 @@ class TestCleanupConnectivity(TestCase):
                                        s3_session=self.s3_session,
                                        aws_ec2_data_model=self.aws_ec2_data_model,
                                        reservation_id=self.reservation_id,
-                                       logger=Mock())
+                                       logger=Mock(),
+                                       ec2_client=Mock())
 
         self.assertTrue(self.vpc_serv.find_vpc_for_reservation.called_with(self.ec2_session, self.reservation_id))
         self.assertTrue(self.key_pair_serv.remove_key_pair_for_reservation_in_s3.called_with(self.s3_session,
-                                                                                       self.aws_ec2_data_model,
-                                                                                       self.reservation_id))
+                                                                                             self.aws_ec2_data_model,
+                                                                                             self.reservation_id))
         self.assertTrue(self.vpc_serv.delete_all_instances.called_with(vpc))
         self.assertTrue(self.vpc_serv.remove_all_security_groups.called_with(vpc))
         self.assertTrue(self.vpc_serv.remove_all_subnets.called_with(vpc))
@@ -40,12 +41,13 @@ class TestCleanupConnectivity(TestCase):
     def test_cleanup_no_vpc(self):
         vpc_serv = Mock()
         vpc_serv.find_vpc_for_reservation = Mock(return_value=None)
-        result = CleanupConnectivityOperation(vpc_serv, self.key_pair_serv, self.route_table_service)\
+        result = CleanupConnectivityOperation(vpc_serv, self.key_pair_serv, self.route_table_service) \
             .cleanup(
-                          ec2_session=self.ec2_session,
-                          s3_session=self.s3_session,
-                          aws_ec2_data_model=self.aws_ec2_data_model,
-                          reservation_id=self.reservation_id,
-                        logger=Mock())
+                ec2_session=self.ec2_session,
+                s3_session=self.s3_session,
+                aws_ec2_data_model=self.aws_ec2_data_model,
+                reservation_id=self.reservation_id,
+                logger=Mock(),
+                ec2_client=Mock())
 
         self.assertFalse(result['success'])

@@ -53,14 +53,19 @@ class RouteTablesService(object):
         for route in route_table.routes:
             all_filter_ok = True
             for key in filters:
-                if not(hasattr(route, key) and getattr(route, key) == filters[key]):
-                    all_filter_ok = False
-                    break
+                if type(route) is dict:
+                    if not(key in route and route[key] == filters[key]):
+                        all_filter_ok = False
+                        break
+                else:
+                    if not(hasattr(route, key) and getattr(route, key) == filters[key]):
+                        all_filter_ok = False
+                        break
             if all_filter_ok:
                 return route
         return None
 
-    def delete_blackhole_routes(self, route_table):
+    def delete_blackhole_routes(self, route_table, ec2_client=None):
         """
         Removes all routes in in route_table that have status blackhole
         :param route_table:
@@ -69,3 +74,12 @@ class RouteTablesService(object):
         for route in route_table.routes:
             if hasattr(route, 'state') and route.state == 'blackhole':
                 route.delete()
+            if ec2_client and type(route) is dict and 'State' in route and route['State'] == 'blackhole':
+                ec2_client.delete_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'])
+
+    def replace_route(self, route_table, route, peer_connection_id, ec2_client):
+        if type(route) is dict:
+            ec2_client.replace_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'],
+                                     VpcPeeringConnectionId=peer_connection_id)
+        else:
+            route.replace(VpcPeeringConnectionId=peer_connection_id)

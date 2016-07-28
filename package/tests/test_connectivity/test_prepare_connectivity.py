@@ -14,6 +14,7 @@ class TestPrepareConnectivity(TestCase):
         self.sg_serv = Mock()
         self.key_pair_serv = Mock()
         self.ec2_session = Mock()
+        self.ec2_client = Mock()
         self.s3_session = Mock()
         self.aws_dm = Mock()
         self.tag_service = Mock()
@@ -31,12 +32,13 @@ class TestPrepareConnectivity(TestCase):
 
         self.vpc_serv.get_peering_connection_by_reservation_id = Mock(return_value=None)
 
-        results = self.prepare_conn.prepare_connectivity(self.ec2_session,
-                                                         self.s3_session,
-                                                         self.reservation,
-                                                         self.aws_dm,
-                                                         request,
-                                                         Mock())
+        results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                                         ec2_session=self.ec2_session,
+                                                         s3_session=self.s3_session,
+                                                         reservation=self.reservation,
+                                                         aws_ec2_datamodel=self.aws_dm,
+                                                         request=request,
+                                                         logger=Mock())
 
         self.assertEqual(request.actions[0].actionId, results[0].actionId)
         self.assertEqual(results[0].type, 'PrepareNetwork')
@@ -50,6 +52,7 @@ class TestPrepareConnectivity(TestCase):
         aws_dm.aws_management_vpc_id = None
         self.assertRaises(ValueError,
                           self.prepare_conn.prepare_connectivity,
+                          self.ec2_client,
                           self.ec2_session,
                           self.s3_session,
                           self.reservation,
@@ -62,12 +65,13 @@ class TestPrepareConnectivity(TestCase):
             {"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356", "actionTarget": None,
              "type": "prepareNetwork"}]})
 
-        results = self.prepare_conn.prepare_connectivity(self.ec2_session,
-                                                         self.s3_session,
-                                                         self.reservation,
-                                                         self.aws_dm,
-                                                         request,
-                                                         Mock())
+        results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                                         ec2_session=self.ec2_session,
+                                                         s3_session=self.s3_session,
+                                                         reservation=self.reservation,
+                                                         aws_ec2_datamodel=self.aws_dm,
+                                                         request=request,
+                                                         logger=Mock())
 
         self.assertEqual(request.actions[0].actionId, results[0].actionId)
         self.assertEqual(results[0].type, 'PrepareNetwork')
