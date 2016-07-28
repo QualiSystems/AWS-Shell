@@ -77,3 +77,9 @@ class RouteTablesService(object):
             if ec2_client and type(route) is dict and 'State' in route and route['State'] == 'blackhole':
                 ec2_client.delete_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'])
 
+    def replace_route(self, route_table, route, peer_connection_id, ec2_client):
+        if type(route) is dict:
+            ec2_client.replace_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'],
+                                     VpcPeeringConnectionId=peer_connection_id)
+        else:
+            route.replace(VpcPeeringConnectionId=peer_connection_id)

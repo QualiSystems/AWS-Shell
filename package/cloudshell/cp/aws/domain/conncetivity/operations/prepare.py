@@ -103,6 +103,7 @@ class PrepareConnectivityOperation(object):
     def _peer_vpcs(self, ec2_client, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
                    reservation_model, logger):
         """
+        :param ec2_client
         :param ec2_session:
         :param management_vpc_id:
         :param vpc_id:
@@ -169,16 +170,18 @@ class PrepareConnectivityOperation(object):
         """
         logger.info("_update_route_to_peered_vpc :: route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
                     .format(route_table.id, peer_connection_id, target_vpc_cidr))
+
+        # need to check for both possibilities since the amazon api for Route is unpredictable
         route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': str(target_vpc_cidr)})
         if not route:
             route = self.route_table_service.find_first_route(route_table, {'DestinationCidrBlock': str(target_vpc_cidr)})
+
         if route:
             logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
-            if type(route) is dict:
-                ec2_client.replace_route(RouteTableId=route_table.id, DestinationCidrBlock=target_vpc_cidr,
-                                         VpcPeeringConnectionId=peer_connection_id)
-            else:
-                route.replace(VpcPeeringConnectionId=peer_connection_id)
+            self.route_table_service.replace_route(route_table=route_table,
+                                                   route=route,
+                                                   peer_connection_id=peer_connection_id,
+                                                   ec2_client=ec2_client)
         else:
             logger.info("_update_route_to_peered_vpc :: route not found, creating it")
             self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
