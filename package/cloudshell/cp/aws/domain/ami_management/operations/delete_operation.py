@@ -29,9 +29,13 @@ class DeleteAMIOperation(object):
         instance = self.instance_service.get_instance_by_id(ec2_session, instance_id)
 
         # get the security groups before we delete the instance
-        security_groups_description = instance.security_groups
+        try:
+            security_groups_description = instance.security_groups
+            #in case we have exception the resource is already deleted
+        except Exception :
+            return True
 
-        instance = self.instance_service.terminate_instance(instance)
+        self.instance_service.terminate_instance(instance)
 
         # find the exclusive security groups of the instance and delete them
         if security_groups_description:
