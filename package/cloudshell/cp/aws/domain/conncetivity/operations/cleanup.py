@@ -17,8 +17,9 @@ class CleanupConnectivityOperation(object):
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
 
-    def cleanup(self, ec2_session, s3_session, aws_ec2_data_model, reservation_id, logger):
+    def cleanup(self, ec2_client, ec2_session, s3_session, aws_ec2_data_model, reservation_id, logger):
         """
+        :param ec2_client:
         :param ec2_session:
         :param s3_session:
         :param AWSEc2CloudProviderResourceModel aws_ec2_data_model: The AWS EC2 data model
@@ -48,7 +49,7 @@ class CleanupConnectivityOperation(object):
             self.vpc_service.remove_all_security_groups(vpc)
             self.vpc_service.remove_all_subnets(vpc)
             self.vpc_service.remove_all_peering(vpc)
-            self._delete_blackhole_routes_in_vpc_route_table(ec2_session, aws_ec2_data_model)
+            self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
 
             self.vpc_service.delete_vpc(vpc)
         except Exception as exc:
@@ -58,6 +59,6 @@ class CleanupConnectivityOperation(object):
 
         return result
 
-    def _delete_blackhole_routes_in_vpc_route_table(self, ec2_session, aws_ec2_data_model):
+    def _delete_blackhole_routes_in_vpc_route_table(self, ec2_session, ec2_client, aws_ec2_data_model):
         rt = self.route_table_service.get_main_route_table(ec2_session, aws_ec2_data_model.aws_management_vpc_id)
-        self.route_table_service.delete_blackhole_routes(rt)
+        self.route_table_service.delete_blackhole_routes(rt, ec2_client)

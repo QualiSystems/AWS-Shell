@@ -107,7 +107,10 @@ class AWSShell(object):
 
                     ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
                     s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
-                    result = self.clean_up_operation.cleanup(ec2_session=ec2_session,
+                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
+
+                    result = self.clean_up_operation.cleanup(ec2_client=ec2_client,
+                                                             ec2_session=ec2_session,
                                                              s3_session=s3_session,
                                                              aws_ec2_data_model=aws_ec2_resource_model,
                                                              reservation_id=command_context.reservation.reservation_id,
@@ -132,6 +135,7 @@ class AWSShell(object):
 
                     ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
                     s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
+                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
 
                     # parse request
                     prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
@@ -143,6 +147,7 @@ class AWSShell(object):
                         raise ValueError('Invalid prepare connectivity request')
 
                     results = self.prepare_connectivity_operation.prepare_connectivity(
+                        ec2_client=ec2_client,
                         ec2_session=ec2_session,
                         s3_session=s3_session,
                         reservation=reservation_model,
