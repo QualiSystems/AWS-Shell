@@ -70,13 +70,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo  Description="Ports and protocol to open inbound traffic from outside of the sandbox. The syntax is protocol[tcp(default)/udp]:port[single/range] with semi-colon separation, for example: 80;tcp:443;udp:200-220." IsReadOnly="false" Name="Inbound Ports"  Type="String">
+    <AttributeInfo  Description="Ports and protocol to open inbound traffic from outside of the sandbox. The syntax is port[single/range]:protocol [tcp(default)/udp] with semi-colon separation, for example: 80;443:tcp;200-220:udp." IsReadOnly="false" Name="Inbound Ports"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo  Description="Ports and protocol to open outbound traffic from inside of the sandbox. The syntax is protocol[tcp(default)/udp]:port[single/range] with semi-colon separation, for example: 80;tcp:443;udp:200-220." IsReadOnly="false" Name="Outbound Ports"  Type="String">
+    <AttributeInfo  Description="Ports and protocol to open outbound traffic from inside of the sandbox. The syntax is port[single/range]:protocol [tcp(default)/udp] with semi-colon separation, for example: 80;443:tcp;200-220:udp." IsReadOnly="false" Name="Outbound Ports"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
