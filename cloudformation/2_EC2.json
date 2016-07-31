@@ -1,1 +1,209 @@
-{"Parameters":{"QualixSN":{"Type":"String"},"ESInstanceSN":{"Type":"String"},"QualiXInstanceProfile":{"Type":"String"},"ESInstanceProfile":{"Type":"String"},"SG2id":{"Type":"String"},"SG1id":{"Type":"String"},"ESAMI":{"Type":"String"},"QualixAMI":{"Type":"String"},"KeyPair":{"Type":"String"},"ESInstance2Profile":{"Type":"String"},"ServerIP":{"Type":"String"},"ZUsername":{"Type":"String"},"ZPassword":{"Type":"String"}},"Resources":{"QualixInstance":{"Type":"AWS::EC2::Instance","Properties":{"InstanceType":"t2.micro","IamInstanceProfile":{"Ref":"QualiXInstanceProfile"},"SubnetId":{"Ref":"QualixSN"},"KeyName":{"Ref":"KeyPair"},"Tags":[{"Key":"Name","Value":"QualiX"},{"Key":"CreateBy","Value":"CloudShell"},{"Key":"Role","Value":"Management"}],"ImageId":{"Ref":"QualixAMI"},"SecurityGroupIds":[{"Ref":"SG1id"},{"Ref":"SG2id"}]}},"ESInstance":{"Type":"AWS::EC2::Instance","Properties":{"IamInstanceProfile":{"Ref":"ESInstanceProfile"},"SubnetId":{"Ref":"ESInstanceSN"},"KeyName":{"Ref":"KeyPair"},"Tags":[{"Key":"Name","Value":"ex-shells"},{"Key":"CreateBy","Value":"CloudShell"},{"Key":"Role","Value":"Management"}],"ImageId":{"Ref":"ESAMI"},"InstanceType":"t2.micro","SecurityGroupIds":[{"Ref":"SG1id"}],"UserData":{"Fn::Base64":{"Fn::Join":["",["#!/bin/bash -xe\n","/bin/echo \"","cd /root/ExecutionServer\n","/bin/mono QsExecutionServerConsoleConfig.exe /s:",{"Ref":"ServerIP"}," /u:",{"Ref":"ZUsername"}," /p:",{"Ref":"ZPassword"}," /esn:ES-Shell-",{"Ref":"AWS::Region"}," /i:","100 \" >> /root/ExecutionServer/cf_config_params.txt"]]}}}},"ESInstance2":{"Type":"AWS::EC2::Instance","Properties":{"IamInstanceProfile":{"Ref":"ESInstance2Profile"},"SubnetId":{"Ref":"ESInstanceSN"},"KeyName":{"Ref":"KeyPair"},"Tags":[{"Key":"Name","Value":"es-commands"},{"Key":"CreateBy","Value":"CloudShell"},{"Key":"Role","Value":"Management"}],"ImageId":{"Ref":"ESAMI"},"InstanceType":"t2.micro","SecurityGroupIds":[{"Ref":"SG1id"}],"UserData":{"Fn::Base64":{"Fn::Join":["",["#!/bin/bash -xe\n","/bin/echo \"","cd /root/ExecutionServer\n","/bin/mono QsExecutionServerConsoleConfig.exe /s:",{"Ref":"ServerIP"}," /u:",{"Ref":"ZUsername"}," /p:",{"Ref":"ZPassword"}," /esn:ES-Shell-",{"Ref":"AWS::Region"}," /i:","100 \" >> /root/ExecutionServer/cf_config_params.txt"]]}}}}},"Description":"EC2 instances - QualiX and ES","Outputs":{"QualixInstanceIP":{"Description":"IP of Bastion-NG Host","Value":{"Fn::GetAtt":["QualixInstance","PrivateIp"]}}}}
+{
+	"Parameters": {
+		"QualixSN": {
+			"Type": "String"
+		},
+		"ESInstanceSN": {
+			"Type": "String"
+		},
+		"QualiXInstanceProfile": {
+			"Type": "String"
+		},
+		"ESInstanceProfile": {
+			"Type": "String"
+		},
+		"SG2id": {
+			"Type": "String"
+		},
+		"SG1id": {
+			"Type": "String"
+		},
+		"ESAMI": {
+			"Type": "String"
+		},
+		"QualixAMI": {
+			"Type": "String"
+		},
+		"KeyPair": {
+			"Type": "String"
+		},
+		"ESInstance2Profile": {
+			"Type": "String"
+		},
+		"ServerIP": {
+			"Type": "String"
+		},
+		"ZUsername": {
+			"Type": "String"
+		},
+		"ZPassword": {
+			"Type": "String"
+		}
+	},
+	"Resources": {
+		"QualixInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"InstanceType": "t2.micro",
+				"IamInstanceProfile": {
+					"Ref": "QualiXInstanceProfile"
+				},
+				"SubnetId": {
+					"Ref": "QualixSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "QualiX"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "QualixAMI"
+				},
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				},
+				{
+					"Ref": "SG2id"
+				}]
+			}
+		},
+		"ESInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "ESInstanceProfile"
+				},
+				"SubnetId": {
+					"Ref": "ESInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "ex-shells"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": "t2.micro",
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"/bin/echo \"",
+						"cd /root/ExecutionServer\n",
+						"/bin/mono QsExecutionServerConsoleConfig.exe /s:",
+						{
+							"Ref": "ServerIP"
+						},
+						" /u:",
+						{
+							"Ref": "ZUsername"
+						},
+						" /p:",
+						{
+							"Ref": "ZPassword"
+						},
+						" /esn:ES-Shell-",
+						{
+							"Ref": "AWS::Region"
+						},
+						" /i:",
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+					}
+				}
+			}
+		},
+		"ESInstance2": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "ESInstance2Profile"
+				},
+				"SubnetId": {
+					"Ref": "ESInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-commands"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": "t2.micro",
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"/bin/echo \"",
+						"cd /root/ExecutionServer\n",
+						"/bin/mono QsExecutionServerConsoleConfig.exe /s:",
+						{
+							"Ref": "ServerIP"
+						},
+						" /u:",
+						{
+							"Ref": "ZUsername"
+						},
+						" /p:",
+						{
+							"Ref": "ZPassword"
+						},
+						" /esn:ES-Shell-",
+						{
+							"Ref": "AWS::Region"
+						},
+						" /i:",
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+					}
+				}
+			}
+		}
+	},
+	"Description": "EC2 instances - QualiX and ES",
+	"Outputs": {
+		"QualixInstanceIP": {
+			"Description": "IP of Bastion-NG Host",
+			"Value": {
+				"Fn::GetAtt": ["QualixInstance",
+				"PrivateIp"]
+			}
+		}
+	}
+}
