@@ -1,12 +1,14 @@
+from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
+from cloudshell.cp.aws.domain.services.waiters.instance import InstanceWaiter
+
 
 class PowerOperation(object):
-    def __init__(self, aws_api, instance_waiter):
+    def __init__(self, instance_service, instance_waiter):
         """
-        :param aws_api: this is the...
-        :type aws_api: cloudshell.cp.aws.device_access_layer.aws_api.AWSApi
-        :type instance_waiter: cloudshell.cp.aws.domain.services.task_manager.instance_waiter.EC2InstanceWaiter
+        :param InstanceService instance_service:
+        :param InstanceWaiter instance_waiter:
         """
-        self.aws_api = aws_api
+        self.instance_service = instance_service
         self.instance_waiter = instance_waiter
 
     def power_on(self, ec2_session, ami_id):
@@ -18,9 +20,12 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.aws_api.get_instance_by_id(ec2_session, ami_id)
+        instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        if instance.state['Name'] == 'running':
+            return True
+
         instance.start()
-        self.instance_waiter.wait(instance, self.instance_waiter.RUNNING)
+        instance.wait_until_running()
         return True
 
     def power_off(self, ec2_session, ami_id):
@@ -32,7 +37,10 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.aws_api.get_instance_by_id(ec2_session, ami_id)
+        instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        if instance.state['Name'] == 'stopped':
+            return True
+
         instance.stop()
-        self.instance_waiter.wait(instance, self.instance_waiter.STOPPED)
+        instance.wait_until_stopped()
         return True

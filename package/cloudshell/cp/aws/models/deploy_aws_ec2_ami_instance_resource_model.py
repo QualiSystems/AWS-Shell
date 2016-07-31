@@ -1,6 +1,6 @@
 class DeployAWSEc2AMIInstanceResourceModel(object):
     def __init__(self):
-        self.aws_ec2 = ''
+        self.cloud_provider = ''
         self.aws_ami_id = ''
         self.storage_size = ''
         self.storage_iops = ''
@@ -9,16 +9,18 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.min_count = 0  # type: int
         self.max_count = 0  # type: int
         self.instance_type = ''  # type: str
-        self.aws_key = ''  # type: str
         self.security_group_ids = None  # type: str
         self.private_ip_address = ''  # type: str
-        self.device_name = ''  # type: str
+        self.root_volume_name = ''  # type: str
         self.delete_on_termination = True  # type: bool
-        self.auto_power_on = False  # type: bool
         self.auto_power_off = False  # type: bool
         self.wait_for_ip = False  # type: bool
+        self.wait_for_status_check = False  # type: bool
         self.auto_delete = False  # type: bool
         self.autoload = False  # type: bool
         self.outbound_ports = ''  # type: str
         self.inbound_ports = ''  # type: str
-
+        self.wait_for_credentials = ''  # type: str
+        self.add_public_ip = False  # type: bool
+        self.add_elastic_ip = ''  # type: str
+        self.user = ''  # type: str

@@ -5,3 +5,4 @@ mock
 teamcity-messages
 jsonpickle
 nose-exclude
+coveralls
