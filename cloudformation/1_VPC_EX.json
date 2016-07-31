@@ -299,9 +299,13 @@
 						"Action": "s3:ListBucket",
 						"Resource": {
 							"Fn::Join": ["",
-							["arn:aws:s3:::cloudshell-",
+							["arn:aws:s3:::cloudshell-sandboxes-",
 							{
 								"Ref": "AWS::AccountId"
+							},
+							"-",
+							{
+								"Ref": "AWS::Region"
 							}]]
 						}
 					},
@@ -312,6 +316,10 @@
 							["arn:aws:s3:::cloudshell-sandboxes-",
 							{
 								"Ref": "AWS::AccountId"
+							},
+							"-",
+							{
+								"Ref": "AWS::Region"
 							},
 							"/*"]]
 						},
@@ -358,9 +366,13 @@
 			"Properties": {
 				"BucketName": {
 					"Fn::Join": ["",
-					["cloudshell-sanboxes-",
+					["cloudshell-sandboxes-",
 					{
 						"Ref": "AWS::AccountId"
+					},
+					"-",
+					{
+						"Ref": "AWS::Region"
 					}]]
 				},
 				"Tags": [{
