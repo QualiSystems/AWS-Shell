@@ -10,12 +10,12 @@
 			"eu-west-1": {
 				"QualixAMI": "ami-cd1774be",
 				"ESAMI": "ami-ac2945df",
-				"NatAMI": "ami-004b0f60"
+				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-2": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a8dd45db"
+				"NatAMI": "ami-a275b1c2"
 			},							
 			"ap-south-1": {
 				"QualixAMI": "ami-fa16db9a",
@@ -46,20 +46,12 @@
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
 				"NatAMI": "ami-5825cd37"
-			},						
-			"eu-west-1": {
-				"QualixAMI": "ami-fa16db9a",
-				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a8dd45db"
-			},										
+			},														
 			"sa-east-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
 				"NatAMI": "ami-9336bcff"
-			},						
-			
-			
-			
+			},													
 		},
 		"AZFromRegion": {
 			"us-east-1": {
