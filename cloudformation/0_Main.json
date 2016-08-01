@@ -16,49 +16,46 @@
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
 				"NatAMI": "ami-a8dd45db"
-			},
-							
-amzn-ami-vpc-nat-hvm-2016.03.3.x86_64-ebs
-
+			},							
 			"ap-south-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
-			},
+				"NatAMI": "ami-e2b9d38d"
+			},			`																		
 			"ap-northeast-2": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
-			},			
+				"NatAMI": "ami-d14388bf"
+			},													
 			"ap-southeast-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
-			},
+				"NatAMI": "ami-a79b49c4"
+			},			
 			"ap-southeast-2": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
-			},									
+				"NatAMI": "ami-53371f30"
+			},		
 			"ap-northeast-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
+				"NatAMI": "ami-2443b745"
 			},
 			"eu-central-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
+				"NatAMI": "ami-5825cd37"
 			},						
 			"eu-west-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
-			},
+				"NatAMI": "ami-a8dd45db"
+			},										
 			"sa-east-1": {
 				"QualixAMI": "ami-fa16db9a",
 				"ESAMI": "ami-d26ea3b2",
-				"NatAMI": "ami-a275b1c2"
+				"NatAMI": "ami-9336bcff"
 			},						
 			
 			
