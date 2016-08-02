@@ -113,8 +113,7 @@
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
 						"/bin/echo \"",
-						"cd /root/ExecutionServer\n",
-						"/bin/mono QsExecutionServerConsoleConfig.exe /s:",
+						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
 						},
@@ -160,8 +159,7 @@
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
 						"/bin/echo \"",
-						"cd /root/ExecutionServer\n",
-						"/bin/mono QsExecutionServerConsoleConfig.exe /s:",
+						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
 						},
@@ -173,7 +171,7 @@
 						{
 							"Ref": "ZPassword"
 						},
-						" /esn:ES-Shell-",
+						" /esn:ES-Commands-",
 						{
 							"Ref": "AWS::Region"
 						},
