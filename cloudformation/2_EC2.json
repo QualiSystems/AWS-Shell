@@ -183,7 +183,7 @@
 						{
 							"Ref": "ZPassword"
 						},
-						" /esn:ES-Shell-",
+						" /esn:ES-Commands-",
 						{
 							"Ref": "AWS::Region"
 						},
