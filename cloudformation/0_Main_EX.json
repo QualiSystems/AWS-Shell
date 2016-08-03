@@ -76,7 +76,7 @@
 			},
 			"eu-west-1": {
 				"QualixAMI": "ami-ea8ece8a",
-				"ESAMI": "ami-7ec3ac0d",
+				"ESAMI": "ami-ecc9898c",
 				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-2": {
