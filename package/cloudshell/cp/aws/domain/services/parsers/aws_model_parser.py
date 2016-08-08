@@ -14,6 +14,9 @@ class AWSModelsParser(object):
 
     @staticmethod
     def convert_to_aws_resource_model(resource):
+        """
+        :rtype AWSEc2CloudProviderResourceModel:
+        """
         resource_context = resource.attributes
         aws_ec2_resource_model = AWSEc2CloudProviderResourceModel()
         aws_ec2_resource_model.region = resource_context['Region']
