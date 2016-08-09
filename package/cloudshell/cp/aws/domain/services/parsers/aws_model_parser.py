@@ -6,6 +6,7 @@ from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import 
 
 
 class AWSModelsParser(object):
+
     @staticmethod
     def convert_app_resource_to_deployed_app(resource):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
@@ -63,8 +64,9 @@ class AWSModelsParser(object):
         deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.add_public_ip)
         deployment_resource_model.add_elastic_ip = data_holder.ami_params.add_elastic_ip
         deployment_resource_model.user = data_holder.ami_params.user
+        deployment_resource_model.app_name = data_holder.app_name
 
-        return deployment_resource_model, data_holder.app_name
+        return deployment_resource_model
 
     @staticmethod
     def convert_to_bool(string):

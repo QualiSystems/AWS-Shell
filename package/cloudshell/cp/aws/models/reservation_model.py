@@ -6,7 +6,7 @@ class ReservationModel(object):
         self.domain = ''
 
     @staticmethod
-    def create_instance_from_reservation(reservation):
+    def create_instance(reservation):
         res_model = ReservationModel()
         res_model.reservation_id = reservation.reservation_id
         res_model.blueprint = reservation.environment_name

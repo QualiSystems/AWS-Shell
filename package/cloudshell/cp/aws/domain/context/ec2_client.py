@@ -21,6 +21,7 @@ class EC2ClientContext(object):
         """
         Initializes aws ec2 client instance
         :return: Subclass of :py:class:`~boto3.resources.base.ServiceResource`
+        :rtype EC2.Client:
         """
         return self.aws_session_manager.get_ec2_client(cloudshell_session=self.cloudshell_session,
                                                        aws_ec2_data_model=self.aws_ec2_resource_model)
