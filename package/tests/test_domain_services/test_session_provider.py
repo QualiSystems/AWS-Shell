@@ -1,7 +1,5 @@
 from unittest import TestCase
 from mock import Mock
-from moto import mock_s3
-from moto import mock_ec2
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 
 DECRYPTED_PREFIX = "decrypted: "
