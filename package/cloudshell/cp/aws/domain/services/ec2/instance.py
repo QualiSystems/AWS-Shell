@@ -14,9 +14,11 @@ class InstanceService(object):
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
-    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check):
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check,
+                        logger):
         """
         Deploys an AMI
+        :param logger: logger
         :param wait_for_status_check: bool
         :param ec2_client: boto3.ec2.client
         :param name: Will assign the deployed vm with the name
@@ -46,7 +48,7 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        self.wait_for_instance_to_run_in_aws(ec2_client, instance, wait_for_status_check)
+        self.wait_for_instance_to_run_in_aws(ec2_client, instance, wait_for_status_check,logger)
 
         self._set_tags(instance, name, reservation)
 
@@ -54,13 +56,14 @@ class InstanceService(object):
         instance.load()
         return instance
 
-    def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check):
+    def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check,logger):
         if wait_for_status_check:
             try:
                 ec2_client.get_waiter('instance_status_ok') \
                     .wait(InstanceIds=[instance.instance_id])
             except WaiterError as e:
                 raise
+            logger.info("Instance created with status: instance_status_ok.")
         else:
             instance.wait_until_running()
 
