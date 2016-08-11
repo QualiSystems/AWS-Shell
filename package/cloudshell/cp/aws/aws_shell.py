@@ -1,35 +1,30 @@
-import botocore
 import jsonpickle
-from botocore.exceptions import ClientError
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
-from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
+from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
-from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
-from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
-from cloudshell.cp.aws.domain.context.aws_api import AwsApiSessionContext
-from cloudshell.cp.aws.domain.context.aws_resource_model import AwsResourceModelContext
-from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
-from cloudshell.cp.aws.domain.context.ec2_session import EC2SessionContext
-from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
-from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
+from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
+from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
-from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
+from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
+from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
@@ -39,7 +34,6 @@ from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 
 
 class AWSShell(object):
@@ -110,6 +104,7 @@ class AWSShell(object):
         :return: json string response
         :rtype: str
         """
+
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Cleanup Connectivity')
             result = self.clean_up_operation \
@@ -134,9 +129,10 @@ class AWSShell(object):
             shell_context.logger.info('Prepare Connectivity')
 
             # parse request
-            prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
-            prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
-
+            decoded_request = DeployDataHolder(jsonpickle.decode(request))
+            prepare_connectivity_request = None
+            if hasattr(decoded_request, 'driverRequest'):
+                prepare_connectivity_request = decoded_request.driverRequest
             if not prepare_connectivity_request:
                 raise ValueError('Invalid prepare connectivity request')
 
@@ -144,7 +140,7 @@ class AWSShell(object):
                     ec2_client=shell_context.aws_api.ec2_client,
                     ec2_session=shell_context.aws_api.ec2_session,
                     s3_session=shell_context.aws_api.s3_session,
-                    reservation=ReservationModel.create_instance(command_context.reservation),
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
                     aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
                     request=prepare_connectivity_request,
                     logger=shell_context.logger)
@@ -162,7 +158,7 @@ class AWSShell(object):
             resource = command_context.remote_endpoints[0]
             data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-            self.power_management_operation.power_on(ec2_session=shell_context.ec2_session,
+            self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
                                                      ami_id=data_holder.vmdetails.uid)
 
             shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
@@ -195,7 +191,7 @@ class AWSShell(object):
             data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
             self.delete_ami_operation.delete_instance(logger=shell_context.logger,
-                                                      ec2_session=shell_context.ec2_session,
+                                                      ec2_session=shell_context.aws_api.ec2_session,
                                                       instance_id=data_holder.vmdetails.uid)
 
     def get_application_ports(self, command_context):
@@ -228,7 +224,7 @@ class AWSShell(object):
                 .deploy(ec2_session=shell_context.aws_api.ec2_session,
                         s3_session=shell_context.aws_api.s3_session,
                         name=aws_ami_deployment_model.app_name,
-                        reservation=ReservationModel.create_instance(command_context.reservation),
+                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
                         aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
                         ami_deployment_model=aws_ami_deployment_model,
                         ec2_client=shell_context.aws_api.ec2_client,

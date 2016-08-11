@@ -3,6 +3,8 @@ import jsonpickle
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.shell.core.driver_context import ReservationContextDetails
 
 
 class AWSModelsParser(object):
@@ -112,3 +114,11 @@ class AWSModelsParser(object):
             return resource_context.remote_endpoints[0].fullname
         else:
             raise ValueError('Could not find resource fullname on the deployed app.')
+
+    @staticmethod
+    def convert_to_reservation_model(reservation_context):
+        """
+        :param ReservationContextDetails reservation_context:
+        :rtype: ReservationModel
+        """
+        return ReservationModel(reservation_context)
