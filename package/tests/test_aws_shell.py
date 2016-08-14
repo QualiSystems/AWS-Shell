@@ -41,7 +41,7 @@ class TestAWSShell(TestCase):
                 return_value=(AWSEc2CloudProviderResourceModel()))
         self.reservation_model = ReservationModel(self.command_context.reservation)
         self.aws_shell.model_parser.convert_to_reservation_model = Mock(
-            return_value=self.reservation_model)
+                return_value=self.reservation_model)
 
         self.expected_shell_context = Mock(spec=AwsShellContextModel)
         self.expected_shell_context.logger = Mock()
@@ -147,13 +147,13 @@ class TestAWSShell(TestCase):
 
             # Assert
             self.aws_shell.prepare_connectivity_operation.prepare_connectivity.assert_called_with(
-                ec2_client=self.expected_shell_context.aws_api.ec2_client,
-                ec2_session=self.expected_shell_context.aws_api.ec2_session,
-                s3_session=self.expected_shell_context.aws_api.s3_session,
-                reservation=self.reservation_model,
-                aws_ec2_datamodel=self.expected_shell_context.aws_ec2_resource_model,
-                request=data_holder_mock.driverRequest,
-                logger=self.expected_shell_context.logger)
+                    ec2_client=self.expected_shell_context.aws_api.ec2_client,
+                    ec2_session=self.expected_shell_context.aws_api.ec2_session,
+                    s3_session=self.expected_shell_context.aws_api.s3_session,
+                    reservation=self.reservation_model,
+                    aws_ec2_datamodel=self.expected_shell_context.aws_ec2_resource_model,
+                    request=data_holder_mock.driverRequest,
+                    logger=self.expected_shell_context.logger)
             self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
 
     def test_prepare_connectivity_invalid_req(self):
@@ -178,9 +178,9 @@ class TestAWSShell(TestCase):
             self.aws_shell.delete_instance(self.command_context)
 
         self.aws_shell.delete_ami_operation.delete_instance.assert_called_with(
-            logger=self.expected_shell_context.logger,
-            ec2_session=self.expected_shell_context.aws_api.ec2_session,
-            instance_id=deployed_model.vmdetails.uid)
+                logger=self.expected_shell_context.logger,
+                ec2_session=self.expected_shell_context.aws_api.ec2_session,
+                instance_id=deployed_model.vmdetails.uid)
 
     def test_power_on(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
@@ -197,8 +197,8 @@ class TestAWSShell(TestCase):
             self.aws_shell.power_on_ami(self.command_context)
 
         self.aws_shell.power_management_operation.power_on.assert_called_with(
-            ec2_session=self.expected_shell_context.aws_api.ec2_session,
-            ami_id=deployed_model.vmdetails.uid)
+                ec2_session=self.expected_shell_context.aws_api.ec2_session,
+                ami_id=deployed_model.vmdetails.uid)
 
     def test_power_off(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})
@@ -215,8 +215,8 @@ class TestAWSShell(TestCase):
             self.aws_shell.power_off_ami(self.command_context)
 
         self.aws_shell.power_management_operation.power_off.assert_called_with(
-            ec2_session=self.expected_shell_context.aws_api.ec2_session,
-            ami_id=deployed_model.vmdetails.uid)
+                ec2_session=self.expected_shell_context.aws_api.ec2_session,
+                ami_id=deployed_model.vmdetails.uid)
 
     def test_get_application_portd(self):
         remote_resource = Mock()
@@ -237,4 +237,42 @@ class TestAWSShell(TestCase):
 
         assert res == 'bla'
         self.aws_shell.deployed_app_ports_operation.get_formated_deployed_app_ports.assert_called_with(
-            deployed_model.vmdetails.vmCustomParams)
+                deployed_model.vmdetails.vmCustomParams)
+
+    def test_get_access_key(self):
+        self.command_context.remote_reservation = Mock()
+        self.command_context.remote_reservation.reservation_id = 'reservation_id'
+        self.aws_shell.access_key_operation.get_access_key = Mock(return_value='access_key')
+
+        with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
+            shell_context.return_value = self.mock_context
+
+            # act
+            res = self.aws_shell.get_access_key(self.command_context)
+
+        assert res == 'access_key'
+        self.aws_shell.access_key_operation.get_access_key(
+                s3_session=self.expected_shell_context.aws_api.ec2_session,
+                aws_ec2_resource_model=self.expected_shell_context.aws_ec2_resource_model,
+                reservation_id=self.command_context.remote_reservation.reservation_id)
+
+    def test_refresh_ip(self):
+        self.aws_shell.model_parser.get_private_ip_from_connected_resource_details = Mock(return_value='private_ip')
+        self.aws_shell.model_parser.get_public_ip_from_connected_resource_details = Mock(return_value='public_ip')
+        self.aws_shell.model_parser.try_get_deployed_connected_resource_instance_id = Mock(return_value='instance_id')
+        self.aws_shell.model_parser.get_connectd_resource_fullname = Mock(return_value='resource_name')
+        self.aws_shell.refresh_ip_operation.refresh_ip = Mock()
+
+        with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
+            shell_context.return_value = self.mock_context
+
+            # act
+            self.aws_shell.refresh_ip(self.command_context)
+
+        self.aws_shell.refresh_ip_operation.refresh_ip(
+            cloudshell_session=self.expected_shell_context.cloudshell_session,
+            ec2_session=self.expected_shell_context.aws_api.ec2_session,
+            deployed_instance_id='instance_id',
+            private_ip_on_resource='private_ip',
+            public_ip_on_resource='public_ip',
+            resource_fullname='resource_name')
