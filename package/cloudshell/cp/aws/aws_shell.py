@@ -240,16 +240,16 @@ class AWSShell(object):
             shell_context.logger.info('Refresh IP')
 
             # Get Private Ip on deployed resource
-            private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(command_context)
+            private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(command_context)
             # Get Public IP on deployed resource
-            public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(command_context)
+            public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(command_context)
             # Get instance id
-            deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(command_context)
+            deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(command_context)
             # Get connected resource name
-            resource_fullname = AWSModelsParser.get_connectd_resource_fullname(command_context)
+            resource_fullname = self.model_parser.get_connectd_resource_fullname(command_context)
 
             self.refresh_ip_operation.refresh_ip(cloudshell_session=shell_context.cloudshell_session,
-                                                 ec2_session=shell_context.ec2_session,
+                                                 ec2_session=shell_context.aws_api.ec2_session,
                                                  deployed_instance_id=deployed_instance_id,
                                                  private_ip_on_resource=private_ip_on_resource,
                                                  public_ip_on_resource=public_ip_on_resource,
