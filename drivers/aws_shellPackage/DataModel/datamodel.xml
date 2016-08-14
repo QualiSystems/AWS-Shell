@@ -106,13 +106,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="The type of the storage volume. In AWS there are few EBS Volume types that can be used, gp2 and io1 for SSD, st1 and sc1 for HDD or the standard type which is the old generation EBS volume type. If auto is selected the storage type defined in the image will be used." Description="" IsReadOnly="false"  Name="Storage Type" Type="String">
+    <AttributeInfo DefaultValue="" Description="The type of the storage volume. In AWS there are few EBS Volume types that can be used, gp2 and io1 for SSD, st1 and sc1 for HDD or the standard type which is the old generation EBS volume type. If auto is selected the storage type defined in the image will be used." IsReadOnly="false"  Name="Storage Type" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The AWS EC2 instance type. The instance type determines the CPU, memory, storage and networking capacity of the instance. For example: t2.large." IsReadOnly="false" Name="Instance Type" Type="String">
+    <AttributeInfo DefaultValue="" Description="The AWS EC2 instance type. The instance type determines the CPU, memory and networking capacity of the instance. For example: t2.large." IsReadOnly="false" Name="Instance Type" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
