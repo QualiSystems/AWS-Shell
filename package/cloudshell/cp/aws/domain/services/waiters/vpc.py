@@ -1,5 +1,7 @@
 import time
 
+from cloudshell.cp.aws.common import retry_helper
+
 
 class VPCWaiter(object):
     PENDING = 'pending'
@@ -7,7 +9,7 @@ class VPCWaiter(object):
     INSTANCE_STATES = [PENDING,
                        AVAILABLE]
 
-    def __init__(self, delay=2, timeout=10):
+    def __init__(self, delay=5, timeout=10):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
@@ -36,5 +38,7 @@ class VPCWaiter(object):
             if time.time() - start_time >= self.timeout:
                 raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, vpc.state))
 
-            vpc.reload()
+            retry_helper.do_with_retry(lambda: vpc.reload())
+
         return vpc
+

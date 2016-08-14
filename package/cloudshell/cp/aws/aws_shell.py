@@ -33,7 +33,6 @@ from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
 
 class AWSShell(object):
