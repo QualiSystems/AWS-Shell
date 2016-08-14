@@ -1,31 +1,30 @@
-import botocore
 import jsonpickle
-from botocore.exceptions import ClientError
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
-from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
+from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
-from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
-from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
-from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
-from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
+from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
+from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
-from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
+from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
+from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
@@ -99,144 +98,107 @@ class AWSShell(object):
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
     def cleanup_connectivity(self, command_context):
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Cleanup Connectivity')
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+        """
+        Will delete the reservation vpc and all related resources including all remaining instances
+        :param ResourceCommandContext command_context:
+        :return: json string response
+        :rtype: str
+        """
 
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
-                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
-                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
-
-                    result = self.clean_up_operation.cleanup(ec2_client=ec2_client,
-                                                             ec2_session=ec2_session,
-                                                             s3_session=s3_session,
-                                                             aws_ec2_data_model=aws_ec2_resource_model,
-                                                             reservation_id=command_context.reservation.reservation_id,
-                                                             logger=logger)
-
-                    return self.command_result_parser.set_command_result(
-                        {'driverResponse': {'actionResults': [result]}})
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Cleanup Connectivity')
+            result = self.clean_up_operation \
+                .cleanup(ec2_client=shell_context.aws_api.ec2_client,
+                         ec2_session=shell_context.aws_api.ec2_session,
+                         s3_session=shell_context.aws_api.s3_session,
+                         aws_ec2_data_model=shell_context.aws_ec2_resource_model,
+                         reservation_id=command_context.reservation.reservation_id,
+                         logger=shell_context.logger)
+            return self.command_result_parser.set_command_result(
+                    {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request):
         """
         Will create a vpc for the reservation and will peer it with the management vpc
-        :param command_context: The Command Context
+        :param ResourceCommandContext command_context: The Command Context
         :param request: The json request
-        :type request: str
-        :return:
+        :return: json string response
+        :rtype: str
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Prepare Connectivity')
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Prepare Connectivity')
 
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
+            # parse request
+            decoded_request = DeployDataHolder(jsonpickle.decode(request))
+            prepare_connectivity_request = None
+            if hasattr(decoded_request, 'driverRequest'):
+                prepare_connectivity_request = decoded_request.driverRequest
+            if not prepare_connectivity_request:
+                raise ValueError('Invalid prepare connectivity request')
 
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
-                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
-                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
+            results = self.prepare_connectivity_operation.prepare_connectivity(
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    s3_session=shell_context.aws_api.s3_session,
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                    aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                    request=prepare_connectivity_request,
+                    logger=shell_context.logger)
 
-                    # parse request
-                    prepare_connectivity_request = DeployDataHolder(jsonpickle.decode(request))
-                    prepare_connectivity_request = getattr(prepare_connectivity_request, 'driverRequest', None)
-
-                    reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
-
-                    if not prepare_connectivity_request:
-                        raise ValueError('Invalid prepare connectivity request')
-
-                    results = self.prepare_connectivity_operation.prepare_connectivity(
-                        ec2_client=ec2_client,
-                        ec2_session=ec2_session,
-                        s3_session=s3_session,
-                        reservation=reservation_model,
-                        aws_ec2_datamodel=aws_ec2_resource_model,
-                        request=prepare_connectivity_request,
-                        logger=logger)
-
-                    return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
+            return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
     def power_on_ami(self, command_context):
         """
         Will power on the ami
-        :param command_context: RemoteCommandContext
-        :return:
+        :param ResourceRemoteCommandContext command_context:
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Power On')
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Power On')
 
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+            resource = command_context.remote_endpoints[0]
+            data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-                    self.power_management_operation.power_on(ec2_session, data_holder.vmdetails.uid)
-                    session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
+            self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
+                                                     ami_id=data_holder.vmdetails.uid)
+
+            shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
 
     def power_off_ami(self, command_context):
         """
         Will power on the ami
-        :param command_context: RemoteCommandContext
-        :return:
+        :param ResourceRemoteCommandContext command_context:
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Power Off')
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Power Off')
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
-                    self.power_management_operation.power_off(ec2_session, data_holder.vmdetails.uid)
-                    session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
+            resource = command_context.remote_endpoints[0]
+            data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+
+            self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
+                                                      ami_id=data_holder.vmdetails.uid)
+
+            shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
 
     def delete_instance(self, command_context):
         """
         Will delete the ami instance
-        :param bool delete_resource:
-        :param command_context: RemoteCommandContext
-        :return:
+        :param ResourceRemoteCommandContext command_context:
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Delete instance')
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Delete instance')
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+            resource = command_context.remote_endpoints[0]
+            data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                    try:
-                        self.delete_ami_operation.delete_instance(ec2_session, data_holder.vmdetails.uid)
-                    except ClientError as clientErr:
-                        error = 'Error'
-                        code = 'Code'
-                        malformed = 'InvalidInstanceID.Malformed'
-
-                        is_malformed_ = error in clientErr.response and \
-                                        code in clientErr.response[error] and \
-                                        (clientErr.response[error][code] == malformed or clientErr.response[error][
-                                            code] == 'InvalidInstanceID.NotFound')
-
-                        if not is_malformed_:
-                            raise
-                        else:
-                            logger.info("Aws instance {0} was already terminated".format(data_holder.vmdetails.uid))
-                            return
-                    except Exception:
-                        raise
+            self.delete_ami_operation.delete_instance(logger=shell_context.logger,
+                                                      ec2_session=shell_context.aws_api.ec2_session,
+                                                      instance_id=data_holder.vmdetails.uid)
 
     def get_application_ports(self, command_context):
         """
         Will return the application ports in a nicely formated manner
-        :param command_context: RemoteCommandContext
-        :return:
+        :param ResourceRemoteCommandContext command_context:
+        :rtype: str
         """
         with LoggingSessionContext(command_context) as logger:
             with ErrorHandlingContext(logger):
@@ -245,77 +207,63 @@ class AWSShell(object):
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
                 return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                    data_holder.vmdetails.vmCustomParams)
+                        data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request):
         """
         Will deploy Amazon Image on the cloud provider
+        :param ResourceCommandContext command_context:
+        :param JSON Obj deployment_request:
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('Deploying AMI')
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Deploying AMI')
 
-                    aws_ami_deployment_model, name = self.model_parser.convert_to_deployment_resource_model(
-                        deployment_request)
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
-                    ec2_client = self.aws_session_manager.get_ec2_client(session, aws_ec2_resource_model)
-                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
+            aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request)
 
-                    reservation_model = ReservationModel.create_instance_from_reservation(command_context.reservation)
+            deploy_data = self.deploy_ami_operation \
+                .deploy(ec2_session=shell_context.aws_api.ec2_session,
+                        s3_session=shell_context.aws_api.s3_session,
+                        name=aws_ami_deployment_model.app_name,
+                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                        aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
+                        ami_deployment_model=aws_ami_deployment_model,
+                        ec2_client=shell_context.aws_api.ec2_client,
+                        logger=shell_context.logger)
 
-                    deploy_data = self.deploy_ami_operation.deploy(ec2_session=ec2_session,
-                                                                   s3_session=s3_session,
-                                                                   name=name,
-                                                                   reservation=reservation_model,
-                                                                   aws_ec2_cp_resource_model=aws_ec2_resource_model,
-                                                                   ami_deployment_model=aws_ami_deployment_model,
-                                                                   ec2_client=ec2_client,
-                                                                   logger=logger)
+            return self.command_result_parser.set_command_result(deploy_data)
 
-                    return self.command_result_parser.set_command_result(deploy_data)
+    def refresh_ip(self, command_context):
+        """
+        :param ResourceRemoteCommandContext command_context:
+        """
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('Refresh IP')
 
-    def refresh_ip(self, resource_context):
-        with LoggingSessionContext(resource_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(resource_context) as session:
-                    logger.info('Refresh IP')
-                    # Get private ip on deployed resource
-                    private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(
-                        resource_context)
+            # Get Private Ip on deployed resource
+            private_ip_on_resource = AWSModelsParser.get_private_ip_from_connected_resource_details(command_context)
+            # Get Public IP on deployed resource
+            public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(command_context)
+            # Get instance id
+            deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(command_context)
+            # Get connected resource name
+            resource_fullname = AWSModelsParser.get_connectd_resource_fullname(command_context)
 
-                    # Get Public IP on deployed resource
-                    public_ip_on_resource = AWSModelsParser.get_public_ip_from_connected_resource_details(
-                        resource_context)
+            self.refresh_ip_operation.refresh_ip(cloudshell_session=shell_context.cloudshell_session,
+                                                 ec2_session=shell_context.ec2_session,
+                                                 deployed_instance_id=deployed_instance_id,
+                                                 private_ip_on_resource=private_ip_on_resource,
+                                                 public_ip_on_resource=public_ip_on_resource,
+                                                 resource_fullname=resource_fullname)
 
-                    deployed_instance_id = AWSModelsParser.try_get_deployed_connected_resource_instance_id(
-                        resource_context)
-
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(resource_context.resource)
-                    ec2_session = self.aws_session_manager.get_ec2_session(session, aws_ec2_resource_model)
-
-                    resource_fullname = AWSModelsParser.get_connectd_resource_fullname(resource_context)
-
-                    self.refresh_ip_operation.refresh_ip(cloudshell_session=session,
-                                                         ec2_session=ec2_session,
-                                                         deployed_instance_id=deployed_instance_id,
-                                                         private_ip_on_resource=private_ip_on_resource,
-                                                         public_ip_on_resource=public_ip_on_resource,
-                                                         resource_fullname=resource_fullname)
-
-    def GetAccessKey(self, command_context):
+    def get_access_key(self, command_context):
         """
         Returns the pem file for the connected resource
+        :param ResourceRemoteCommandContext command_context:
+        :rtype str:
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                with CloudShellSessionContext(command_context) as session:
-                    logger.info('GetAccessKey')
-                    aws_ec2_resource_model = self.model_parser.convert_to_aws_resource_model(command_context.resource)
-                    s3_session = self.aws_session_manager.get_s3_session(session, aws_ec2_resource_model)
-                    reservation_id = command_context.remote_reservation.reservation_id
-
-                    return self.access_key_operation.get_access_key(s3_session=s3_session,
-                                                                    aws_ec2_resource_model=aws_ec2_resource_model,
-                                                                    reservation_id=reservation_id)
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            shell_context.logger.info('GetAccessKey')
+            reservation_id = command_context.remote_reservation.reservation_id
+            return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
+                                                            aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
+                                                            reservation_id=reservation_id)
