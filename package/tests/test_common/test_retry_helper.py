@@ -33,7 +33,7 @@ class TestRetryHelper(TestCase):
         retry_helper.do_with_retry(lambda: mock.reload())
 
         mock.reload.assert_called()
-        print "mock_calls: " + len(mock.reload.mock_calls)
+        print "mock_calls: {0}".format(len(mock.reload.mock_calls))
         assert len(mock.reload.mock_calls) == 3
 
     def test_retry_action_throws_after_max_retry(self):
@@ -48,5 +48,5 @@ class TestRetryHelper(TestCase):
             retry_helper.do_with_retry(lambda: mock.reload())
 
         mock.reload.assert_called()
-        print "mock_calls: " + len(mock.reload.mock_calls)
+        print "mock_calls: {0}".format(len(mock.reload.mock_calls))
         assert len(mock.reload.mock_calls) == 3
