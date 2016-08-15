@@ -157,6 +157,7 @@ class PrepareConnectivityOperation(object):
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
 
+    @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
                                     target_vpc_cidr, logger):
         """
