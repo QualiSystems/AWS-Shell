@@ -9,7 +9,7 @@ class SubnetWaiter(object):
     INSTANCE_STATES = [PENDING,
                        AVAILABLE]
 
-    def __init__(self, delay=5, timeout=10):
+    def __init__(self, delay=10, timeout=10):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
