@@ -134,8 +134,6 @@ class VPCService(object):
         """
         internet_gateway = ec2_session.create_internet_gateway()
 
-        internet_gateway.reload()
-
         tags = self.tag_service.get_default_tags("IGW {0}".format(reservation.reservation_id),
                                                  reservation)
 

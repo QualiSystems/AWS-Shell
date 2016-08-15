@@ -1,3 +1,6 @@
+from retrying import retry
+
+
 class TagNames(object):
     CreatedBy = 'CreatedBy'
     Owner = 'Owner'
@@ -62,6 +65,7 @@ class TagService(object):
     def get_reservation_tag(self, reservation_id):
         return self._get_kvp(TagNames.ReservationId, reservation_id)
 
+    @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def set_ec2_resource_tags(self, resource, tags):
         """
         Will set tags on a EC2 resource

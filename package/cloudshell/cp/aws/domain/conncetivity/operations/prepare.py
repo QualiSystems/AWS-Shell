@@ -63,7 +63,7 @@ class PrepareConnectivityOperation(object):
                 vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
 
                 # will create an IG if not exist
-                logger.info("Get or create adn attach existing internet gateway")
+                logger.info("Get or create and attach existing internet gateway")
                 internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
                 # will try to peer sandbox VPC to mgmt VPC if not exist
@@ -157,6 +157,7 @@ class PrepareConnectivityOperation(object):
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
 
+    @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
                                     target_vpc_cidr, logger):
         """
@@ -246,6 +247,7 @@ class PrepareConnectivityOperation(object):
         action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result
 
+    @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def _create_and_attach_internet_gateway(self, ec2_session, vpc, reservation):
         """
         :param ec2_session:

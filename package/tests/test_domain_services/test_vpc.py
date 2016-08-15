@@ -51,7 +51,6 @@ class TestVPCService(TestCase):
 
         self.assertTrue(self.ec2_session.create_internet_gateway.called)
         ig = self.ec2_session.create_internet_gateway()
-        self.assertTrue(ig.reload.called)
         self.assertTrue(self.tag_service.get_default_tags.called_with(
             "IGW {0}".format(self.reservation.reservation_id),
             self.reservation))

@@ -1,6 +1,10 @@
+import traceback
+
 import botocore
 from botocore.exceptions import WaiterError
 from concurrent.futures._base import wait
+
+from cloudshell.cp.aws.common import retry_helper
 
 
 class InstanceService(object):
@@ -48,21 +52,23 @@ class InstanceService(object):
             # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 
-        self.wait_for_instance_to_run_in_aws(ec2_client, instance, wait_for_status_check,logger)
+        self.wait_for_instance_to_run_in_aws(ec2_client, instance, wait_for_status_check, logger)
 
         self._set_tags(instance, name, reservation)
 
         # Reload the instance attributes
-        instance.load()
+        retry_helper.do_with_retry(lambda: instance.load())
         return instance
 
-    def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check,logger):
+    def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check, logger):
         if wait_for_status_check:
             try:
                 ec2_client.get_waiter('instance_status_ok') \
                     .wait(InstanceIds=[instance.instance_id])
             except WaiterError as e:
-                raise
+                logger.error("Error in wait_for_instance_to_run_in_aws, instance status in not OK. Error: {0}"
+                             .format(traceback.format_exc()))
+                raise ValueError('Instance status check is not OK. Check the log and aws console for more details.')
             logger.info("Instance created with status: instance_status_ok.")
         else:
             instance.wait_until_running()
