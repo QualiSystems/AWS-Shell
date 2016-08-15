@@ -13,7 +13,7 @@ class TestRetryHelper(TestCase):
 
     def test_retry_action_executed_3_times(self):
         def test_method():
-            TestRetryHelper.counter = TestRetryHelper.counter + 1
+            TestRetryHelper.counter += 1
             if TestRetryHelper.counter != 3:
                 raise Exception()
 
@@ -22,8 +22,10 @@ class TestRetryHelper(TestCase):
         assert TestRetryHelper.counter == 3
 
     def test_retry_action_executes_lambda(self):
+        TestRetryHelper.counter = 0
+
         def test_method():
-            TestRetryHelper.counter = TestRetryHelper.counter + 1
+            TestRetryHelper.counter += 1
             if TestRetryHelper.counter != 2:
                 raise Exception()
 
