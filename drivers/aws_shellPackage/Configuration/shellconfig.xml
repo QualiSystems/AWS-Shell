@@ -11,8 +11,8 @@
             </AutoLoad>
             <Attributes>
                 <Attribute Name="Region" Value="" />
-                <Attribute Name="AWS Management SG ID" Value="" />
-                <Attribute Name="AWS Management VPC ID" Value="" />
+                <Attribute Name="AWS Mgmt SG ID" Value="" />
+                <Attribute Name="AWS Mgmt VPC ID" Value="" />
                 <Attribute Name="Keypairs Location" Value="" />
                 <Attribute Name="Max Storage Size" Value="0" />
                 <Attribute Name="Max Storage IOPS" Value="0" />

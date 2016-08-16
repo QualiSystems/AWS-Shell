@@ -28,8 +28,8 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']
         aws_ec2_resource_model.aws_access_key_id = resource_context['AWS Access Key ID']
         aws_ec2_resource_model.key_pairs_location = resource_context['Keypairs Location']
-        aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Management VPC ID']
-        aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Management SG ID']
+        aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Mgmt VPC ID']
+        aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Mgmt SG ID']
         aws_ec2_resource_model.instance_type = resource_context['Instance Type']
 
         return aws_ec2_resource_model

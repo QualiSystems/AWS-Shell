@@ -45,7 +45,7 @@ class PrepareConnectivityOperation(object):
         :return:
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
-            raise ValueError('AWS Management VPC ID must be set!')
+            raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
         logger.info("Creating or getting existing key pair")
         self._create_key_pair(ec2_session=ec2_session,
