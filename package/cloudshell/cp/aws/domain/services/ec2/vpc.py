@@ -1,3 +1,6 @@
+from cloudshell.cp.aws.common import retry_helper
+
+
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
     PEERING_CONNECTION = "Peering connection for {0} with management vpc"
@@ -73,19 +76,16 @@ class VPCService(object):
 
         # create peering connection
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
-
+        # wait until pending acceptance
+        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
+        # accept peering request
+        vpc_peer_connection.accept()
+        # wait until active
+        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.ACTIVE)
         # set tags on peering connection
         tags = self.tag_service.get_default_tags(self._get_peering_connection_name(reservation_model),
                                                  reservation_model)
-        ec2_session.create_tags(Resources=[vpc_peer_connection.id], Tags=tags)
-
-        # wait until pending acceptance
-        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
-
-        vpc_peer_connection.accept()
-
-        # wait until connection active
-        self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.ACTIVE)
+        retry_helper.do_with_retry(lambda: ec2_session.create_tags(Resources=[vpc_peer_connection.id], Tags=tags))
 
         return vpc_peer_connection.id
 
