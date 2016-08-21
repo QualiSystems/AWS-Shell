@@ -51,7 +51,7 @@
 				"QualixAMI": "ami-4c1e8920",
 				"ESAMI": "ami-8c1483e0",
 				"NatAMI": "ami-9336bcff"
-			},													
+			}													
 		},
 		"AZFromRegion": {
 			"us-east-1": {
