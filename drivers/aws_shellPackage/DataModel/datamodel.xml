@@ -142,7 +142,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDR, only of size /24. For example:10.0.0.0/24,172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
+    <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDRs. For example: 10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
