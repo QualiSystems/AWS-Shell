@@ -75,6 +75,9 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.user = deployment_credentiales['user']
         deployedResource.wait_for_status_check = resource.attributes['Wait for Status Check']
 
+
+        
+
         return deployedResource
 
     def _convert_to_bool(self, string):
