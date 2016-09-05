@@ -86,7 +86,8 @@ class DeployAMIOperation(object):
                                                          wait_for_status_check=ami_deployment_model.wait_for_status_check,
                                                          logger=logger)
 
-        self._set_elastic_ip(ec2_session=ec2_session, instance=instance, ami_deployment_model=ami_deployment_model)
+        if ami_deployment_model.allocate_elastic_ip:
+            self._set_elastic_ip(ec2_session=ec2_session, ec2_client=ec2_client, instance=instance)
 
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
@@ -297,18 +298,17 @@ class DeployAMIOperation(object):
         """
         return int(storage_size) * 30
 
-    def _set_elastic_ip(self, ec2_session, instance, ami_deployment_model):
+    def _set_elastic_ip(self, ec2_session, ec2_client, instance):
         """
         :param ec2_session: EC2 session
+        :param ec2_client: EC2 client
         :param instance:
-        :param ami_deployment_model: The resource model on which the AMI will be deployed on
-        :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
         :return:
         """
-        if ami_deployment_model.add_elastic_ip:
-            self.instance_service.associate_elastic_ip(ec2_session=ec2_session,
-                                                       instance=instance,
-                                                       elastic_ip=ami_deployment_model.add_elastic_ip)
+        elastic_ip = self.instance_service.allocate_elastic_address(ec2_client=ec2_client)
+        self.instance_service.associate_elastic_ip(ec2_session=ec2_session,
+                                                   instance=instance,
+                                                   elastic_ip=elastic_ip)
 
     def _prepare_deployed_app_attributes(self, instance, ami_credentials, ami_deployment_model):
         """

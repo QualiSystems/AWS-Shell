@@ -108,3 +108,14 @@ class InstanceService(object):
     @staticmethod
     def get_instance_by_id(ec2_session, id):
         return ec2_session.Instance(id=id)
+
+    @staticmethod
+    def allocate_elastic_address(ec2_client):
+        """
+        :param ec2_client:
+        :return:
+        """
+        result = ec2_client.allocate_address(
+            Domain='vpc'
+        )
+        return result["PublicIp"]

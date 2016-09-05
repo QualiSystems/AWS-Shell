@@ -70,13 +70,10 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.wait_for_credentials = self._convert_to_bool(resource.attributes['Wait for Credentials'])
         deployedResource.add_public_ip = self._convert_to_bool(resource.attributes['Add Public IP'])
         deployedResource.add_elastic_ip = resource.attributes['Add Elastic IP']
-        deployedResource.assign_elastic_ip = resource.attributes['Assign Elastic IP']
+        deployedResource.allocate_elastic_ip = resource.attributes['Allocate Elastic IP']
         deployedResource.root_volume_name = resource.attributes['Root Volume Name']
         deployedResource.user = deployment_credentiales['user']
         deployedResource.wait_for_status_check = resource.attributes['Wait for Status Check']
-
-
-        
 
         return deployedResource
 
