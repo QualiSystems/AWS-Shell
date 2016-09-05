@@ -160,6 +160,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="False" Description="TBD" IsReadOnly="false" Name="Assign Elastic IP" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Public IP" Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -325,6 +331,9 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Elastic IP" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Assign Elastic IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
