@@ -215,21 +215,22 @@ class AWSShell(object):
         :param JSON Obj deployment_request:
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
-            shell_context.logger.info('Deploying AMI')
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Deploying AMI')
 
-            aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request)
 
-            deploy_data = self.deploy_ami_operation \
-                .deploy(ec2_session=shell_context.aws_api.ec2_session,
-                        s3_session=shell_context.aws_api.s3_session,
-                        name=aws_ami_deployment_model.app_name,
-                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
-                        aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
-                        ami_deployment_model=aws_ami_deployment_model,
-                        ec2_client=shell_context.aws_api.ec2_client,
-                        logger=shell_context.logger)
+                deploy_data = self.deploy_ami_operation \
+                    .deploy(ec2_session=shell_context.aws_api.ec2_session,
+                            s3_session=shell_context.aws_api.s3_session,
+                            name=aws_ami_deployment_model.app_name,
+                            reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                            aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
+                            ami_deployment_model=aws_ami_deployment_model,
+                            ec2_client=shell_context.aws_api.ec2_client,
+                            logger=shell_context.logger)
 
-            return self.command_result_parser.set_command_result(deploy_data)
+                return self.command_result_parser.set_command_result(deploy_data)
 
     def refresh_ip(self, command_context):
         """

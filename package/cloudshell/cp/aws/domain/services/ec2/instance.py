@@ -115,7 +115,12 @@ class InstanceService(object):
         :param ec2_client:
         :return:
         """
-        result = ec2_client.allocate_address(
-            Domain='vpc'
-        )
+        result = ec2_client.allocate_address(Domain='vpc')
         return result["PublicIp"]
+
+    @staticmethod
+    def release_elastic_address(vpc_address):
+        """
+        :param vpc_address:
+        """
+        vpc_address.release()
