@@ -8,8 +8,8 @@
 				"NatAMI": "ami-4868ab25"
 			},
 			"eu-west-1": {
-				"QualixAMI": "ami-ea8ece8a",
-				"ESAMI": "ami-ecc9898c",
+				"QualixAMI": "ami-c584f8b6",
+				"ESAMI": "ami-f88bf78b",
 				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-2": {
