@@ -4,3 +4,5 @@
 
 # AWS-Shell
 A CloudShell 'Shell' that allows integrating AWS as an app's deployment option.
+
+[![Throughput Graph](https://graphs.waffle.io/waffleio/waffle.io/throughput.svg)](https://waffle.io/waffleio/waffle.io/metrics/throughput)
