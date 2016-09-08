@@ -85,9 +85,9 @@ class DeployAMIOperation(object):
                                                          ec2_client=ec2_client,
                                                          wait_for_status_check=ami_deployment_model.wait_for_status_check,
                                                          logger=logger)
-
+        allocated_elastic_ip = ""
         if ami_deployment_model.allocate_elastic_ip:
-            self._set_elastic_ip(ec2_session=ec2_session, ec2_client=ec2_client, instance=instance)
+            allocated_elastic_ip = self._set_elastic_ip(ec2_session=ec2_session, ec2_client=ec2_client, instance=instance)
 
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
@@ -97,7 +97,7 @@ class DeployAMIOperation(object):
                                                     ami_deployment_model=ami_deployment_model,
                                                     logger=logger)
 
-        deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
+        deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model, allocated_elastic_ip)
 
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
@@ -111,7 +111,7 @@ class DeployAMIOperation(object):
                             deployed_app_attributes=deployed_app_attributes,
                             deployed_app_address=instance.private_ip_address,
                             public_ip=instance.public_ip_address if ami_deployment_model.add_public_ip else None,
-                            elastic_ip=ami_deployment_model.add_elastic_ip)
+                            elastic_ip=allocated_elastic_ip)
 
     def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance,
                              ami_deployment_model, logger):
@@ -309,8 +309,9 @@ class DeployAMIOperation(object):
         self.instance_service.associate_elastic_ip(ec2_session=ec2_session,
                                                    instance=instance,
                                                    elastic_ip=elastic_ip)
+        return elastic_ip
 
-    def _prepare_deployed_app_attributes(self, instance, ami_credentials, ami_deployment_model):
+    def _prepare_deployed_app_attributes(self, instance, ami_credentials, ami_deployment_model, allocated_elastic_ip):
         """
 
         :param instance:
@@ -328,7 +329,7 @@ class DeployAMIOperation(object):
 
         if ami_deployment_model.add_public_ip:
             deployed_app_attr['Public IP'] = instance.public_ip_address
-        if ami_deployment_model.add_elastic_ip:
-            deployed_app_attr['Public IP'] = ami_deployment_model.add_elastic_ip
+        if allocated_elastic_ip:
+            deployed_app_attr['Public IP'] = allocated_elastic_ip
 
         return deployed_app_attr
