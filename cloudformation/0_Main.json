@@ -3,13 +3,13 @@
 	"Mappings": {
 		"AMIFromRegion": {
 			"us-east-1": {
-				"QualixAMI": "ami-a248c6b5",
-				"ESAMI": "ami-710b9d66",
+				"QualixAMI": "ami-bb7007ac",
+				"ESAMI": "ami-84780f93",
 				"NatAMI": "ami-4868ab25"
 			},
 			"eu-west-1": {
-				"QualixAMI": "ami-ea8ece8a",
-				"ESAMI": "ami-ecc9898c",
+				"QualixAMI": "ami-c584f8b6",
+				"ESAMI": "ami-f88bf78b",
 				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-2": {
@@ -48,8 +48,8 @@
 				"NatAMI": "ami-5825cd37"
 			},														
 			"sa-east-1": {
-				"QualixAMI": "ami-4c1e8920",
-				"ESAMI": "ami-8c1483e0",
+				"QualixAMI": "ami-1fa33373",
+				"ESAMI": "ami-1ba23277",
 				"NatAMI": "ami-9336bcff"
 			}													
 		},
