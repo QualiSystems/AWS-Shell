@@ -148,7 +148,7 @@
 				"AZ": "ap-northeast-2a"
 			},
 			"sa-east-1": {
-				"AZ": "us-west-1a"
+				"AZ": "sa-east-1a"
 			},
 			"ap-south-1": {
 				"AZ": "ap-south-1a"
