@@ -154,7 +154,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="Assigns an Elastic IP address to the instance. An Elastic IP is a static public IP address, which is reachable from the internet. Please enter the specific Elastic IP you want to associate with your instance. If kept empty no Elastic IP will be associated with the instance. Note that this value should be filled in for the app in the environment and not in the app catalog. For example 52.203.236.131." IsReadOnly="false" Name="Add Elastic IP" Type="String">
+    <AttributeInfo DefaultValue="False" Description="Allocates an Elastic IP address to the instance. An Elastic IP is a static public IP address, which is reachable from the internet. Please enter the specific Elastic IP you want to associate with your instance. If kept empty no Elastic IP will be associated with the instance. Note that this value should be filled in for the app in the environment and not in the app catalog. For example 52.203.236.131." IsReadOnly="false" Name="Allocate Elastic IP" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -324,7 +324,7 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Public IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Elastic IP" UserInput="true">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allocate Elastic IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
