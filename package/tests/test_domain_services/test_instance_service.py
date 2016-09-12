@@ -70,3 +70,15 @@ class TestInstanceService(TestCase):
         self.assertTrue(instances[1].terminate.called)
         self.assertTrue(self.instance_waiter.multi_wait.called_with([self.instance], 'terminated'))
         self.assertIsNotNone(res)
+
+    def test_release_elastic_address(self):
+        vpc_address = Mock()
+        res = self.instance_service.release_elastic_address(vpc_address)
+        self.assertTrue(vpc_address.release.called)
+
+    def test_allocate_elastic_address(self):
+        ec2_client = Mock()
+        result={'PublicIp': 'string'}
+        ec2_client.allocate_address = Mock(return_value=result)
+        res = self.instance_service.allocate_elastic_address(ec2_client)
+        self.assertTrue(ec2_client.allocate_address.called)
