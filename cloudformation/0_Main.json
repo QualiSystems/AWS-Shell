@@ -12,6 +12,11 @@
 				"ESAMI": "ami-f88bf78b",
 				"NatAMI": "ami-a8dd45db"
 			},
+			"us-west-1": {
+				"QualixAMI": "ami-e6c98986",
+				"ESAMI": "ami-ecc9898c",
+				"NatAMI": "ami-004b0f60"
+			},
 			"us-west-2": {
 				"QualixAMI": "ami-6177b901",
 				"ESAMI": "ami-3f72bc5f",
@@ -55,13 +60,13 @@
 		},
 		"AZFromRegion": {
 			"us-east-1": {
-				"AZ": "us-east-1a"
+				"AZ": "us-east-1b"
 			},
 			"us-west-2": {
-				"AZ": "us-west-2a"
+				"AZ": "us-west-2b"
 			},
 			"us-west-1": {
-				"AZ": "us-west-1b"
+				"AZ": "us-west-1a"
 			},
 			"eu-west-1": {
 				"AZ": "eu-west-1c"
