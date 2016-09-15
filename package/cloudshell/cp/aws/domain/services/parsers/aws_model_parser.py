@@ -3,9 +3,12 @@ import jsonpickle
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.shell.core.driver_context import ReservationContextDetails
 
 
 class AWSModelsParser(object):
+
     @staticmethod
     def convert_app_resource_to_deployed_app(resource):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
@@ -14,6 +17,9 @@ class AWSModelsParser(object):
 
     @staticmethod
     def convert_to_aws_resource_model(resource):
+        """
+        :rtype AWSEc2CloudProviderResourceModel:
+        """
         resource_context = resource.attributes
         aws_ec2_resource_model = AWSEc2CloudProviderResourceModel()
         aws_ec2_resource_model.region = resource_context['Region']
@@ -22,8 +28,8 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.aws_secret_access_key = resource_context['AWS Secret Access Key']
         aws_ec2_resource_model.aws_access_key_id = resource_context['AWS Access Key ID']
         aws_ec2_resource_model.key_pairs_location = resource_context['Keypairs Location']
-        aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Management VPC ID']
-        aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Management SG ID']
+        aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Mgmt VPC ID']
+        aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Mgmt SG ID']
         aws_ec2_resource_model.instance_type = resource_context['Instance Type']
 
         return aws_ec2_resource_model
@@ -60,8 +66,9 @@ class AWSModelsParser(object):
         deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.add_public_ip)
         deployment_resource_model.add_elastic_ip = data_holder.ami_params.add_elastic_ip
         deployment_resource_model.user = data_holder.ami_params.user
+        deployment_resource_model.app_name = data_holder.app_name
 
-        return deployment_resource_model, data_holder.app_name
+        return deployment_resource_model
 
     @staticmethod
     def convert_to_bool(string):
@@ -107,3 +114,11 @@ class AWSModelsParser(object):
             return resource_context.remote_endpoints[0].fullname
         else:
             raise ValueError('Could not find resource fullname on the deployed app.')
+
+    @staticmethod
+    def convert_to_reservation_model(reservation_context):
+        """
+        :param ReservationContextDetails reservation_context:
+        :rtype: ReservationModel
+        """
+        return ReservationModel(reservation_context)

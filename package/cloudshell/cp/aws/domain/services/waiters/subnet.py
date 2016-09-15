@@ -1,5 +1,7 @@
 import time
 
+from cloudshell.cp.aws.common import retry_helper
+
 
 class SubnetWaiter(object):
     PENDING = 'pending'
@@ -7,7 +9,7 @@ class SubnetWaiter(object):
     INSTANCE_STATES = [PENDING,
                        AVAILABLE]
 
-    def __init__(self, delay=2, timeout=10):
+    def __init__(self, delay=10, timeout=10):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
@@ -32,11 +34,14 @@ class SubnetWaiter(object):
 
         start_time = time.time()
         while subnet.state != state:
-            subnet.reload()
+
+            retry_helper.do_with_retry(lambda: subnet.reload())
+
             if time.time() - start_time >= self.timeout:
                 raise Exception('Timeout: Waiting for instance to be {0} from'.format(state, subnet.state))
             time.sleep(self.delay)
 
         if load:
             subnet.reload()
+
         return subnet

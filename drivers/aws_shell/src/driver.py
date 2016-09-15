@@ -49,4 +49,4 @@ class AWSShellDriver(ResourceDriverInterface):
         return AutoLoadDetails([], [])
 
     def GetAccessKey(self, context, ports):
-        return self.aws_shell.GetAccessKey(context)
+        return self.aws_shell.get_access_key(context)

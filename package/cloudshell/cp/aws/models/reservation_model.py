@@ -1,15 +1,13 @@
-class ReservationModel(object):
-    def __init__(self):
-        self.reservation_id = ''
-        self.owner = ''
-        self.blueprint = ''
-        self.domain = ''
+from cloudshell.shell.core.driver_context import ReservationContextDetails
 
-    @staticmethod
-    def create_instance_from_reservation(reservation):
-        res_model = ReservationModel()
-        res_model.reservation_id = reservation.reservation_id
-        res_model.blueprint = reservation.environment_name
-        res_model.owner = reservation.owner_user
-        res_model.domain = reservation.domain
-        return res_model
+
+class ReservationModel(object):
+    def __init__(self, reservation_context):
+        """
+        :param ReservationContextDetails reservation_context:
+        :return:
+        """
+        self.reservation_id = reservation_context.reservation_id
+        self.owner = reservation_context.owner_user
+        self.blueprint = reservation_context.environment_name
+        self.domain = reservation_context.domain

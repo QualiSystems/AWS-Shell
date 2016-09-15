@@ -1,5 +1,7 @@
 import time
 
+from cloudshell.cp.aws.common import retry_helper
+
 
 class VpcPeeringConnectionWaiter(object):
     INITIATING_REQUEST = 'initiating-request',
@@ -22,7 +24,7 @@ class VpcPeeringConnectionWaiter(object):
               PROVISIONING,
               DELETING]
 
-    def __init__(self, delay=2, timeout=10):
+    def __init__(self, delay=10, timeout=10):
         """
         :param delay: the time in seconds between each pull
         :type delay: int
@@ -48,7 +50,7 @@ class VpcPeeringConnectionWaiter(object):
 
         start_time = time.time()
         while vpc_peering_connection.status['Code'] != state:
-            vpc_peering_connection.reload()
+            retry_helper.do_with_retry(lambda: vpc_peering_connection.reload())
 
             if vpc_peering_connection.status['Code'] == state:
                 break
@@ -63,5 +65,5 @@ class VpcPeeringConnectionWaiter(object):
             time.sleep(self.delay)
 
         if load:
-            vpc_peering_connection.reload()
+            retry_helper.do_with_retry(lambda: vpc_peering_connection.reload())
         return vpc_peering_connection

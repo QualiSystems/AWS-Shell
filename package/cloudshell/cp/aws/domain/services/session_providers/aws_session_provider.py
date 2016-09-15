@@ -1,7 +1,10 @@
 import ConfigParser
 import os
 
+
 import boto3
+
+from cloudshell.cp.aws.models.aws_api import AwsApiClients
 
 
 class AWSSessionProvider(object):
@@ -12,6 +15,21 @@ class AWSSessionProvider(object):
         self.test_cred_path = os.path.join(os.path.dirname(__file__), 'test_cred.ini')
         if not os.path.isfile(self.test_cred_path):
             self.test_cred_path = ''
+
+    def get_clients(self, cloudshell_session, aws_ec2_data_model):
+        """
+
+        :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell_session:
+        :param cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel aws_ec2_data_model:
+        :return:
+        :rtype: AwsApiClients
+        """
+        aws_session = self._get_aws_session(aws_ec2_data_model, cloudshell_session)
+        if not aws_session:
+            raise ValueError('Could not create AWS Session')
+        return AwsApiClients(ec2_session=aws_session.resource(self.EC2),
+                             s3_session=aws_session.resource(self.S3),
+                             ec2_client=aws_session.client(self.EC2))
 
     def get_s3_session(self, cloudshell_session, aws_ec2_data_model):
         aws_session = self._get_aws_session(aws_ec2_data_model, cloudshell_session)

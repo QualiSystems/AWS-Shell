@@ -24,3 +24,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.add_public_ip = False  # type: bool
         self.add_elastic_ip = ''  # type: str
         self.user = ''  # type: str
+        self.app_name = ''  # type: str

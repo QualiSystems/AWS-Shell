@@ -11,11 +11,14 @@ class TestTagService(TestCase):
         self.tag_service = TagService()
 
     def test_get_security_group_tags(self):
-        reservation = ReservationModel()
-        reservation.reservation_id = 'ReservationId'
-        reservation.owner = 'Owner'
-        reservation.blueprint = 'Blueprint'
-        reservation.domain = 'Global'
+        reservation_context = Mock()
+        reservation_context.reservation_id = 'ReservationId'
+        reservation_context.owner_user = 'Owner'
+        reservation_context.environment_name = 'Blueprint'
+        reservation_context.domain = 'Global'
+
+        reservation = ReservationModel(reservation_context)
+
         res = self.tag_service.get_security_group_tags('name', 'shared', reservation)
         self.assertEqual(res, [{'Value': 'name', 'Key': 'Name'},
                                {'Value': 'Cloudshell', 'Key': 'CreatedBy'},

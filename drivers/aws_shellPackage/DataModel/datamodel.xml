@@ -25,7 +25,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The Management VPC ID. Will be used to configure the communication between the Management VPC and the Sandbox VPC. For example vpc-633fb904." IsReadOnly="false" Name="AWS Management VPC ID" Type="String">
+    <AttributeInfo DefaultValue="" Description="The Management VPC ID. Will be used to configure the communication between the Management VPC and the Sandbox VPC. For example vpc-633fb904." IsReadOnly="false" Name="AWS Mgmt VPC ID" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -46,7 +46,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The Management VPC's security group. Will be used to configure the communication between the Management VPC's instances and the Sandbox instances. For example sg-0d104876." IsReadOnly="false" Name="AWS Management SG ID" Type="String">
+    <AttributeInfo DefaultValue="" Description="The Management VPC's security group. Will be used to configure the communication between the Management VPC's instances and the Sandbox instances. For example sg-0d104876." IsReadOnly="false" Name="AWS Mgmt SG ID" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -106,13 +106,13 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="The type of the storage volume. In AWS there are few EBS Volume types that can be used, gp2 and io1 for SSD, st1 and sc1 for HDD or the standard type which is the old generation EBS volume type. If auto is selected the storage type defined in the image will be used." Description="" IsReadOnly="false"  Name="Storage Type" Type="String">
+    <AttributeInfo DefaultValue="" Description="The type of the storage volume. In AWS there are few EBS Volume types that can be used, gp2 and io1 for SSD, st1 and sc1 for HDD or the standard type which is the old generation EBS volume type. If auto is selected the storage type defined in the image will be used." IsReadOnly="false"  Name="Storage Type" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The AWS EC2 instance type. The instance type determines the CPU, memory, storage and networking capacity of the instance. For example: t2.large." IsReadOnly="false" Name="Instance Type" Type="String">
+    <AttributeInfo DefaultValue="" Description="The AWS EC2 instance type. The instance type determines the CPU, memory and networking capacity of the instance. For example: t2.large." IsReadOnly="false" Name="Instance Type" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -142,7 +142,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDR, only of size /24. For example:10.0.0.0/24,172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
+    <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDRs. For example: 10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -185,10 +185,10 @@
                 <AllowedValue>eu-west-1</AllowedValue>
               </AllowedValues>
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Management SG ID">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt SG ID">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Management VPC ID">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt VPC ID">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Keypairs Location">
