@@ -24,13 +24,21 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         with LoggingSessionContext(context) as logger:
             with CloudShellSessionContext(context) as session:
                 logger.info('Deploy started')
+
+                app_request = jsonpickle.decode(context.resource.app_context.app_request_json)
+
+                # Cloudshell >= v7.2 have no Cloud Provider attribute, fill it from the cloudProviderName context attr
+                cloud_provider_name = app_request["deploymentService"].get("cloudProviderName")
+
+                if cloud_provider_name:
+                    context.resource.attributes['Cloud Provider'] = cloud_provider_name
+
                 # create deployment resource model and serialize it to json
-                aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource,
-                                                                                              self.get_deployment_credentials(
-                                                                                                  context))
+                aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(
+                    context.resource,
+                    self.get_deployment_credentials(context))
 
-                ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
-
+                ami_res_name = app_request['name']
                 deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
 
                 self.vaidate_deployment_ami_model(aws_ami_deployment_model)
