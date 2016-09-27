@@ -107,7 +107,11 @@ class InstanceService(object):
 
     @staticmethod
     def get_instance_by_id(ec2_session, id):
-        return ec2_session.Instance(id=id)
+        instance = ec2_session.Instance(id=id)
+        if not hasattr(instance, "state") or instance.state['Name'].lower() == 'terminated':
+            raise Exception("Can't perform action. EC2 instance was terminated/removed")
+
+        return instance
 
     @staticmethod
     def allocate_elastic_address(ec2_client):
