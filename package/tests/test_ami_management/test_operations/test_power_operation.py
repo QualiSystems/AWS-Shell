@@ -8,7 +8,7 @@ class TestPowerOperations(TestCase):
     def setUp(self):
         self.aws_ec2_service = Mock()
         self.instance = Mock()
-        self.aws_ec2_service.get_instance_by_id = Mock(return_value=self.instance)
+        self.aws_ec2_service.get_active_instance_by_id = Mock(return_value=self.instance)
         self.power_operations = PowerOperation(self.aws_ec2_service, Mock())
         self.ec2_session = Mock()
 
@@ -16,7 +16,7 @@ class TestPowerOperations(TestCase):
         self.instance.state = {'Name': 'running'}
         result = self.power_operations.power_on(self.ec2_session, 'id')
         self.assertTrue(result)
-        self.assertTrue(self.aws_ec2_service.get_instance_by_id.called_with(self.ec2_session, 'id'))
+        self.assertTrue(self.aws_ec2_service.get_active_instance_by_id.called_with(self.ec2_session, 'id'))
         self.assertFalse(self.instance.start.called)
         self.assertFalse(self.instance.wait_until_running.called)
 
@@ -24,7 +24,7 @@ class TestPowerOperations(TestCase):
         self.instance.state = {'Name': 'stopped'}
         result = self.power_operations.power_on(self.ec2_session, 'id')
         self.assertTrue(result)
-        self.assertTrue(self.aws_ec2_service.get_instance_by_id.called_with(self.ec2_session, 'id'))
+        self.assertTrue(self.aws_ec2_service.get_active_instance_by_id.called_with(self.ec2_session, 'id'))
         self.assertTrue(self.instance.start.called)
         self.assertTrue(self.instance.wait_until_running.called)
 
@@ -32,14 +32,14 @@ class TestPowerOperations(TestCase):
         self.instance.state = {'Name': 'stopped'}
         result = self.power_operations.power_off(self.ec2_session, 'id')
         self.assertTrue(result)
-        self.assertTrue(self.aws_ec2_service.get_instance_by_id.called_with(self.ec2_session, 'id'))
+        self.assertTrue(self.aws_ec2_service.get_active_instance_by_id.called_with(self.ec2_session, 'id'))
         self.assertFalse(self.instance.stop.called)
         self.assertFalse(self.instance.wait_until_stopped.called)
 
-    def test_power_off_already_stopped(self):
+    def test_power_off_on_running_instance(self):
         self.instance.state = {'Name': 'running'}
         result = self.power_operations.power_off(self.ec2_session, 'id')
         self.assertTrue(result)
-        self.assertTrue(self.aws_ec2_service.get_instance_by_id.called_with(self.ec2_session, 'id'))
+        self.assertTrue(self.aws_ec2_service.get_active_instance_by_id.called_with(self.ec2_session, 'id'))
         self.assertTrue(self.instance.stop.called)
         self.assertTrue(self.instance.wait_until_stopped.called)

@@ -78,7 +78,7 @@ class AWSShell(object):
                                                        key_pair_service=self.key_pair_service,
                                                        subnet_service=self.subnet_service)
 
-        self.refresh_ip_operation = RefreshIpOperation()
+        self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)
 
         self.power_management_operation = PowerOperation(instance_service=self.instance_service,
                                                          instance_waiter=self.ec2_instance_waiter)
