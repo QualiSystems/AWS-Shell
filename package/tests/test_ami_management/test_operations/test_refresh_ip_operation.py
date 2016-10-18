@@ -26,7 +26,7 @@ class TestRefreshIpOperation(TestCase):
         instance.private_ip_address = "1.0.0.1"
         instance.public_ip_address = "2.0.0.1"
 
-        self.instance_service.get_instance_by_id = Mock(return_value=instance)
+        self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
 
         self.refresh_ip_operation.refresh_ip(cloudshell_session=self.cloudshell_session,
                                              ec2_session=self.ec2_session,

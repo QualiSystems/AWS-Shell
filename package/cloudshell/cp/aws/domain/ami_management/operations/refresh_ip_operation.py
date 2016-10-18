@@ -19,7 +19,7 @@ class RefreshIpOperation(object):
         :param ec2_session : ec2_session
         """
 
-        deployed_instance = self.instance_service.get_instance_by_id(ec2_session, deployed_instance_id)
+        deployed_instance = self.instance_service.get_active_instance_by_id(ec2_session, deployed_instance_id)
 
         public_ip_on_aws = deployed_instance.public_ip_address
         private_ip_on_aws = deployed_instance.private_ip_address
