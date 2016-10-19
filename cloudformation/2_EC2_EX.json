@@ -40,7 +40,7 @@
 			"Type": "String"
 		},
 		"ExecutionServerBinaryLocation": {
-			"Type": "String",
+			"Type": "String"
 		}
 	},
 	"Resources": {

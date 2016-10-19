@@ -270,8 +270,15 @@
 					"ZPassword": {
 						"Ref": "ZPassword"
 					},
-					"ExecutionServerBinaryLocation":
-						"Fn::FindInMap": ["ExecutionServerVersion",{"Ref": "CloudshellVersion"}, "ExecutionServerBinaryLocation"]
+					"ExecutionServerBinaryLocation": {
+						"Fn::FindInMap": [
+							"ExecutionServerVersion",
+							{
+								"Ref": "CloudshellVersion"
+							},
+							"ExecutionServerBinaryLocation"
+						]
+					}
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2_EX.json"
 			}
