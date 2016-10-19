@@ -38,6 +38,9 @@
 		},
 		"ZPassword": {
 			"Type": "String"
+		},
+		"ExecutionServerBinaryLocation": {
+			"Type": "String",
 		}
 	},
 	"Resources": {
@@ -113,7 +116,17 @@
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
 						"/bin/echo \"",
-						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
+						"#!/bin/bash\n",
+						"mkdir -p /quali/execsrv\n",
+						"groupadd execsrv\n",
+						"usermod -a -G execsrv ec2-user\n",
+						"chown -R root:execsrv /quali/execsrv\n",
+						"chmod 777 /quali/execsrv\n",
+						"wget -O /quali/execsrv/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /quali/execsrv/exec.tar -C /quali/execsrv\n",
+						"mono /quali/execsrv/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
 						},
@@ -130,7 +143,7 @@
 							"Ref": "AWS::Region"
 						},
 						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+						"100 \" >> /quali/execsrv/cf_config_params.txt"]]
 					}
 				}
 			}
@@ -159,7 +172,17 @@
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
 						"/bin/echo \"",
-						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
+						"#!/bin/bash\n",
+						"mkdir -p /quali/execsrv\n",
+						"groupadd execsrv\n",
+						"usermod -a -G execsrv ec2-user\n",
+						"chown -R root:execsrv /quali/execsrv\n",
+						"chmod 777 /quali/execsrv\n",
+						"wget -O /quali/execsrv/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /quali/execsrv/exec.tar -C /quali/execsrv\n",
+						"mono /quali/execsrv/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
 						},
@@ -171,12 +194,12 @@
 						{
 							"Ref": "ZPassword"
 						},
-						" /esn:ES-Commands-",
+						" /esn:ES-Shell-",
 						{
 							"Ref": "AWS::Region"
 						},
 						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+						"100 \" >> /quali/execsrv/cf_config_params.txt"]]
 					}
 				},
 				"Tags": [{

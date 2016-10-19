@@ -29,7 +29,7 @@ def main():
     write_file_to_test_dir(main_data, TEST_MAIN_JSON)
 
     main_ex_data = read_file_data('0_Main_EX.json')
-    main_ex_data = main_ex_data.replace(EC2_EX_JSON, 'test/' + TEST_EC2_EX_JSON)
+    main_ex_data = main_ex_data.replace(EC2_EX_JSON, 'deploy_execution_server_by_selected_version/' + TEST_EC2_EX_JSON)
     write_file_to_test_dir(main_ex_data, TEST_MAIN_EX_JSON)
 
 
@@ -40,7 +40,7 @@ def read_file_data(file_name):
 
 
 def write_file_to_test_dir(file_data, file_name):
-    test_dir = os.path.join(os.getcwd(), 'test')
+    test_dir = os.path.join(os.getcwd(), 'deploy_execution_server_by_selected_version')
     if not os.path.exists(test_dir):
         os.makedirs(test_dir)
 

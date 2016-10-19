@@ -65,6 +65,12 @@
 			"Type": "String",
 			"Description": "Password for CloudShell server",
 			"NoEcho": true
+		},
+		"CloudshellVersion": {
+			"Type": "String",
+			"Description": "Cloudshell version",
+			"AllowedValues": ["9.0-EA", "9.0-GA"],
+			"Default": "9.0-EA"
 		}
 	},
 	"Mappings": {
@@ -158,6 +164,14 @@
 			},
 			"ap-south-1": {
 				"AZ": "ap-south-1a"
+			}
+		},
+		"ExecutionServerVersion": {
+			"9.0-EA": {
+				"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/exec.tar"
+			},
+			"9.0-GA": {
+				"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/exec.tar"
 			}
 		}
 	},
@@ -255,7 +269,9 @@
 					},
 					"ZPassword": {
 						"Ref": "ZPassword"
-					}
+					},
+					"ExecutionServerBinaryLocation":
+						"Fn::FindInMap": ["ExecutionServerVersion",{"Ref": "CloudshellVersion"}, "ExecutionServerBinaryLocation"]
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2_EX.json"
 			}
