@@ -115,17 +115,14 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"/bin/echo \"",
-						"#!/bin/bash\n",
 						"mkdir -p /quali/execsrv\n",
-						"groupadd execsrv\n",
-						"usermod -a -G execsrv ec2-user\n",
-						"chown -R root:execsrv /quali/execsrv\n",
-						"chmod 777 /quali/execsrv\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
 						"wget -O /quali/execsrv/exec.tar ",
 						{ "Ref" : "ExecutionServerBinaryLocation"},
 						"\n",
 						"tar -xvf /quali/execsrv/exec.tar -C /quali/execsrv\n",
+						"/bin/echo \"",
 						"mono /quali/execsrv/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
@@ -171,17 +168,14 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"/bin/echo \"",
-						"#!/bin/bash\n",
 						"mkdir -p /quali/execsrv\n",
-						"groupadd execsrv\n",
-						"usermod -a -G execsrv ec2-user\n",
-						"chown -R root:execsrv /quali/execsrv\n",
-						"chmod 777 /quali/execsrv\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
 						"wget -O /quali/execsrv/exec.tar ",
 						{ "Ref" : "ExecutionServerBinaryLocation"},
 						"\n",
 						"tar -xvf /quali/execsrv/exec.tar -C /quali/execsrv\n",
+						"/bin/echo \"",
 						"mono /quali/execsrv/QsExecutionServerConsoleConfig.exe /s:",
 						{
 							"Ref": "ServerIP"
