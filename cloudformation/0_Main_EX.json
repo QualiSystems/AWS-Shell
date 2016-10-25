@@ -1,78 +1,5 @@
 {
 	"Description": "Main Template",
-	"Parameters": {
-		"1VPCCIDR": {
-			"Type": "String",
-			"Description": "IP Address range for Management VPC",
-			"MinLength": "9",
-			"MaxLength": "18",
-			"Default": "10.0.0.0/24",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
-		},
-		"2ESCIDR": {
-			"Type": "String",
-			"Description": "Must be inside VPC CIDR",
-			"MinLength": "9",
-			"MaxLength": "18",
-			"Default": "10.0.0.0/28",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
-		},
-		"5VPNAddress": {
-			"Type": "String",
-			"Description": "IP Address of your router",
-			"MinLength": "7",
-			"MaxLength": "15",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})",
-			"ConstraintDescription": "must be a valid IP address of the form x.x.x.x"
-		},
-		"4OnPremiseCIDR": {
-			"Type": "String",
-			"Description": "IP Address address range of a network behind the router",
-			"MinLength": "9",
-			"MaxLength": "18",
-			"Default": "192.168.1.0/24",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
-		},
-		"ZServerIP": {
-			"Type": "String",
-			"Description": "IP Address of your CloudShell Server",
-			"MinLength": "7",
-			"MaxLength": "15",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})",
-			"ConstraintDescription": "must be a valid IP address of the form x.x.x.x"
-		},
-		"7KeyPair": {
-			"Type": "AWS::EC2::KeyPair::KeyName",
-			"Description": "Choose the Keypair for the instances"
-		},
-		"3QualiCIDR": {
-			"Type": "String",
-			"Description": "Must be inside VPC CIDR",
-			"MinLength": "9",
-			"MaxLength": "18",
-			"Default": "10.0.0.32/28",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
-		},
-		"ZUsername": {
-			"Type": "String",
-			"Description": "Username for CloudShell server"
-		},
-		"ZPassword": {
-			"Type": "String",
-			"Description": "Password for CloudShell server",
-			"NoEcho": true
-		},
-		"CloudshellVersion": {
-			"Type": "String",
-			"Description": "Cloudshell version",
-			"AllowedValues": ["9.0-EA", "9.0-GA"],
-			"Default": "9.0-EA"
-		}
-	},
 	"Mappings": {
 		"AMIFromRegion": {
 			"us-east-1": {
@@ -164,14 +91,6 @@
 			},
 			"ap-south-1": {
 				"AZ": "ap-south-1a"
-			}
-		},
-		"ExecutionServerVersion": {
-			"9.0-EA": {
-				"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/exec.tar"
-			},
-			"9.0-GA": {
-				"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/exec.tar"
 			}
 		}
 	},
@@ -271,13 +190,11 @@
 						"Ref": "ZPassword"
 					},
 					"ExecutionServerBinaryLocation": {
-						"Fn::FindInMap": [
-							"ExecutionServerVersion",
-							{
-								"Ref": "CloudshellVersion"
-							},
-							"ExecutionServerBinaryLocation"
-						]
+						"Fn::Join": ["",
+						[ "https://s3.amazonaws.com/cloudshell-cf/execution-server/",
+							{"Ref": "CloudshellVersion"},
+							"/exec.tar"
+						]]
 					}
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2_EX.json"
