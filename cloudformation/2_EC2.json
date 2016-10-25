@@ -38,6 +38,9 @@
 		},
 		"ZPassword": {
 			"Type": "String"
+		},
+		"ExecutionServerBinaryLocation": {
+			"Type": "String"
 		}
 	},
 	"Resources": {
@@ -112,6 +115,16 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
+						"ln /root/ExecutionServer/cf_config_ex\n",
+						"rm -rf /root/ExecutionServer/\n",
+						"mkdir /root/ExecutionServer/\n",
+						"mv cf_config_ex /root/ExecutionServer/\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
@@ -170,6 +183,16 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
+						"ln /root/ExecutionServer/cf_config_ex\n",
+						"rm -rf /root/ExecutionServer/\n",
+						"mkdir /root/ExecutionServer/\n",
+						"mv cf_config_ex /root/ExecutionServer/\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{

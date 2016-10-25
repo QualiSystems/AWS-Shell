@@ -115,7 +115,10 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"mkdir -p /root/ExecutionServer\n",
+						"ln /root/ExecutionServer/cf_config_ex\n",
+						"rm -rf /root/ExecutionServer/\n",
+						"mkdir /root/ExecutionServer/\n",
+						"mv cf_config_ex /root/ExecutionServer/\n",
 						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
 						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
 						"wget -O /root/ExecutionServer/exec.tar ",
@@ -168,7 +171,10 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"mkdir -p /root/ExecutionServer\n",
+						"ln /root/ExecutionServer/cf_config_ex\n",
+						"rm -rf /root/ExecutionServer/\n",
+						"mkdir /root/ExecutionServer/\n",
+						"mv cf_config_ex /root/ExecutionServer/\n",
 						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
 						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
 						"wget -O /root/ExecutionServer/exec.tar ",

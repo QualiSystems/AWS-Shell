@@ -168,6 +168,12 @@
 			"Type": "String",
 			"Description": "Password for CloudShell server",
 			"NoEcho": true
+		},
+		"CloudshellVersion": {
+			"Type": "String",
+			"Description": "Cloudshell version",
+			"AllowedValues": ["7.0-GA", "7.1-GA"],
+			"Default": "7.0-GA"
 		}
 	},
 	"Resources": {
@@ -274,6 +280,13 @@
 					},
 					"ZPassword": {
 						"Ref": "ZPassword"
+					},
+					"ExecutionServerBinaryLocation": {
+						"Fn::Join": ["",
+						[ "https://s3.amazonaws.com/cloudshell-cf/execution-server/",
+							{"Ref": "CloudshellVersion"},
+							"/exec.tar"
+						]]
 					}
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2.json"
