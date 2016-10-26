@@ -130,12 +130,6 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The cloud provider resource name in CloudShell." IsReadOnly="false" Name="Cloud Provider" Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="The AWS AMI ID to launch the instance from. The AMI should be accessible in the selected cloud provider's AWS region. For example :ami-6869aa05." IsReadOnly="false" Name="AWS AMI Id" Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -278,9 +272,6 @@
       <Models>
         <ResourceModel Description="" Name="AWS EC2 Instance" ImagePath="DeploymentTypes-AWS-EC2.png" SupportsConcurrentCommands="false">
           <AttachedAttributes>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider" UserInput="true">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>

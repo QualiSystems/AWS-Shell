@@ -20,7 +20,7 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        instance = self.instance_service.get_active_instance_by_id(ec2_session, ami_id)
         if instance.state['Name'] == 'running':
             return True
 
@@ -37,7 +37,7 @@ class PowerOperation(object):
         :param
         :return:
         """
-        instance = self.instance_service.get_instance_by_id(ec2_session, ami_id)
+        instance = self.instance_service.get_active_instance_by_id(ec2_session, ami_id)
         if instance.state['Name'] == 'stopped':
             return True
 

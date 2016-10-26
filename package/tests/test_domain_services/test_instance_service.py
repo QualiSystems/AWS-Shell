@@ -1,6 +1,7 @@
 from unittest import TestCase
 
 from mock import Mock
+from mock import MagicMock
 
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 
@@ -13,11 +14,12 @@ class TestInstanceService(TestCase):
         self.ec2_client = Mock()
         self.name = 'name'
         self.reservation_id = 'res_id'
-        self.instance = Mock()
+        self.instance = MagicMock()
         self.instance.instance_id = 'id'
         self.default_tags = ['tag1', 'tag2']
         self.tag_service.get_default_tags = Mock(return_value=self.default_tags)
         self.ec2_session.create_instances = Mock(return_value=[self.instance])
+        self.ec2_session.Instance = Mock(return_value=self.instance)
         self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
 
     def test_create_instance(self):
@@ -53,6 +55,18 @@ class TestInstanceService(TestCase):
         res = self.instance_service.get_instance_by_id(self.ec2_session, 'id')
         self.assertTrue(self.ec2_session.Instance.called_with('id'))
         self.assertIsNotNone(res)
+
+    def test_get_active_instance_by_id_raise_exception_if_vm_terminated(self):
+        """Check that method will raise exception if VM was terminated on the AWS"""
+        self.instance.state = {'Name': 'terminated'}
+        with self.assertRaises(Exception):
+            self.instance_service.get_active_instance_by_id(self.ec2_session, 'id')
+
+    def test_get_active_instance_by_id_raise_exception_if_no_vm(self):
+        """Check that method will raise exception if VM was removed from the AWS"""
+        self.ec2_session.Instance = Mock(return_value=None)
+        with self.assertRaises(Exception):
+            self.instance_service.get_active_instance_by_id(self.ec2_session, 'id')
 
     def test_terminate_instance(self):
         self.instance_waiter.multi_wait = Mock(return_value=[self.instance])
