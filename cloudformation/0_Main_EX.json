@@ -69,10 +69,9 @@
 		"CloudshellVersion": {
 			"Type": "String",
 			"Description": "Cloudshell version",
-			"AllowedValues": ["7.0-GA", "7.1-GA"],
-			"Default": "7.0-GA"
-		}
-	},
+			"AllowedValues": ["7.1-EA", "7.1-GA"],
+			"Default": "7.1-GA"
+	}},
 	"Mappings": {
 		"AMIFromRegion": {
 			"us-east-1": {
