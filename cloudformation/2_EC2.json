@@ -121,7 +121,7 @@
 						{ "Ref" : "ExecutionServerBinaryLocation"},
 						"\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/cf_config_ex\n",
+						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
@@ -187,7 +187,7 @@
 						{ "Ref" : "ExecutionServerBinaryLocation"},
 						"\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cloudshell-cf/deploy_execution_server_by_selected_version/cf_config_ex\n",
+						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{

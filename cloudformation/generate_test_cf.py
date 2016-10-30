@@ -25,11 +25,11 @@ def main():
     write_file_to_test_dir(ec2_ex_data, TEST_EC2_EX_JSON)
 
     main_data = read_file_data('0_Main.json')
-    main_data = main_data.replace(EC2_JSON, 'test/' + TEST_EC2_JSON)
+    main_data = main_data.replace(EC2_JSON, '' + TEST_EC2_JSON)
     write_file_to_test_dir(main_data, TEST_MAIN_JSON)
 
     main_ex_data = read_file_data('0_Main_EX.json')
-    main_ex_data = main_ex_data.replace(EC2_EX_JSON, 'deploy_execution_server_by_selected_version/' + TEST_EC2_EX_JSON)
+    main_ex_data = main_ex_data.replace(EC2_EX_JSON, '' + TEST_EC2_EX_JSON)
     write_file_to_test_dir(main_ex_data, TEST_MAIN_EX_JSON)
 
 

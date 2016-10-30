@@ -170,7 +170,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/1_VPC_EX.json",
+				"TemplateURL": "https://s3.amazonaws.com/cf-execution-server/1_VPC_EX.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
@@ -263,13 +263,13 @@
 					},
 					"ExecutionServerBinaryLocation": {
 						"Fn::Join": ["",
-						[ "https://s3.amazonaws.com/cloudshell-cf/execution-server/",
+						[ "https://s3.amazonaws.com/cf-execution-server/execution-server/",
 							{"Ref": "CloudshellVersion"},
 							"/exec.tar"
 						]]
 					}
 				},
-				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2_EX.json"
+				"TemplateURL": "https://s3.amazonaws.com/cf-execution-server/2_EC2_EX.json"
 			}
 		}
 	},
