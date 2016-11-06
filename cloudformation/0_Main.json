@@ -168,13 +168,18 @@
 			"Type": "String",
 			"Description": "Password for CloudShell server",
 			"NoEcho": true
+		},
+		"CloudshellVersion": {
+			"Type": "String",
+			"Description": "Cloudshell version",
+			"Default": "7.1-GA"
 		}
 	},
 	"Resources": {
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/1_VPC.json",
+				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/1_VPC.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
@@ -274,9 +279,16 @@
 					},
 					"ZPassword": {
 						"Ref": "ZPassword"
+					},
+					"ExecutionServerBinaryLocation": {
+						"Fn::Join": ["",
+						[ "https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/",
+							{"Ref": "CloudshellVersion"},
+							"/exec.tar"
+						]]
 					}
 				},
-				"TemplateURL": "https://s3.amazonaws.com/cloudshell-cf/2_EC2.json"
+				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/2_EC2.json"
 			}
 		}
 	},

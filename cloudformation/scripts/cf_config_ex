@@ -1,0 +1,16 @@
+#!/bin/bash
+exec 4</root/ExecutionServer/cf_config_params.txt
+while read LINE <&4; do
+        n=0
+        until [ $n -ge 5 ]
+        do
+                $LINE >> /var/log/cf_config.log 2>&1 && break
+                n=$[$n+1]
+                sleep 15
+        done
+done
+
+cd /root/ExecutionServer
+./ex >> /var/log/cf_config.log 2>&1
+
+exit 0

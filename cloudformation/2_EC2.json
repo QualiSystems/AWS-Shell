@@ -38,6 +38,9 @@
 		},
 		"ZPassword": {
 			"Type": "String"
+		},
+		"ExecutionServerBinaryLocation": {
+			"Type": "String"
 		}
 	},
 	"Resources": {
@@ -112,6 +115,13 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
+						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
@@ -125,12 +135,13 @@
 						{
 							"Ref": "ZPassword"
 						},
-						" /esn:ES-Shell-",
+						" /esn:ES-Shells-",
 						{
 							"Ref": "AWS::Region"
 						},
 						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
+						"supervisorctl restart ex"]]
 					}
 				}
 			}
@@ -170,6 +181,13 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{ "Ref" : "ExecutionServerBinaryLocation"},
+						"\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
+						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
@@ -188,7 +206,8 @@
 							"Ref": "AWS::Region"
 						},
 						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt"]]
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
+						"supervisorctl restart ex"]]
 					}
 				}
 			}
