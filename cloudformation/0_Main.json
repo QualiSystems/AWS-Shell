@@ -172,7 +172,6 @@
 		"CloudshellVersion": {
 			"Type": "String",
 			"Description": "Cloudshell version",
-			"AllowedValues": ["7.1-EA", "7.1-GA"],
 			"Default": "7.1-GA"
 		}
 	},
@@ -180,7 +179,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://s3.amazonaws.com/cf-execution-server/1_VPC.json",
+				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/1_VPC.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
@@ -283,13 +282,13 @@
 					},
 					"ExecutionServerBinaryLocation": {
 						"Fn::Join": ["",
-						[ "https://s3.amazonaws.com/cf-execution-server/execution-server/",
+						[ "https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/",
 							{"Ref": "CloudshellVersion"},
 							"/exec.tar"
 						]]
 					}
 				},
-				"TemplateURL": "https://s3.amazonaws.com/cf-execution-server/2_EC2.json"
+				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/2_EC2.json"
 			}
 		}
 	},
