@@ -3,57 +3,57 @@
 	"Mappings": {
 		"AMIFromRegion": {
 			"us-east-1": {
-				"QualixAMI": "ami-bb7007ac",
+				"QualixAMI": "ami-6d1c2007",
 				"ESAMI": "ami-84780f93",
 				"NatAMI": "ami-4868ab25"
 			},
 			"eu-west-1": {
-				"QualixAMI": "ami-c584f8b6",
+				"QualixAMI": "ami-7abd0209",
 				"ESAMI": "ami-f88bf78b",
 				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-1": {
-				"QualixAMI": "ami-e6c98986",
+				"QualixAMI": "ami-af4333cf",
 				"ESAMI": "ami-ecc9898c",
 				"NatAMI": "ami-004b0f60"
 			},
 			"us-west-2": {
-				"QualixAMI": "ami-6177b901",
+				"QualixAMI": "ami-d2c924b2",
 				"ESAMI": "ami-3f72bc5f",
 				"NatAMI": "ami-a275b1c2"
 			},							
 			"ap-south-1": {
-				"QualixAMI": "ami-3c3a4f53",
+				"QualixAMI": "ami-95cda6fa",
 				"ESAMI": "ami-2b265344",
 				"NatAMI": "ami-e2b9d38d"
 			},																				
 			"ap-northeast-2": {
-				"QualixAMI": "ami-7d11db13",
+				"QualixAMI": "ami-c74789a9",
 				"ESAMI": "ami-6017dd0e",
 				"NatAMI": "ami-d14388bf"
 			},													
 			"ap-southeast-1": {
-				"QualixAMI": "ami-6b64bb08",
+				"QualixAMI": "ami-f068a193",
 				"ESAMI": "ami-3c65ba5f",
 				"NatAMI": "ami-a79b49c4"
 			},			
 			"ap-southeast-2": {
-				"QualixAMI": "ami-8ceedbef",
+				"QualixAMI": "ami-fedafc9d",
 				"ESAMI": "ami-cdb085ae",
 				"NatAMI": "ami-53371f30"
 			},		
 			"ap-northeast-1": {
-				"QualixAMI": "ami-73448012",
+				"QualixAMI": "ami-eec1c380",
 				"ESAMI": "ami-e43bff85",
 				"NatAMI": "ami-2443b745"
 			},
 			"eu-central-1": {
-				"QualixAMI": "ami-6cdd2a03",
+				"QualixAMI": "ami-9bf712f4",
 				"ESAMI": "ami-69dd2a06",
 				"NatAMI": "ami-5825cd37"
 			},														
 			"sa-east-1": {
-				"QualixAMI": "ami-1fa33373",
+				"QualixAMI": "ami-26b93b4a",
 				"ESAMI": "ami-1ba23277",
 				"NatAMI": "ami-9336bcff"
 			}													

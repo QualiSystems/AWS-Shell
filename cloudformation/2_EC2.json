@@ -77,7 +77,19 @@
 				},
 				{
 					"Ref": "SG2id"
-				}]
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"yum -y install epel-release wget\n",
+						"wget https://s3-us-west-2.amazonaws.com/qualix-ova/guacamole-quali-install.sh\n",
+						"chmod +x guacamole-quali-install.sh\n",
+						"./guacamole-quali-install.sh"]]
+					}
+				}
 			}
 		},
 		"ESInstance": {
