@@ -86,7 +86,7 @@ class TestPrepareConnectivity(TestCase):
                                                     self.route_table_service)
         key_pair.create_key_pair = Mock(return_value=Mock())
 
-        prepare_conn._create_key_pair(self.ec2_session, self.s3_session, 'bucket', 'res_id')
+        prepare_conn._get_or_create_key_pair(self.ec2_session, self.s3_session, 'bucket', 'res_id')
 
         self.assertTrue(key_pair.get_key_for_reservation.called_with(self.s3_session, 'bucket', 'res_id'))
         self.assertTrue(key_pair.create_key_pair.called_with(self.ec2_session,

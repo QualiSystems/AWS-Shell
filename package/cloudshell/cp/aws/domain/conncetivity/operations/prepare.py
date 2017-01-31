@@ -1,16 +1,16 @@
 import traceback
 
-from cloudshell.cp.aws.domain.services.ec2 import route_table
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.cp.aws.models.connectivity_models import PrepareConnectivityActionResult
-from cloudshell.cp.aws.models.port_data import PortData
+from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
 class PrepareConnectivityOperation(object):
-    def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service):
+    def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
+                 cryptography_service):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -22,14 +22,18 @@ class PrepareConnectivityOperation(object):
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
         :param route_table_service:
         :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
+        :param cryptography_service:
+        :type cryptography_service: CryptographyService
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
         self.key_pair_service = key_pair_service
         self.tag_service = tag_service
         self.route_table_service = route_table_service
+        self.cryptography_service = cryptography_service
 
-    def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, request, logger):
+    def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, request,
+                             logger):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
         also will create a key pair for that reservation
@@ -48,10 +52,10 @@ class PrepareConnectivityOperation(object):
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
         logger.info("Creating or getting existing key pair")
-        self._create_key_pair(ec2_session=ec2_session,
-                              s3_session=s3_session,
-                              bucket=aws_ec2_datamodel.key_pairs_location,
-                              reservation_id=reservation.reservation_id)
+        access_key = self._get_or_create_key_pair(ec2_session=ec2_session,
+                                                  s3_session=s3_session,
+                                                  bucket=aws_ec2_datamodel.key_pairs_location,
+                                                  reservation_id=reservation.reservation_id)
         results = []
         for action in request.actions:
             try:
@@ -83,22 +87,33 @@ class PrepareConnectivityOperation(object):
                                                                     vpc=vpc,
                                                                     management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
 
-                results.append(self._create_action_result(action, security_group, vpc))
+                results.append(self._create_action_result(action, security_group, vpc, access_key))
 
             except Exception as e:
                 logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
                 results.append(self._create_fault_action_result(action, e))
         return results
 
-    def _create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
-        keypair = self.key_pair_service.get_key_for_reservation(s3_session=s3_session,
-                                                                bucket_name=bucket,
-                                                                reservation_id=reservation_id)
-        if not keypair:
-            self.key_pair_service.create_key_pair(ec2_session=ec2_session,
-                                                  s3_session=s3_session,
-                                                  bucket=bucket,
-                                                  reservation_id=reservation_id)
+    def _get_or_create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
+        """
+        The method creates a keypair or retrieves an existing keypair and returns the private key.
+        :param ec2_session:
+        :param s3_session:
+        :param str bucket:
+        :param str reservation_id:
+        :return: Private Key
+        """
+        private_key = self.key_pair_service.get_key_for_reservation(s3_session=s3_session,
+                                                                    bucket_name=bucket,
+                                                                    reservation_id=reservation_id)
+        if not private_key:
+            key_pair = self.key_pair_service.create_key_pair(ec2_session=ec2_session,
+                                                             s3_session=s3_session,
+                                                             bucket=bucket,
+                                                             reservation_id=reservation_id)
+            private_key = key_pair.key_material
+
+        return private_key
 
     def _peer_vpcs(self, ec2_client, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
                    reservation_model, logger):
@@ -175,7 +190,8 @@ class PrepareConnectivityOperation(object):
         # need to check for both possibilities since the amazon api for Route is unpredictable
         route = self.route_table_service.find_first_route(route_table, {'destination_cidr_block': str(target_vpc_cidr)})
         if not route:
-            route = self.route_table_service.find_first_route(route_table, {'DestinationCidrBlock': str(target_vpc_cidr)})
+            route = self.route_table_service.find_first_route(route_table,
+                                                              {'DestinationCidrBlock': str(target_vpc_cidr)})
 
         if route:
             logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
@@ -218,14 +234,19 @@ class PrepareConnectivityOperation(object):
                                                               cidr=cidr)
         return vpc
 
-    @staticmethod
-    def _create_action_result(action, security_group, vpc):
+    def _create_action_result(self, action, security_group, vpc, access_key):
         action_result = PrepareConnectivityActionResult()
         action_result.actionId = action.actionId
         action_result.success = True
         action_result.infoMessage = 'PrepareConnectivity finished successfully'
         action_result.vpcId = vpc.id
         action_result.securityGroupId = security_group.id
+
+        # encrypt the private key
+        cryptography_dto = self.cryptography_service.encrypt(access_key)
+        action_result.access_key = cryptography_dto.encrypted_input
+        action_result.secret_key = cryptography_dto.encrypted_asymmetric_key
+
         return action_result
 
     @staticmethod
