@@ -133,6 +133,9 @@
 			"us-east-1": {
 				"AZ": "us-east-1b"
 			},
+			"us-east-2": {
+				"AZ": "us-east-2a"
+			},
 			"us-west-2": {
 				"AZ": "us-west-2b"
 			},
