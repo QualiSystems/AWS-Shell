@@ -73,6 +73,11 @@
 				"ESAMI": "ami-84780f93",
 				"NatAMI": "ami-4868ab25"
 			},
+			"us-east-2": {
+				"QualixAMI": "ami-6a2d760f",
+				"ESAMI": "ami-a57055c0",
+				"NatAMI": "ami-92a6fef7"
+			},
 			"eu-west-1": {
 				"QualixAMI": "ami-7abd0209",
 				"ESAMI": "ami-f88bf78b",
