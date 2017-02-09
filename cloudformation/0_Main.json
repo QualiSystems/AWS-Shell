@@ -168,6 +168,11 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
+		"8InstanceType": {
+			"Type": "String",
+			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c3.xlarge.",
+			"Default": "c3.xlarge"
+		},
 		"ZUsername": {
 			"Type": "String",
 			"Description": "Username for CloudShell server"

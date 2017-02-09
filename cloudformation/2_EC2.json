@@ -47,7 +47,7 @@
 		"QualixInstance": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
-				"InstanceType": "c3.xlarge",
+				"InstanceType": { "Ref": "8InstanceType" },
 				"IamInstanceProfile": {
 					"Ref": "QualiXInstanceProfile"
 				},
@@ -119,7 +119,7 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": "c3.xlarge",
+				"InstanceType": { "Ref": "8InstanceType" },
 				"SecurityGroupIds": [{
 					"Ref": "SG1id"
 				}],
@@ -185,7 +185,7 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": "c3.xlarge",
+				"InstanceType": { "Ref": "8InstanceType" },
 				"SecurityGroupIds": [{
 					"Ref": "SG1id"
 				}],
