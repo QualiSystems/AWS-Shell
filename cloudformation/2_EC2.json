@@ -41,13 +41,16 @@
 		},
 		"ExecutionServerBinaryLocation": {
 			"Type": "String"
+		},
+		"InstanceSize": {
+			"Type": "String"
 		}
 	},
 	"Resources": {
 		"QualixInstance": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
-				"InstanceType": { "Ref": "8InstanceType" },
+				"InstanceType": { "Ref": "InstanceSize" },
 				"IamInstanceProfile": {
 					"Ref": "QualiXInstanceProfile"
 				},
@@ -119,7 +122,7 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": { "Ref": "8InstanceType" },
+				"InstanceType": { "Ref": "InstanceSize" },
 				"SecurityGroupIds": [{
 					"Ref": "SG1id"
 				}],
@@ -185,7 +188,7 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": { "Ref": "8InstanceType" },
+				"InstanceType": { "Ref": "InstanceSize" },
 				"SecurityGroupIds": [{
 					"Ref": "SG1id"
 				}],

@@ -268,6 +268,9 @@
 					"ZPassword": {
 						"Ref": "ZPassword"
 					},
+					"InstanceSize": {
+						"Ref": "8InstanceType"
+					},
 					"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell-version/exec.tar"
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/2_EC2_EX.json"
