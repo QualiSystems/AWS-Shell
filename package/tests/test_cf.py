@@ -1,3 +1,4 @@
+import os
 from unittest import TestCase
 
 import json
@@ -6,6 +7,23 @@ import json
 class TestAWSShell(TestCase):
     def setUp(self):
         pass
+
+    def test_temp(self):
+        def list_files_to_res(path):
+            result = '\n'
+            files_list = os.listdir(path)
+            for f in files_list:
+                result += path + f + "\n"
+            return result
+
+        res = '\n'
+        res += list_files_to_res('../')
+        res += list_files_to_res('../../')
+        res += list_files_to_res('../../cloudformation/')
+
+        raise Exception(res)
+
+
 
     def test_main_json_valid(self):
         json_file = open('../../cloudformation/0_Main.json', 'r')
