@@ -146,15 +146,15 @@ class PrepareConnectivityOperation(object):
         # get mgmt vpc cidr
         mgmt_cidr = self.vpc_service.get_vpc_cidr(ec2_session=ec2_session, vpc_id=management_vpc_id)
 
-        # add route in management route table to the new sandbox vpc
-        mgmt_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
-                                                                         vpc_id=management_vpc_id)
-        self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
-                                         route_table=mgmt_route_table,
-                                         target_vpc_cidr=sandbox_vpc_cidr,
-                                         logger=logger,
-                                         ec2_session=ec2_session,
-                                         ec2_client=ec2_client)
+        # add route in mgmgt vpc for ALL route tables to the new sandbox vpc
+        mgmt_rts = self.route_table_service.get_all_route_tables(ec2_session=ec2_session, vpc_id=management_vpc_id)
+        for mgmt_route_table in mgmt_rts:
+            self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
+                                             route_table=mgmt_route_table,
+                                             target_vpc_cidr=sandbox_vpc_cidr,
+                                             logger=logger,
+                                             ec2_session=ec2_session,
+                                             ec2_client=ec2_client)
 
         # add route in sandbox route table to the management vpc
         sandbox_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,

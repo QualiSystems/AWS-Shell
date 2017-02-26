@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
@@ -37,6 +37,7 @@ class TestPrepareConnectivity(TestCase):
         self.prepare_conn._get_or_create_key_pair = Mock(return_value=access_key)
         crypto_dto = Mock()
         self.crypto_service.encrypt = Mock(return_value=crypto_dto)
+        self.route_table_service.get_all_route_tables = Mock(return_value=MagicMock())
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
                                                          ec2_session=self.ec2_session,
