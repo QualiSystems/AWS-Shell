@@ -60,5 +60,7 @@ class CleanupConnectivityOperation(object):
         return result
 
     def _delete_blackhole_routes_in_vpc_route_table(self, ec2_session, ec2_client, aws_ec2_data_model):
-        rt = self.route_table_service.get_main_route_table(ec2_session, aws_ec2_data_model.aws_management_vpc_id)
-        self.route_table_service.delete_blackhole_routes(rt, ec2_client)
+        rts = self.route_table_service.get_all_route_tables(ec2_session=ec2_session,
+                                                            vpc_id=aws_ec2_data_model.aws_management_vpc_id)
+        for rt in rts:
+            self.route_table_service.delete_blackhole_routes(rt, ec2_client)

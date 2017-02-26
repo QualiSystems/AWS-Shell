@@ -1,7 +1,7 @@
 from _ast import Eq
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 
@@ -19,6 +19,7 @@ class TestCleanupConnectivity(TestCase):
                                                               self.route_table_service)
 
     def test_cleanup(self):
+        self.route_table_service.get_all_route_tables = Mock(return_value=[Mock(), Mock()])
         vpc = self.vpc_serv.find_vpc_for_reservation()
 
         self.cleanup_operation.cleanup(ec2_session=self.ec2_session,
@@ -37,6 +38,9 @@ class TestCleanupConnectivity(TestCase):
         self.assertTrue(self.vpc_serv.remove_all_subnets.called_with(vpc))
         self.assertTrue(self.vpc_serv.remove_all_peering.called_with(vpc))
         self.assertTrue(self.vpc_serv.delete_vpc.called_with(vpc))
+        self.route_table_service.get_all_route_tables.assert_called_once_with(ec2_session=self.ec2_session,
+                                                                              vpc_id=self.aws_ec2_data_model.aws_management_vpc_id)
+        self.assertEquals(self.route_table_service.delete_blackhole_routes.call_count, 2)
 
     def test_cleanup_no_vpc(self):
         vpc_serv = Mock()
