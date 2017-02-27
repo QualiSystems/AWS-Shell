@@ -130,12 +130,6 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="The cloud provider resource name in CloudShell." IsReadOnly="false" Name="Cloud Provider" Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="The AWS AMI ID to launch the instance from. The AMI should be accessible in the selected cloud provider's AWS region. For example :ami-6869aa05." IsReadOnly="false" Name="AWS AMI Id" Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -154,7 +148,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="" Description="Assigns an Elastic IP address to the instance. An Elastic IP is a static public IP address, which is reachable from the internet. Please enter the specific Elastic IP you want to associate with your instance. If kept empty no Elastic IP will be associated with the instance. Note that this value should be filled in for the app in the environment and not in the app catalog. For example 52.203.236.131." IsReadOnly="false" Name="Add Elastic IP" Type="String">
+    <AttributeInfo DefaultValue="False" Description="Allocates an Elastic IP address to the instance. An Elastic IP is a static public IP address, which is reachable from the internet. Please enter the specific Elastic IP you want to associate with your instance. If kept empty no Elastic IP will be associated with the instance. Note that this value should be filled in for the app in the environment and not in the app catalog. For example 52.203.236.131." IsReadOnly="false" Name="Allocate Elastic IP" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -177,12 +171,15 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
               <AllowedValues>
                 <AllowedValue>us-east-1</AllowedValue>
+                <AllowedValue>us-east-2</AllowedValue>
+                <AllowedValue>us-west-1</AllowedValue>
                 <AllowedValue>us-west-2</AllowedValue>
+                <AllowedValue>eu-central-1</AllowedValue>
+                <AllowedValue>eu-west-1</AllowedValue>
                 <AllowedValue>ap-southeast-1</AllowedValue>
                 <AllowedValue>ap-southeast-2</AllowedValue>
                 <AllowedValue>ap-northeast-1</AllowedValue>
-                <AllowedValue>eu-central-1</AllowedValue>
-                <AllowedValue>eu-west-1</AllowedValue>
+                <AllowedValue>ap-northeast-2</AllowedValue>
               </AllowedValues>
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt SG ID">
@@ -249,38 +246,12 @@
       </Models>
       <Categories />
     </ResourceFamily>
-    <ResourceFamily Description="" IsService="true" Name="Installation Options" ServiceType="Installation">
-      <AttachedAttributes />
-      <AttributeValues />
-      <Models>
-        <ResourceModel Description="" Name="Generic Installation Option" SupportsConcurrentCommands="false">
-          <AttachedAttributes>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Generic Input" UserInput="true">
-              <AllowedValues />
-            </AttachedAttribute>
-          </AttachedAttributes>
-          <AttributeValues>
-            <AttributeValue Name="Generic Input" Value="" />
-          </AttributeValues>
-          <ParentModels />
-          <Drivers>
-            <DriverName>Generic Driver</DriverName>
-          </Drivers>
-          <Scripts />
-        </ResourceModel>
-      </Models>
-      <Categories>
-      </Categories>
-    </ResourceFamily>
     <ResourceFamily Description="" IsService="true" Name="Deployment Options" ServiceType="Deployment">
       <AttachedAttributes />
       <AttributeValues />
       <Models>
         <ResourceModel Description="" Name="AWS EC2 Instance" ImagePath="DeploymentTypes-AWS-EC2.png" SupportsConcurrentCommands="false">
           <AttachedAttributes>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Cloud Provider" UserInput="true">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
@@ -324,7 +295,7 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Public IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Elastic IP" UserInput="true">
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allocate Elastic IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">

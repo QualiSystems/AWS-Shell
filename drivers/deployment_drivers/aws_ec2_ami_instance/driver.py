@@ -24,13 +24,21 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         with LoggingSessionContext(context) as logger:
             with CloudShellSessionContext(context) as session:
                 logger.info('Deploy started')
+
+                app_request = jsonpickle.decode(context.resource.app_context.app_request_json)
+
+                # Cloudshell >= v7.2 have no Cloud Provider attribute, fill it from the cloudProviderName context attr
+                cloud_provider_name = app_request["deploymentService"].get("cloudProviderName")
+
+                if cloud_provider_name:
+                    context.resource.attributes['Cloud Provider'] = cloud_provider_name
+
                 # create deployment resource model and serialize it to json
-                aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(context.resource,
-                                                                                              self.get_deployment_credentials(
-                                                                                                  context))
+                aws_ami_deployment_model = self._convert_context_to_deployment_resource_model(
+                    context.resource,
+                    self.get_deployment_credentials(context))
 
-                ami_res_name = jsonpickle.decode(context.resource.app_context.app_request_json)['name']
-
+                ami_res_name = app_request['name']
                 deployment_info = self._get_deployment_info(aws_ami_deployment_model, ami_res_name)
 
                 self.vaidate_deployment_ami_model(aws_ami_deployment_model)
@@ -69,7 +77,7 @@ class DeployAWSEC2AMIInstance(ResourceDriverInterface):
         deployedResource.outbound_ports = resource.attributes['Outbound Ports']
         deployedResource.wait_for_credentials = self._convert_to_bool(resource.attributes['Wait for Credentials'])
         deployedResource.add_public_ip = self._convert_to_bool(resource.attributes['Add Public IP'])
-        deployedResource.add_elastic_ip = resource.attributes['Add Elastic IP']
+        deployedResource.allocate_elastic_ip = resource.attributes['Allocate Elastic IP']
         deployedResource.root_volume_name = resource.attributes['Root Volume Name']
         deployedResource.user = deployment_credentiales['user']
         deployedResource.wait_for_status_check = resource.attributes['Wait for Status Check']

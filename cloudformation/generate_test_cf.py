@@ -7,7 +7,7 @@ TEST_EC2_JSON = '2_EC2_test.json'
 TEST_EC2_EX_JSON = '2_EC2_EX_test.json'
 
 PROD_INSTANCE_TYPE = '"c3.xlarge"'
-TEST_INSTANCE_TYPE = '"t2.micro"'
+TEST_INSTANCE_TYPE = '"t2.small"'
 
 TEST_MAIN_JSON = '0_Main_test.json'
 TEST_MAIN_EX_JSON = '0_Main_EX_test.json'
@@ -25,11 +25,11 @@ def main():
     write_file_to_test_dir(ec2_ex_data, TEST_EC2_EX_JSON)
 
     main_data = read_file_data('0_Main.json')
-    main_data = main_data.replace(EC2_JSON, 'test/' + TEST_EC2_JSON)
+    main_data = main_data.replace(EC2_JSON, '' + TEST_EC2_JSON)
     write_file_to_test_dir(main_data, TEST_MAIN_JSON)
 
     main_ex_data = read_file_data('0_Main_EX.json')
-    main_ex_data = main_ex_data.replace(EC2_EX_JSON, 'test/' + TEST_EC2_EX_JSON)
+    main_ex_data = main_ex_data.replace(EC2_EX_JSON, '' + TEST_EC2_EX_JSON)
     write_file_to_test_dir(main_ex_data, TEST_MAIN_EX_JSON)
 
 
@@ -40,7 +40,7 @@ def read_file_data(file_name):
 
 
 def write_file_to_test_dir(file_data, file_name):
-    test_dir = os.path.join(os.getcwd(), 'test')
+    test_dir = os.path.join(os.getcwd(), 'deploy_execution_server_by_selected_version')
     if not os.path.exists(test_dir):
         os.makedirs(test_dir)
 

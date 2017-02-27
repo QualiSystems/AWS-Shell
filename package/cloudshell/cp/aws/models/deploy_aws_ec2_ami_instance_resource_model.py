@@ -22,6 +22,6 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.inbound_ports = ''  # type: str
         self.wait_for_credentials = ''  # type: str
         self.add_public_ip = False  # type: bool
-        self.add_elastic_ip = ''  # type: str
+        self.allocate_elastic_ip = False  # type: bool
         self.user = ''  # type: str
         self.app_name = ''  # type: str

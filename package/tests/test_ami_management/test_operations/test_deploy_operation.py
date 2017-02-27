@@ -32,7 +32,7 @@ class TestDeployOperation(TestCase):
         ami_datamodel.inbound_ports = "80"
         ami_datamodel.outbound_ports = "20"
         ami_datamodel.add_public_ip = None
-        ami_datamodel.add_elastic_ip = None
+        ami_datamodel.allocate_elastic_ip = True
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.ec2_serv.create_instance = Mock(return_value=instance)
@@ -63,7 +63,8 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
-                                                       'User': ami_credentials.user_name})
+                                                       'User': ami_credentials.user_name,
+                                                       'Public IP': res.elastic_ip})
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(

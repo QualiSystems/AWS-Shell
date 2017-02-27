@@ -14,6 +14,7 @@ from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConn
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
+from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
@@ -56,6 +57,7 @@ class AWSShell(object):
         self.key_pair_service = KeyPairService(self.s3_service)
         self.vpc_waiter = VPCWaiter()
         self.route_tables_service = RouteTablesService()
+        self.cryptography_service = CryptographyService()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -68,7 +70,8 @@ class AWSShell(object):
                                          security_group_service=self.security_group_service,
                                          key_pair_service=self.key_pair_service,
                                          tag_service=self.tag_service,
-                                         route_table_service=self.route_tables_service)
+                                         route_table_service=self.route_tables_service,
+                                         cryptography_service=self.cryptography_service)
 
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
@@ -78,7 +81,7 @@ class AWSShell(object):
                                                        key_pair_service=self.key_pair_service,
                                                        subnet_service=self.subnet_service)
 
-        self.refresh_ip_operation = RefreshIpOperation()
+        self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)
 
         self.power_management_operation = PowerOperation(instance_service=self.instance_service,
                                                          instance_waiter=self.ec2_instance_waiter)

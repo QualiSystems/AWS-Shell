@@ -95,3 +95,5 @@ package/cloudshell/configuration/*
 drivers/aws_shell/src/debug.xml
 drivers/aws_shell/src/debug_info.txt
 cloudformation/test/*
+cloudformation/deploy_execution_server_by_selected_version
+cloudformation/deploy_execution_server_by_selected_version/*

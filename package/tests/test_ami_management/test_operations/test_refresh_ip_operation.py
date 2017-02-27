@@ -7,7 +7,8 @@ from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation imp
 class TestRefreshIpOperation(TestCase):
     def setUp(self):
         self.ec2_session = Mock()
-        self.refresh_ip_operation = RefreshIpOperation()
+        self.instance_service = Mock()
+        self.refresh_ip_operation = RefreshIpOperation(self.instance_service)
         self.instance = Mock()
         self.cloudshell_session = Mock()
 
@@ -16,7 +17,7 @@ class TestRefreshIpOperation(TestCase):
 
         self.ec2_session = Mock()
 
-    def test_delete_operation(self):
+    def test_refresh_ip(self):
         instance_id = "some instance id"
         current_private_ip = "1.0.0.0"
         current_public_ip = "2.0.0.0"
@@ -25,7 +26,7 @@ class TestRefreshIpOperation(TestCase):
         instance.private_ip_address = "1.0.0.1"
         instance.public_ip_address = "2.0.0.1"
 
-        self.ec2_session.Instance = Mock(return_value=instance)
+        self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
 
         self.refresh_ip_operation.refresh_ip(cloudshell_session=self.cloudshell_session,
                                              ec2_session=self.ec2_session,

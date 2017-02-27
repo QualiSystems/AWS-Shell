@@ -62,7 +62,12 @@ class DeleteAMIOperation(object):
         except Exception:
             return True
 
+        vpc_addresses = list(instance.vpc_addresses.all())
+
         self.instance_service.terminate_instance(instance)
+
+        for address in vpc_addresses:
+            self.instance_service.release_elastic_address(address)
 
         # find the exclusive security groups of the instance and delete them
         if security_groups_description:
