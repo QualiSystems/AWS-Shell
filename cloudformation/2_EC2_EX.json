@@ -137,7 +137,7 @@
 						  "Ref": "ExecutionServerBinaryLocation"
 						},
 						"\n",
-						"curl http://s3.amazonaws.com/gilsbucketz/8.0.0-162101/AWS-CF/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
@@ -194,7 +194,7 @@
 						  "Ref": "ExecutionServerBinaryLocation"
 						},
 						"\n",
-						"curl http://s3.amazonaws.com/gilsbucketz/8.0.0-162101/AWS-CF/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
