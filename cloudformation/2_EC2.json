@@ -129,13 +129,16 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
-						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+						"chattr +i /etc/resolv.conf\n",
 						"wget -O /root/ExecutionServer/exec.tar ",
-						{ "Ref" : "ExecutionServerBinaryLocation"},
+						{
+						  "Ref": "ExecutionServerBinaryLocation"
+						},
 						"\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
@@ -195,13 +198,16 @@
 					"Fn::Base64": {
 						"Fn::Join": ["",
 						["#!/bin/bash -xe\n",
-						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
-						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+						"chattr +i /etc/resolv.conf\n",
 						"wget -O /root/ExecutionServer/exec.tar ",
-						{ "Ref" : "ExecutionServerBinaryLocation"},
+						{
+						  "Ref": "ExecutionServerBinaryLocation"
+						},
 						"\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
 						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"wget -O /root/ExecutionServer/cf_config_ex https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex\n",
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
