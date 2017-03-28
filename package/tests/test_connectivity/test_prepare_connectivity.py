@@ -95,7 +95,7 @@ class TestPrepareConnectivity(TestCase):
 
     def test_create_key_pair(self):
         key_pair_service = Mock()
-        key_pair_service.get_key_for_reservation = Mock(return_value=None)
+        key_pair_service.load_key_pair_by_name = Mock(return_value=None)
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
                                                     self.route_table_service, self.crypto_service)
         key_pair = Mock()
@@ -103,7 +103,7 @@ class TestPrepareConnectivity(TestCase):
 
         access_key = prepare_conn._get_or_create_key_pair(self.ec2_session, self.s3_session, 'bucket', 'res_id')
 
-        self.assertTrue(key_pair_service.get_key_for_reservation.called_with(self.s3_session, 'bucket', 'res_id'))
+        self.assertTrue(key_pair_service.load_key_pair_by_name.called_with(self.s3_session, 'bucket', 'res_id'))
         self.assertTrue(key_pair_service.create_key_pair.called_with(self.ec2_session,
                                                                      self.s3_session,
                                                                      'bucket',

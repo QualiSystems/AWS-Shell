@@ -103,9 +103,9 @@ class PrepareConnectivityOperation(object):
         :param str reservation_id:
         :return: Private Key
         """
-        private_key = self.key_pair_service.get_key_for_reservation(s3_session=s3_session,
-                                                                    bucket_name=bucket,
-                                                                    reservation_id=reservation_id)
+        private_key = self.key_pair_service.load_key_pair_by_name(s3_session=s3_session,
+                                                                  bucket_name=bucket,
+                                                                  reservation_id=reservation_id)
         if not private_key:
             key_pair = self.key_pair_service.create_key_pair(ec2_session=ec2_session,
                                                              s3_session=s3_session,
