@@ -18,8 +18,8 @@ class AWSShellDriver(ResourceDriverInterface):
     def initialize(self, context):
         pass
 
-    def deploy_ami(self, context, request):
-        return self.aws_shell.deploy_ami(context, request)
+    def deploy_ami(self, context, request, cancellation_context):
+        return self.aws_shell.deploy_ami(context, request, cancellation_context)
 
     def PowerOn(self, context, ports):
         return self.aws_shell.power_on_ami(context)
@@ -36,8 +36,8 @@ class AWSShellDriver(ResourceDriverInterface):
     def destroy_vm_only(self, context, ports):
         return self.aws_shell.delete_instance(context)
 
-    def PrepareConnectivity(self, context, request):
-        return self.aws_shell.prepare_connectivity(context, request)
+    def PrepareConnectivity(self, context, request, cancellation_context):
+        return self.aws_shell.prepare_connectivity(context, request, cancellation_context)
 
     def CleanupConnectivity(self, context, request):
         return self.aws_shell.cleanup_connectivity(context)

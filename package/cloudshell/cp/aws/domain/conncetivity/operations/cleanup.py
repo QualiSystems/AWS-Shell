@@ -29,20 +29,21 @@ class CleanupConnectivityOperation(object):
         """
         result = {'success': True}
         try:
+            logger.info("Removing private key (pem file) from s3")
+            self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
+                                                                        aws_ec2_data_model.key_pairs_location,
+                                                                        reservation_id)
+
+            logger.info("Removing key pair from ec2")
+            self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
+                                                                         reservation_id=reservation_id)
+
             vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
             if not vpc:
                 raise ValueError('No VPC was created for this reservation')
 
             logger.info("Deleting all instances")
             self.vpc_service.delete_all_instances(vpc)
-
-            logger.info("Removing private key (pem file) from s3")
-            self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
-                                                                        aws_ec2_data_model.key_pairs_location,
-                                                                        reservation_id)
-            logger.info("Removing key pair from ec2")
-            self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
-                                                                         reservation_id=reservation_id)
 
             logger.info("Deleting vpc and removing dependencies")
             self.vpc_service.remove_all_internet_gateways(vpc)

@@ -4,13 +4,14 @@ from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.cp.aws.models.connectivity_models import PrepareConnectivityActionResult
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
+from cloudshell.shell.core.driver_context import CancellationContext
 
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
 class PrepareConnectivityOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
-                 cryptography_service):
+                 cryptography_service, cancellation_service):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -24,6 +25,8 @@ class PrepareConnectivityOperation(object):
         :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
         :param cryptography_service:
         :type cryptography_service: CryptographyService
+        :param cancellation_service:
+        :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
@@ -31,9 +34,10 @@ class PrepareConnectivityOperation(object):
         self.tag_service = tag_service
         self.route_table_service = route_table_service
         self.cryptography_service = cryptography_service
+        self.cancellation_service = cancellation_service
 
     def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, request,
-                             logger):
+                             cancellation_context, logger):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
         also will create a key pair for that reservation
@@ -45,17 +49,23 @@ class PrepareConnectivityOperation(object):
         :param aws_ec2_datamodel: The AWS EC2 data model
         :type aws_ec2_datamodel: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
         :param request: Parsed prepare connectivity request
+        :param CancellationContext cancellation_context:
         :param logging.Logger logger:
         :return:
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+
         logger.info("Creating or getting existing key pair")
         access_key = self._get_or_create_key_pair(ec2_session=ec2_session,
                                                   s3_session=s3_session,
                                                   bucket=aws_ec2_datamodel.key_pairs_location,
                                                   reservation_id=reservation.reservation_id)
+
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+
         results = []
         for action in request.actions:
             try:
@@ -66,9 +76,13 @@ class PrepareConnectivityOperation(object):
                 logger.info("Get or create existing VPC")
                 vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
 
+                self.cancellation_service.check_if_cancelled(cancellation_context)
+
                 # will create an IG if not exist
                 logger.info("Get or create and attach existing internet gateway")
                 internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
+
+                self.cancellation_service.check_if_cancelled(cancellation_context)
 
                 # will try to peer sandbox VPC to mgmt VPC if not exist
                 logger.info("Create VPC Peering with management vpc")
@@ -81,6 +95,8 @@ class PrepareConnectivityOperation(object):
                                 reservation_model=reservation,
                                 logger=logger)
 
+                self.cancellation_service.check_if_cancelled(cancellation_context)
+
                 logger.info("Get or create default Security Group")
                 security_group = self._get_or_create_security_group(ec2_session=ec2_session,
                                                                     reservation=reservation,
@@ -92,6 +108,9 @@ class PrepareConnectivityOperation(object):
             except Exception as e:
                 logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
                 results.append(self._create_fault_action_result(action, e))
+
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+
         return results
 
     def _get_or_create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):

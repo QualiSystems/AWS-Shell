@@ -2,18 +2,20 @@ import traceback
 import uuid
 from multiprocessing import TimeoutError
 
+from cloudshell.cp.aws.domain.common.exceptions import CancellationException
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
+from cloudshell.shell.core.driver_context import CancellationContext
 
 
 class DeployAMIOperation(object):
     MAX_IO1_IOPS = 20000
 
     def __init__(self, instance_service, ami_credential_service, security_group_service, tag_service,
-                 vpc_service, key_pair_service, subnet_service):
+                 vpc_service, key_pair_service, subnet_service, cancellation_service):
         """
         :param instance_service: Instance Service
         :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
@@ -29,6 +31,8 @@ class DeployAMIOperation(object):
         :type key_pair_service: cloudshell.cp.aws.domain.services.ec2.keypair.KeyPairService
         :param subnet_service: Subnet Service
         :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param cancellation_service:
+        :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
         """
 
         self.tag_service = tag_service
@@ -38,9 +42,10 @@ class DeployAMIOperation(object):
         self.vpc_service = vpc_service
         self.key_pair_service = key_pair_service
         self.subnet_serivce = subnet_service
+        self.cancellation_service = cancellation_service
 
     def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model,
-               ami_deployment_model, ec2_client, logger):
+               ami_deployment_model, ec2_client, cancellation_context, logger):
         """
         :param ec2_client: boto3.ec2.client
         :param ec2_session: EC2 session
@@ -54,7 +59,9 @@ class DeployAMIOperation(object):
         :param ami_deployment_model: The resource model on which the AMI will be deployed on
         :type ami_deployment_model: cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel
         :param logging.Logger logger:
-        :return:
+        :param CancellationContext cancellation_context:
+        :return: Deploy Result
+        :rtype: DeployResult
         """
 
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
@@ -65,29 +72,50 @@ class DeployAMIOperation(object):
         key_name = self.key_pair_service.get_reservation_key_name(reservation_id=reservation.reservation_id)
         logger.info("Found shared sandbox key pair '{0}'".format(key_name))
 
-        security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
-                                                                  ec2_session=ec2_session,
-                                                                  reservation=reservation,
-                                                                  vpc=vpc)
+        self.cancellation_service.check_if_cancelled(cancellation_context)
 
-        ami_deployment_info = self._create_deployment_parameters(ec2_session=ec2_session,
-                                                                 aws_ec2_resource_model=aws_ec2_cp_resource_model,
-                                                                 ami_deployment_model=ami_deployment_model,
-                                                                 vpc=vpc,
-                                                                 security_group=security_group,
-                                                                 key_pair=key_name,
-                                                                 reservation=reservation)
+        instance = None
+        security_group = None
+        allocated_elastic_ip = None
+        try:
+            security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
+                                                                      ec2_session=ec2_session,
+                                                                      reservation=reservation,
+                                                                      vpc=vpc)
 
-        instance = self.instance_service.create_instance(ec2_session=ec2_session,
-                                                         name=name,
-                                                         reservation=reservation,
-                                                         ami_deployment_info=ami_deployment_info,
-                                                         ec2_client=ec2_client,
-                                                         wait_for_status_check=ami_deployment_model.wait_for_status_check,
-                                                         logger=logger)
-        allocated_elastic_ip = ""
-        if ami_deployment_model.allocate_elastic_ip:
-            allocated_elastic_ip = self._set_elastic_ip(ec2_session=ec2_session, ec2_client=ec2_client, instance=instance)
+            self.cancellation_service.check_if_cancelled(cancellation_context)
+
+            ami_deployment_info = self._create_deployment_parameters(ec2_session=ec2_session,
+                                                                     aws_ec2_resource_model=aws_ec2_cp_resource_model,
+                                                                     ami_deployment_model=ami_deployment_model,
+                                                                     vpc=vpc,
+                                                                     security_group=security_group,
+                                                                     key_pair=key_name,
+                                                                     reservation=reservation)
+            instance = self.instance_service.create_instance(ec2_session=ec2_session,
+                                                             name=name,
+                                                             reservation=reservation,
+                                                             ami_deployment_info=ami_deployment_info,
+                                                             ec2_client=ec2_client,
+                                                             wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                                                             cancellation_context=cancellation_context,
+                                                             logger=logger)
+
+            self.cancellation_service.check_if_cancelled(cancellation_context)
+
+            if ami_deployment_model.allocate_elastic_ip:
+                allocated_elastic_ip = self._set_elastic_ip(ec2_session=ec2_session, ec2_client=ec2_client,
+                                                            instance=instance)
+
+            self.cancellation_service.check_if_cancelled(cancellation_context)
+
+        except Exception as e:
+            self._rollback_deploy(ec2_session=ec2_session,
+                                  instance_id=self._extract_instance_id_on_cancellation(e, instance),
+                                  custom_security_group=security_group,
+                                  elastic_ip=allocated_elastic_ip,
+                                  logger=logger)
+            raise  # re-raise original exception after rollback
 
         ami_credentials = self._get_ami_credentials(key_pair_location=aws_ec2_cp_resource_model.key_pairs_location,
                                                     wait_for_credentials=ami_deployment_model.wait_for_credentials,
@@ -95,9 +123,11 @@ class DeployAMIOperation(object):
                                                     reservation=reservation,
                                                     s3_session=s3_session,
                                                     ami_deployment_model=ami_deployment_model,
+                                                    cancellation_context=cancellation_context,
                                                     logger=logger)
 
-        deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model, allocated_elastic_ip)
+        deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model,
+                                                                        allocated_elastic_ip)
 
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
@@ -113,8 +143,21 @@ class DeployAMIOperation(object):
                             public_ip=instance.public_ip_address if ami_deployment_model.add_public_ip else None,
                             elastic_ip=allocated_elastic_ip)
 
+    def _extract_instance_id_on_cancellation(self, exception, instance):
+        """
+        :param exception:
+        :param instance:
+        :return:
+        """
+        instance_id = None
+        if exception and exception.data and 'instance_id' in exception.data:
+            instance_id = exception.data['instance_id']
+        elif instance:
+            instance_id = instance.id
+        return instance_id
+
     def _get_ami_credentials(self, s3_session, key_pair_location, reservation, wait_for_credentials, instance,
-                             ami_deployment_model, logger):
+                             ami_deployment_model, cancellation_context, logger):
         """
         Will load win
         :param s3_session:
@@ -124,6 +167,7 @@ class DeployAMIOperation(object):
         :param wait_for_credentials:
         :param instance:
         :param logging.Logger logger:
+        :param CancellationContext cancellation_context:
         :return:
         :rtype: cloudshell.cp.aws.models.ami_credentials.AMICredentials
         """
@@ -136,13 +180,12 @@ class DeployAMIOperation(object):
             try:
                 result = self.credentials_service.get_windows_credentials(instance=instance,
                                                                           key_value=key_value,
-                                                                          wait_for_password=wait_for_credentials)
+                                                                          wait_for_password=wait_for_credentials,
+                                                                          cancellation_context=cancellation_context)
             except TimeoutError:
                 logger.info(
-                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
+                        "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
-            except Exception as e:
-                raise
         else:
             return None if ami_deployment_model.user else self.credentials_service.get_default_linux_credentials()
 
@@ -303,7 +346,8 @@ class DeployAMIOperation(object):
         :param ec2_session: EC2 session
         :param ec2_client: EC2 client
         :param instance:
-        :return:
+        :return: allocated elastic ip
+        :rtype: str
         """
         elastic_ip = self.instance_service.allocate_elastic_address(ec2_client=ec2_client)
         self.instance_service.associate_elastic_ip(ec2_session=ec2_session,
@@ -333,3 +377,32 @@ class DeployAMIOperation(object):
             deployed_app_attr['Public IP'] = allocated_elastic_ip
 
         return deployed_app_attr
+
+    def _rollback_deploy(self, ec2_session, instance_id, custom_security_group, elastic_ip, logger):
+        """
+
+        :param boto3.ec2.client ec2_session:
+        :param str instance_id:
+        :param custom_security_group: Security Group object
+        :param str elastic_ip:
+        :param logging.Logger logger:
+        :return:
+        """
+        logger.info("Starting rollback for deploy operation")
+
+        if instance_id:
+            instance = self.instance_service.get_instance_by_id(ec2_session=ec2_session,
+                                                                id=instance_id)
+            logger.debug("Terminating instance id: {}".format(instance.id))
+            self.instance_service.terminate_instance(instance=instance)
+
+        if custom_security_group:
+            logger.debug("Deleting custom security group {0} - {1}".format(custom_security_group.id,
+                                                                           custom_security_group.group_name))
+            self.security_group_service.delete_security_group(custom_security_group)
+
+        if elastic_ip:
+            logger.debug("Releasing elastic ip {}".format(elastic_ip))
+            self.instance_service.find_and_release_elastic_address(ec2_session=ec2_session,
+                                                                   elastic_ip=elastic_ip)
+
