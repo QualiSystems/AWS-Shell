@@ -3,6 +3,7 @@ from unittest import TestCase
 from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
+from cloudshell.cp.aws.domain.common.exceptions import CancellationException
 
 
 class TestDeployOperation(TestCase):
@@ -11,22 +12,79 @@ class TestDeployOperation(TestCase):
         self.ec2_session = Mock()
         self.ec2_client = Mock()
         self.s3_session = Mock()
-        self.ec2_serv = Mock()
+        self.instance_service = Mock()
         self.security_group_service = Mock()
         self.tag_service = Mock()
         self.key_pair = Mock()
         self.vpc_service = Mock()
         self.subnet_service = Mock()
         self.credentials_manager = Mock()
-        self.deploy_operation = DeployAMIOperation(self.ec2_serv,
+        self.cancellation_service = Mock()
+        self.logger = Mock()
+        self.deploy_operation = DeployAMIOperation(self.instance_service,
                                                    self.credentials_manager,
                                                    self.security_group_service,
                                                    self.tag_service,
                                                    self.vpc_service,
                                                    self.key_pair,
-                                                   self.subnet_service)
+                                                   self.subnet_service,
+                                                   self.cancellation_service)
+
+    def test_deploy_rollback_called(self):
+        # arrange
+        ami_datamodel = Mock()
+        cancellation_context = Mock()
+        inst_name = 'my name'
+        reservation = Mock()
+        self.deploy_operation._create_security_group_for_instance = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+        self.deploy_operation._rollback_deploy = Mock()
+        self.instance_service.create_instance = Mock(side_effect=Exception)
+
+        # act & assert
+        self.assertRaises(Exception, self.deploy_operation.deploy, self.ec2_session, self.s3_session, inst_name,
+                          reservation, self.ec2_datamodel, ami_datamodel, self.ec2_client, cancellation_context,
+                          self.logger)
+        self.deploy_operation._rollback_deploy.assert_called_once()
+
+    def test_rollback(self):
+        # prepare
+        self.deploy_operation._extract_instance_id_on_cancellation = Mock()
+        inst_id = Mock()
+        security_group = Mock()
+        allocated_elastic_ip = Mock()
+        instance = Mock()
+        self.deploy_operation.instance_service.get_instance_by_id = Mock(return_value=instance)
+
+        # act
+        self.deploy_operation._rollback_deploy(ec2_session=self.ec2_session,
+                                               instance_id=inst_id,
+                                               custom_security_group=security_group,
+                                               elastic_ip=allocated_elastic_ip,
+                                               logger=self.logger)
+
+        # assert
+        self.deploy_operation.instance_service.get_instance_by_id.assert_called_once_with(ec2_session=self.ec2_session,
+                                                                                          id=inst_id)
+        self.deploy_operation.instance_service.terminate_instance.assert_called_once_with(instance=instance)
+        self.deploy_operation.security_group_service.delete_security_group(security_group)
+        self.deploy_operation.instance_service.find_and_release_elastic_address(ec2_session=self.ec2_session,
+                                                                                elastic_ip=allocated_elastic_ip)
+
+    def test_extract_instance_id_on_cancellation(self):
+        # prepare
+        instance = Mock()
+        instance_id = 'some_id'
+        cancellation_exception = CancellationException("cancelled_test", {'instance_ids' : [instance_id]})
+
+        # act
+        extracted_id = self.deploy_operation._extract_instance_id_on_cancellation(cancellation_exception, instance)
+
+        # assert
+        self.assertEquals(extracted_id, instance_id)
 
     def test_deploy(self):
+        # prepare
         ami_datamodel = Mock()
         ami_datamodel.storage_size = 30
         ami_datamodel.inbound_ports = "80"
@@ -35,20 +93,26 @@ class TestDeployOperation(TestCase):
         ami_datamodel.allocate_elastic_ip = True
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
-        self.ec2_serv.create_instance = Mock(return_value=instance)
+        self.instance_service.create_instance = Mock(return_value=instance)
         sg = Mock()
         self.security_group_service.create_security_group = Mock(return_value=sg)
         self.deploy_operation._get_block_device_mappings = Mock()
+        cancellation_context = Mock()
+        inst_name = 'my name'
+        reservation = Mock()
+        ami_deployment_model = Mock()
+        self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_model)
 
         # act
-        res = self.deploy_operation.deploy(self.ec2_session,
-                                           self.s3_session,
-                                           'my name',
-                                           Mock(),
-                                           self.ec2_datamodel,
-                                           ami_datamodel,
-                                           self.ec2_client,
-                                           Mock())
+        res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
+                                           s3_session=self.s3_session,
+                                           name=inst_name,
+                                           reservation=reservation,
+                                           aws_ec2_cp_resource_model=self.ec2_datamodel,
+                                           ami_deployment_model=ami_datamodel,
+                                           ec2_client=self.ec2_client,
+                                           cancellation_context=cancellation_context,
+                                           logger=self.logger)
 
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
@@ -67,18 +131,27 @@ class TestDeployOperation(TestCase):
                                                        'Public IP': res.elastic_ip})
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
-        self.assertTrue(self.ec2_serv.set_ec2_resource_tags.called_with(
-            self.security_group_service.create_security_group()),
-            self.tag_service.get_security_group_tags())
+        self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
+                self.security_group_service.create_security_group()),
+                self.tag_service.get_security_group_tags())
 
         self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
                                                        instance.key_pair.key_name,
                                                        self.key_pair.FILE_SYSTEM))
 
         self.assertTrue(self.security_group_service.set_security_group_rules.called_with(
-            ami_datamodel, self.security_group_service.create_security_group()))
+                ami_datamodel, self.security_group_service.create_security_group()))
 
         self.security_group_service.remove_allow_all_outbound_rule.assert_called_with(security_group=sg)
+
+        self.instance_service.create_instance.assert_called_once_with(ec2_session=self.ec2_session,
+                                                                      name=inst_name,
+                                                                      reservation=reservation,
+                                                                      ami_deployment_info=ami_deployment_model,
+                                                                      ec2_client=self.ec2_client,
+                                                                      wait_for_status_check=ami_datamodel.wait_for_status_check,
+                                                                      cancellation_context=cancellation_context,
+                                                                      logger=self.logger)
 
     def test_get_block_device_mappings_throws_max_storage_error(self):
         ec_model = Mock()

@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 from mock import MagicMock
+from urllib3.util import retry
 
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 
@@ -22,14 +23,21 @@ class TestInstanceService(TestCase):
         self.ec2_session.Instance = Mock(return_value=self.instance)
         self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
 
+    #@Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
     def test_create_instance(self):
         ami_dep = Mock()
+        cancellation_context = Mock()
+        new_instance = Mock()
+        new_instance.instance_id='id'
+        self.ec2_session.create_instances = Mock(return_value=[new_instance])
+
         res = self.instance_service.create_instance(ec2_session=self.ec2_session,
                                                     name=self.name,
                                                     reservation=self.reservation_id,
                                                     ami_deployment_info=ami_dep,
                                                     ec2_client=self.ec2_client,
                                                     wait_for_status_check=False,
+                                                    cancellation_context=cancellation_context,
                                                     logger=Mock())
 
         self.assertTrue(self.ec2_session.create_instances.called_with(ami_dep.aws_ami_id,
@@ -45,11 +53,15 @@ class TestInstanceService(TestCase):
                                                                               'Groupd': ami_dep.security_group_ids
                                                                           }
                                                                       ]))
+
+        self.instance_waiter.wait.assert_called_once_with(instance=new_instance,
+                                                          state=self.instance_waiter.RUNNING,
+                                                          cancellation_context=cancellation_context)
         self.assertTrue(self.tag_service.get_default_tags.called_with(self.name + ' ' + self.reservation_id,
                                                                       self.reservation_id))
         self.assertTrue(self.tag_service.set_ec2_resource_tags.called_with(self.instance, self.default_tags))
-        self.assertTrue(self.instance.load.called)
-        self.assertEqual(self.instance, res)
+        self.assertTrue(new_instance.load.called)
+        self.assertEqual(new_instance, res)
 
     def test_get_instance_by_id(self):
         res = self.instance_service.get_instance_by_id(self.ec2_session, 'id')

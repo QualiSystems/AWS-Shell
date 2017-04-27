@@ -2,7 +2,6 @@ from cloudshell.cp.aws.domain.common.exceptions import CancellationException
 
 
 class CommandCancellationService(object):
-
     def check_if_cancelled(self, cancellation_context, data=None):
         """Check if command was cancelled from the CloudShell
 

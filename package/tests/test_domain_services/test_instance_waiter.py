@@ -31,7 +31,8 @@ class helper:
 
 class TestInstanceWaiter(TestCase):
     def setUp(self):
-        self.instance_waiter = InstanceWaiter(1, 0.02)
+        self.cancellation_service = Mock()
+        self.instance_waiter = InstanceWaiter(self.cancellation_service, 1, 0.02)
         self.instance = Mock()
 
     @patch('time.sleep', helper.change_to_stopped)
@@ -58,6 +59,28 @@ class TestInstanceWaiter(TestCase):
         res = self.instance_waiter.multi_wait([instance, inst], InstanceWaiter.STOPPED)
         self.assertEqual(res, [instance, inst])
         self.assertTrue(instance.reload.call_count, 2)
+
+    @patch('time.sleep', helper.change_to_stopped)
+    def test_waiter_multi_with_cancellation(self):
+        cancellation_context = Mock()
+        helper.change_to_stopped(Mock())
+
+        instance.state['Name'] = InstanceWaiter.RUNNING
+
+        inst = Mock()
+        inst.state = dict()
+        inst.state['Name'] = InstanceWaiter.STOPPED
+
+        instances = [instance, inst]
+
+        res = self.instance_waiter.multi_wait(instances, InstanceWaiter.STOPPED, cancellation_context)
+
+        self.assertEqual(res, [instance, inst])
+        self.assertTrue(instance.reload.call_count, 2)
+        self.assertTrue(self.cancellation_service.check_if_cancelled.call_count, 2)
+        instance_ids = filter(lambda x: str(x.id), instances)
+        self.cancellation_service.check_if_cancelled.assert_called_with(cancellation_context,
+                                                                        {'instance_ids': instance_ids})
 
     def test_waiter_multi_errors(self):
         self.assertRaises(ValueError, self.instance_waiter.multi_wait, [], InstanceWaiter.STOPPED)

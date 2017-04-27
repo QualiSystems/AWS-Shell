@@ -150,8 +150,8 @@ class DeployAMIOperation(object):
         :return:
         """
         instance_id = None
-        if exception and exception.data and 'instance_id' in exception.data:
-            instance_id = exception.data['instance_id']
+        if exception and hasattr(exception, "data") and exception.data and 'instance_ids' in exception.data:
+            instance_id = exception.data['instance_ids'][0]     # we assume at this point that we are working on a single app
         elif instance:
             instance_id = instance.id
         return instance_id

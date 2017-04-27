@@ -57,6 +57,8 @@ class InstanceWaiter(object):
         if state not in self.INSTANCE_STATES:
             raise ValueError('Unsupported instance state')
 
+        instance_ids = filter(lambda x: str(x.id), instances)
+
         start_time = time.time()
         last_item = 0
         while len(instances) - last_item:
@@ -70,7 +72,8 @@ class InstanceWaiter(object):
             else:
                 last_item += 1
 
-            self.cancellation_service.check_if_cancelled(cancellation_context, {'instance_id': instance.id})
+            self.cancellation_service.check_if_cancelled(cancellation_context,
+                                                         {'instance_ids': instance_ids})
 
         return instances
 
@@ -96,7 +99,7 @@ class InstanceWaiter(object):
                 logger.error("Instance status check is not OK: {}".format(instance_status))
                 raise ValueError('Instance status check is not OK. Check the log and aws console for more details')
 
-            self.cancellation_service.check_if_cancelled(cancellation_context, {'instance_id': instance.id})
+            self.cancellation_service.check_if_cancelled(cancellation_context, {'instance_ids': [instance.id]})
 
             time.sleep(self.delay)
 

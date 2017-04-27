@@ -7,7 +7,8 @@ from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 
 class TestPasswordWaiter(TestCase):
     def setUp(self):
-        self.pass_waiter = PasswordWaiter(0.5, 0.02)
+        self.cancellation_service = Mock()
+        self.pass_waiter = PasswordWaiter(self.cancellation_service, 0.5, 0.02)
 
     def test_wait_none(self):
         self.assertRaises(ValueError, self.pass_waiter.wait, None)
@@ -15,7 +16,9 @@ class TestPasswordWaiter(TestCase):
     def test_wait_timeout(self):
         instance = Mock()
         instance.password_data = Mock(return_value={'PasswordData': ''})
-        self.assertRaises(Exception, self.pass_waiter.wait, instance)
+        cancellation_context = Mock()
+        self.assertRaises(Exception, self.pass_waiter.wait, instance, cancellation_context)
+        self.cancellation_service.check_if_cancelled.assert_called_with(cancellation_context)
 
     def test_wait(self):
         instance = Mock()
