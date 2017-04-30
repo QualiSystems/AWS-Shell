@@ -1,4 +1,4 @@
-<Driver Description="Deploy AWS EC2 AMI Instance" MainClass="driver.DeployAWSEC2AMIInstance" Name="Deploy AWS EC2 AMI Instance" Version="1.1.9999">
+<Driver Description="Deploy AWS EC2 AMI Instance" MainClass="driver.DeployAWSEC2AMIInstance" Name="Deploy AWS EC2 AMI Instance" Version="1.2.0">
     <Layout>
         <Category Name="App Management">
             <Command Description="" DisplayName="Deploy" Name="Deploy" Tags="allow_shared" />
