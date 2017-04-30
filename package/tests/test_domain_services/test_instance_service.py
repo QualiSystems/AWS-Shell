@@ -2,7 +2,6 @@ from unittest import TestCase
 
 from mock import Mock
 from mock import MagicMock
-from urllib3.util import retry
 
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 
