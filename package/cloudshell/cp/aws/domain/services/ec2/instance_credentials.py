@@ -4,28 +4,34 @@ from base64 import b64decode
 from Crypto.PublicKey import RSA
 
 from cloudshell.cp.aws.models.ami_credentials import AMICredentials
+from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
+from cloudshell.shell.core.driver_context import CancellationContext
 
 
 class InstanceCredentialsService(object):
     DEFAULT_USER_NAME = "Administrator"
 
     def __init__(self, password_waiter):
+        """
+        :param PasswordWaiter password_waiter:
+        :return:
+        """
         self.password_waiter = password_waiter
 
-    def get_windows_credentials(self, instance, key_value, wait_for_password=True):
+    def get_windows_credentials(self, instance, key_value, wait_for_password=True, cancellation_context=None):
         """
 
         :param instance: Ami amazon instance
-        :param key_value: pem lines
-        :type key_value: str
-        :param wait_for_password:
-        :type wait_for_password: bool
+        :param str key_value: pem lines
+        :param bool wait_for_password:
+        :param CancellationContext cancellation_context:
         :return:
         :rtype: AMICredentials
         """
         password_data = instance.password_data()['PasswordData']
         if not password_data and wait_for_password:
-            password_data = self.password_waiter.wait(instance)
+            password_data = self.password_waiter.wait(instance=instance,
+                                                      cancellation_context=cancellation_context)
 
         if not password_data:
             return None
