@@ -108,17 +108,25 @@ class InstanceWaiter(object):
         return instance_status
 
     def _is_instance_status_ok(self, instance_status):
+        if not instance_status:
+            return False
         return instance_status['SystemStatus']['Status'] == self.STATUS_OK \
                and instance_status['InstanceStatus']['Status'] == self.STATUS_OK
 
     def _is_instance_status_impaired(self, instance_status):
+        if not instance_status:
+            return False
         return instance_status['SystemStatus']['Status'] == self.STATUS_IMPAIRED \
                or instance_status['InstanceStatus']['Status'] == self.STATUS_IMPAIRED
 
     @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def _get_instance_status(self, ec2_client, instance):
-        return ec2_client.describe_instance_status(InstanceIds=[instance.id], IncludeAllInstances=True) \
-            .InstanceStatuses[0]
+        instance_status = ec2_client.describe_instance_status(InstanceIds=[instance.id], IncludeAllInstances=True)
+        if hasattr(instance_status, 'InstanceStatuses'):
+            return instance_status.InstanceStatuses[0]
+        if 'InstanceStatuses' in instance_status:
+            return instance_status['InstanceStatuses'][0]
+        return None
 
     @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def _reload_instance(self, instance):
