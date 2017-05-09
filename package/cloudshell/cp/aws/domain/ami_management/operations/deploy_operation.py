@@ -245,6 +245,7 @@ class DeployAMIOperation(object):
             raise ValueError('AWS Image Id cannot be empty')
 
         image = ec2_session.Image(ami_deployment_model.aws_ami_id)
+        self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.min_count = 1
@@ -405,4 +406,10 @@ class DeployAMIOperation(object):
             logger.debug("Releasing elastic ip {}".format(elastic_ip))
             self.instance_service.find_and_release_elastic_address(ec2_session=ec2_session,
                                                                    elastic_ip=elastic_ip)
+
+    def _validate_image_available(self, image, ami_id):
+        if hasattr(image, 'state') and image.state == 'available':
+            return
+        raise ValueError('AMI {} not found'.format(ami_id))
+
 

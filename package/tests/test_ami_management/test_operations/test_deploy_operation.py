@@ -297,15 +297,19 @@ class TestDeployOperation(TestCase):
                           reservation=Mock())
 
     def test_create_deployment_parameters(self):
-        ami = Mock()
-        ami.aws_ami_id = 'asd'
-        ami.storage_size = '0'
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.aws_ami_id = 'asd'
+        ami_model.storage_size = '0'
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
 
-        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=Mock(),
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
                                                                         aws_ec2_resource_model=self.ec2_datamodel,
-                                                                        ami_deployment_model=ami,
+                                                                        ami_deployment_model=ami_model,
                                                                         vpc=vpc,
                                                                         security_group=None,
                                                                         key_pair='keypair',
