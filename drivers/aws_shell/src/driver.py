@@ -19,7 +19,7 @@ class AWSShellDriver(ResourceDriverInterface):
     def initialize(self, context):
         pass
 
-    def Deploy(self, context, Name=None, request=None, cancellation_context=None):
+    def Deploy(self, context, request=None, cancellation_context=None):
         app_request = jsonpickle.decode(request)
         deployment_name = app_request['DeploymentServiceName']
         if deployment_name in self.deployments.keys():
