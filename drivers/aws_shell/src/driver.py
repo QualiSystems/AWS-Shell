@@ -1,6 +1,6 @@
+import jsonpickle
 from cloudshell.shell.core.driver_context import AutoLoadDetails
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
-
 from cloudshell.cp.aws.aws_shell import AWSShell
 
 
@@ -13,10 +13,20 @@ class AWSShellDriver(ResourceDriverInterface):
         ctor must be without arguments, it is created with reflection at run time
         """
         self.aws_shell = AWSShell()
-        pass
+        self.deployments = dict()
+        self.deployments['AWS EC2 Instance'] = self.deploy_ami
 
     def initialize(self, context):
         pass
+
+    def Deploy(self, context, Name=None, request=None, cancellation_context=None):
+        app_request = jsonpickle.decode(request)
+        deployment_name = app_request['DeploymentServiceName']
+        if deployment_name in self.deployments.keys():
+            deploy_method = self.deployments[deployment_name]
+            return deploy_method(context, request, cancellation_context)
+        else:
+            raise Exception('Could not find the deployment')
 
     def deploy_ami(self, context, request, cancellation_context):
         return self.aws_shell.deploy_ami(context, request, cancellation_context)

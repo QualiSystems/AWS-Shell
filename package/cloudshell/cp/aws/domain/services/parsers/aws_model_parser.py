@@ -35,39 +35,33 @@ class AWSModelsParser(object):
         return aws_ec2_resource_model
 
     @staticmethod
-    def convert_to_deployment_resource_model(deployment_request):
+    def convert_to_deployment_resource_model(deployment_request, resource_context_details):
+        '''
+        :type resource_context_details: ResourceContextDetails
+        '''
         data = jsonpickle.decode(deployment_request)
         data_holder = DeployDataHolder(data)
         deployment_resource_model = DeployAWSEc2AMIInstanceResourceModel()
-        deployment_resource_model.cloud_provider = data_holder.ami_params.cloud_provider
-        deployment_resource_model.aws_ami_id = data_holder.ami_params.aws_ami_id
-        deployment_resource_model.storage_size = data_holder.ami_params.storage_size
-        deployment_resource_model.storage_iops = data_holder.ami_params.storage_iops
-        deployment_resource_model.storage_type = data_holder.ami_params.storage_type
-        deployment_resource_model.min_count = int(data_holder.ami_params.min_count)
-        deployment_resource_model.max_count = int(data_holder.ami_params.max_count)
-        deployment_resource_model.instance_type = data_holder.ami_params.instance_type
-        deployment_resource_model.security_group_ids = data_holder.ami_params.security_group_ids
-        deployment_resource_model.private_ip_address = data_holder.ami_params.private_ip_address
-        deployment_resource_model.root_volume_name = data_holder.ami_params.root_volume_name
-        deployment_resource_model.delete_on_termination = AWSModelsParser.convert_to_bool(
-            data_holder.ami_params.delete_on_termination)
-        deployment_resource_model.auto_power_off = \
-            AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_power_off)
-        deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_ip)
+        deployment_resource_model.cloud_provider = resource_context_details.name
+        deployment_resource_model.aws_ami_id = data["Attributes"]['AWS AMI Id']
+        deployment_resource_model.storage_size = data["Attributes"]['Storage Size']
+        deployment_resource_model.storage_iops = data["Attributes"]['Storage IOPS']
+        deployment_resource_model.storage_type = data["Attributes"]['Storage Type']
+        deployment_resource_model.instance_type = data["Attributes"]['Instance Type']
+        deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
+        deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for IP'])
         deployment_resource_model.wait_for_status_check = AWSModelsParser.convert_to_bool(
-            data_holder.ami_params.wait_for_status_check)
-        deployment_resource_model.auto_delete = AWSModelsParser.convert_to_bool(data_holder.ami_params.auto_delete)
-        deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data_holder.ami_params.autoload)
-        deployment_resource_model.inbound_ports = data_holder.ami_params.inbound_ports
-        deployment_resource_model.outbound_ports = data_holder.ami_params.outbound_ports
+            data["Attributes"]['Wait for Status Check'])
+        deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data["Attributes"]['Autoload'])
+        deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
+        deployment_resource_model.outbound_ports = data["Attributes"]['Outbound Ports']
         deployment_resource_model.wait_for_credentials = \
-            AWSModelsParser.convert_to_bool(data_holder.ami_params.wait_for_credentials)
-        deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data_holder.ami_params.add_public_ip)
+            AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for Credentials'])
+        deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Add Public IP'])
         deployment_resource_model.allocate_elastic_ip = \
-            AWSModelsParser.convert_to_bool(data_holder.ami_params.allocate_elastic_ip)
-        deployment_resource_model.user = data_holder.ami_params.user
-        deployment_resource_model.app_name = data_holder.app_name
+            AWSModelsParser.convert_to_bool(data["Attributes"]['Allocate Elastic IP'])
+        deployment_resource_model.user = data["LogicalResourceRequestAttributes"]["User"]
+        deployment_resource_model.app_name = data_holder.AppName
 
         return deployment_resource_model
 

@@ -234,7 +234,7 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Deploying AMI')
 
-                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request, command_context.resource)
 
                 deploy_data = self.deploy_ami_operation \
                     .deploy(ec2_session=shell_context.aws_api.ec2_session,
