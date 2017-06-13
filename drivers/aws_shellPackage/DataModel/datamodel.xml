@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <DataModelInfo xmlns="http://schemas.qualisystems.com/ResourceManagement/DataModelSchema.xsd">
   <Attributes>
+    <AttributeInfo Name="Execution Server Selector" Type="String" DefaultValue="" Description="This attribute points to a pre-define group of execution servers. Usually used for different sites or domains." IsReadOnly="false">
+	</AttributeInfo>
     <AttributeInfo DefaultValue="" Description="Enable in order to retrieve credentials from a Windows machine. Note that if this parameter is enabled and the credentials weren't retrieved within 15 minutes the deployment will fail." IsReadOnly="false" Name="Wait for Credentials" Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
@@ -168,6 +170,9 @@
       <Models>
         <ResourceModel Description="" ImagePath="AWS.png" Name="AWS EC2" SupportsConcurrentCommands="true">
           <AttachedAttributes>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Execution Server Selector">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Region">
               <AllowedValues>
                 <AllowedValue>us-east-1</AllowedValue>
