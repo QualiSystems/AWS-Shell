@@ -10,6 +10,7 @@
                 <Description>After filling in all the inputs click Start Discovery to complete the cloud provider creation process</Description>
             </AutoLoad>
             <Attributes>
+                <Attribute Name="Execution Server Selector" Value="" />
                 <Attribute Name="Region" Value="" />
                 <Attribute Name="AWS Mgmt SG ID" Value="" />
                 <Attribute Name="AWS Mgmt VPC ID" Value="" />
