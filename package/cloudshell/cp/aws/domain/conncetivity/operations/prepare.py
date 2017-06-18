@@ -76,6 +76,8 @@ class PrepareConnectivityOperation(object):
                 logger.info("Get or create existing VPC")
                 vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
 
+                self._enable_dns_hostnames(ec2_client=ec2_client, vpc_id=vpc.id)
+
                 self.cancellation_service.check_if_cancelled(cancellation_context)
 
                 # will create an IG if not exist
@@ -112,6 +114,21 @@ class PrepareConnectivityOperation(object):
         self.cancellation_service.check_if_cancelled(cancellation_context)
 
         return results
+
+    @retry(stop_max_attempt_number=2, wait_fixed=1000)
+    def _enable_dns_hostnames(self, ec2_client, vpc_id):
+        """
+
+        :param ec2_client:
+        :param vpc_id:
+        :return:
+        """
+        ec2_client.modify_vpc_attribute(
+            EnableDnsHostnames={
+                'Value': True
+            },
+            VpcId=vpc_id
+        )
 
     def _get_or_create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
         """
