@@ -196,3 +196,19 @@ class VPCService(object):
     def get_vpc_cidr(self, ec2_session, vpc_id):
         vpc = ec2_session.Vpc(vpc_id)
         return vpc.cidr_block
+
+    def modify_vpc_attribute(self, ec2_client, vpc_id, enable_dns_hostnames):
+        """
+        Enables VPC Attribute
+        :param ec2_client:
+        :param vpc_id:
+        :param enable_dns_hostnames:
+        :return:
+        """
+
+        return ec2_client.modify_vpc_attribute(
+            EnableDnsHostnames={
+                'Value': enable_dns_hostnames
+            },
+            VpcId=vpc_id
+        )

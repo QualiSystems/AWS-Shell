@@ -123,12 +123,10 @@ class PrepareConnectivityOperation(object):
         :param vpc_id:
         :return:
         """
-        ec2_client.modify_vpc_attribute(
-            EnableDnsHostnames={
-                'Value': True
-            },
-            VpcId=vpc_id
-        )
+        self.vpc_service.modify_vpc_attribute(ec2_client=ec2_client,vpc_id=vpc_id,enable_dns_hostnames=True)
+
+
+
 
     def _get_or_create_key_pair(self, ec2_session, s3_session, bucket, reservation_id):
         """
