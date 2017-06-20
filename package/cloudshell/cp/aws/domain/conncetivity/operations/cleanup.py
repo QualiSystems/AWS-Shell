@@ -48,10 +48,12 @@ class CleanupConnectivityOperation(object):
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
 
             self.vpc_service.delete_vpc(vpc)
+            
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
             result['success'] = False
             result['errorMessage'] = 'CleanupConnectivity ended with the error: {0}'.format(exc)
+
         return result
 
     def _remove_keypair(self, aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session):
