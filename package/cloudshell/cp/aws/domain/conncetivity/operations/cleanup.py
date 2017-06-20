@@ -28,15 +28,10 @@ class CleanupConnectivityOperation(object):
         :return:
         """
         result = {'success': True}
-        try:
-            logger.info("Removing private key (pem file) from s3")
-            self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
-                                                                        aws_ec2_data_model.key_pairs_location,
-                                                                        reservation_id)
 
-            logger.info("Removing key pair from ec2")
-            self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
-                                                                         reservation_id=reservation_id)
+        try:
+            # need to remove the keypair before we try to find the VPC
+            self._remove_keypair(aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session)
 
             vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
             if not vpc:
@@ -53,12 +48,22 @@ class CleanupConnectivityOperation(object):
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
 
             self.vpc_service.delete_vpc(vpc)
+            
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
             result['success'] = False
             result['errorMessage'] = 'CleanupConnectivity ended with the error: {0}'.format(exc)
 
         return result
+
+    def _remove_keypair(self, aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session):
+        logger.info("Removing private key (pem file) from s3")
+        self.key_pair_service.remove_key_pair_for_reservation_in_s3(s3_session,
+                                                                    aws_ec2_data_model.key_pairs_location,
+                                                                    reservation_id)
+        logger.info("Removing key pair from ec2")
+        self.key_pair_service.remove_key_pair_for_reservation_in_ec2(ec2_session=ec2_session,
+                                                                     reservation_id=reservation_id)
 
     def _delete_blackhole_routes_in_vpc_route_table(self, ec2_session, ec2_client, aws_ec2_data_model):
         rts = self.route_table_service.get_all_route_tables(ec2_session=ec2_session,
