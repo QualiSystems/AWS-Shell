@@ -232,6 +232,41 @@
 				}]
 			}
 		},
+		"CloudShellServerInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "ESInstance2Profile"
+				},
+				"SubnetId": {
+					"Ref": "ESInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": { "Ref": "InstanceSize" },
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				}],
+				"UserData": {
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-commands"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}]
+			}
+		},
 		"ESInstanceEIP": {
 			"Type": "AWS::EC2::EIP",
 			"Properties": {

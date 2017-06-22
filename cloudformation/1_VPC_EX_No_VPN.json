@@ -50,7 +50,7 @@
 		},
 		"ManagementIGW": {
 			"Type": "AWS::EC2::InternetGateway",
-			"Properties": {
+			"Properties": {;
 				"Tags": [{
 					"Key": "CreateBy",
 					"Value": "CloudShell"
