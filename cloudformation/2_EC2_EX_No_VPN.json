@@ -161,7 +161,8 @@
 						"supervisorctl restart ex"]]
 					}
 				}
-			}
+			},
+			"DependsOn": "CloudShellServerInstance"
 		},
 		"ESInstance2": {
 			"Type": "AWS::EC2::Instance",
@@ -230,7 +231,8 @@
 					"Key": "Role",
 					"Value": "Management"
 				}]
-			}
+			},
+			"DependsOn": "CloudShellServerInstance"
 		},
 		"CloudShellServerInstance": {
 			"Type": "AWS::EC2::Instance",
@@ -255,7 +257,7 @@
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "es-commands"
+					"Value": "cloudshell-server"
 				},
 				{
 					"Key": "CreateBy",
