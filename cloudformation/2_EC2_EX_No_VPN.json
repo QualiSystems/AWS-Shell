@@ -142,7 +142,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							"Ref": "ServerIP"
+							"Ref": { "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ] }
 						},
 						" /u:",
 						{
@@ -200,7 +200,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							"Ref": "ServerIP"
+							"Ref": { "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ] }
 						},
 						" /u:",
 						{
@@ -298,6 +298,16 @@
 				"Domain": "vpc"
 			},
 			"DependsOn": "QualixInstance"
+		},
+		"CloudShellServerInstanceEIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"InstanceId": {
+					"Ref": "CloudShellServerInstance"
+				},
+				"Domain": ""
+			},
+			"DependsOn": "CloudShellServerInstance"
 		}
 	},
 	"Description": "EC2 instances - QualiX and ES",
