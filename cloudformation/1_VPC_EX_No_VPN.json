@@ -7,10 +7,6 @@
 		"ESCIDR": {
 			"Type": "String"
 		},
-		"ServerIP": {
-			"Type": "String",
-			"Description": "IP Address of your Quali Server"
-		},
 		"KeyPair": {
 			"Type": "AWS::EC2::KeyPair::KeyName"
 		},

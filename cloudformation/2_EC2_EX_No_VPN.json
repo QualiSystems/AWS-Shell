@@ -30,9 +30,6 @@
 		"ESInstance2Profile": {
 			"Type": "String"
 		},
-		"ServerIP": {
-			"Type": "String"
-		},
 		"ZUsername": {
 			"Type": "String"
 		},

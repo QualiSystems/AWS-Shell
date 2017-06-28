@@ -28,14 +28,6 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
 		},
-		"ZServerIP": {
-			"Type": "String",
-			"Description": "IP Address of your CloudShell Server",
-			"MinLength": "7",
-			"MaxLength": "15",
-			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})",
-			"ConstraintDescription": "must be a valid IP address of the form x.x.x.x"
-		},
 		"7KeyPair": {
 			"Type": "AWS::EC2::KeyPair::KeyName",
 			"Description": "Choose the Keypair for the instances"
@@ -180,9 +172,6 @@
 					"OnPremiseCIDR": {
 						"Ref": "4OnPremiseCIDR"
 					},
-					"ServerIP": {
-						"Ref": "ZServerIP"
-					},
 					"KeyPair": {
 						"Ref": "7KeyPair"
 					},
@@ -247,9 +236,6 @@
 					"ESInstance2Profile": {
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.ESInstance2Profile"]
-					},
-					"ServerIP": {
-						"Ref": "ZServerIP"
 					},
 					"ZUsername": {
 						"Ref": "ZUsername"
