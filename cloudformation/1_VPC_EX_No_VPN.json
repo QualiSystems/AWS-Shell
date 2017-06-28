@@ -434,25 +434,6 @@
 				"Path": "/"
 			}
 		},
-		"CustomerGateway": {
-			"Type": "AWS::EC2::CustomerGateway",
-			"Properties": {
-				"Type": "ipsec.1",
-				"BgpAsn": "64000",
-				"Tags": [{
-					"Key": "Name",
-					"Value": "Cloudshell_CustomerGateway"
-				},
-				{
-					"Key": "Role",
-					"Value": "Management"
-				},
-				{
-					"Key": "CreateBy",
-					"Value": "CloudShell"
-				}]
-			}
-		},
 		"EC2RWPolicy": {
 			"Type": "AWS::IAM::Policy",
 			"Properties": {
