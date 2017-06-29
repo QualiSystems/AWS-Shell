@@ -10,6 +10,7 @@ from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
+from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
@@ -34,19 +35,21 @@ from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
+from cloudshell.shell.core.driver_context import CancellationContext
 
 
 class AWSShell(object):
     def __init__(self):
         self.command_result_parser = CommandResultsParser()
+        self.cancellation_service = CommandCancellationService()
         self.tag_service = TagService()
-        self.ec2_instance_waiter = InstanceWaiter()
+        self.ec2_instance_waiter = InstanceWaiter(cancellation_service=self.cancellation_service)
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
         self.aws_session_manager = AWSSessionProvider()
-        self.password_waiter = PasswordWaiter()
+        self.password_waiter = PasswordWaiter(self.cancellation_service)
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
         self.security_group_service = SecurityGroupService()
@@ -71,7 +74,8 @@ class AWSShell(object):
                                          key_pair_service=self.key_pair_service,
                                          tag_service=self.tag_service,
                                          route_table_service=self.route_tables_service,
-                                         cryptography_service=self.cryptography_service)
+                                         cryptography_service=self.cryptography_service,
+                                         cancellation_service=self.cancellation_service)
 
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
@@ -79,7 +83,8 @@ class AWSShell(object):
                                                        tag_service=self.tag_service,
                                                        vpc_service=self.vpc_service,
                                                        key_pair_service=self.key_pair_service,
-                                                       subnet_service=self.subnet_service)
+                                                       subnet_service=self.subnet_service,
+                                                       cancellation_service=self.cancellation_service)
 
         self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)
 
@@ -120,12 +125,13 @@ class AWSShell(object):
                 return self.command_result_parser.set_command_result(
                         {'driverResponse': {'actionResults': [result]}})
 
-    def prepare_connectivity(self, command_context, request):
+    def prepare_connectivity(self, command_context, request, cancellation_context):
         """
         Will create a vpc for the reservation and will peer it with the management vpc
         :param ResourceCommandContext command_context: The Command Context
         :param request: The json request
         :return: json string response
+        :param CancellationContext cancellation_context:
         :rtype: str
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
@@ -147,6 +153,7 @@ class AWSShell(object):
                         reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
                         aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
                         request=prepare_connectivity_request,
+                        cancellation_context=cancellation_context,
                         logger=shell_context.logger)
 
                 return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
@@ -216,17 +223,18 @@ class AWSShell(object):
                 return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
                         data_holder.vmdetails.vmCustomParams)
 
-    def deploy_ami(self, command_context, deployment_request):
+    def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
         Will deploy Amazon Image on the cloud provider
         :param ResourceCommandContext command_context:
         :param JSON Obj deployment_request:
+        :param CancellationContext cancellation_context:
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Deploying AMI')
 
-                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request, command_context.resource)
 
                 deploy_data = self.deploy_ami_operation \
                     .deploy(ec2_session=shell_context.aws_api.ec2_session,
@@ -236,6 +244,7 @@ class AWSShell(object):
                             aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
                             ami_deployment_model=aws_ami_deployment_model,
                             ec2_client=shell_context.aws_api.ec2_client,
+                            cancellation_context=cancellation_context,
                             logger=shell_context.logger)
 
                 return self.command_result_parser.set_command_result(deploy_data)
