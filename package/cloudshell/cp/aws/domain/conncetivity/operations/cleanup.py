@@ -53,7 +53,6 @@ class CleanupConnectivityOperation(object):
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
             result['success'] = False
             result['errorMessage'] = 'CleanupConnectivity ended with the error: {0}'.format(exc)
-
         return result
 
     def _remove_keypair(self, aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session):
