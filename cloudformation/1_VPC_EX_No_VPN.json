@@ -7,6 +7,9 @@
 		"ESCIDR": {
 			"Type": "String"
 		},
+		"QualiServerCIDR": {
+			"Type": "String"
+		},
 		"KeyPair": {
 			"Type": "AWS::EC2::KeyPair::KeyName"
 		},
@@ -217,6 +220,32 @@
 				}
 			}
 		},
+		"QualiServerInstanceSN": {
+			"Type": "AWS::EC2::Subnet",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"CidrBlock": {
+					"Ref": "QualiServerCIDR"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "ES"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}],
+				"AvailabilityZone": {
+					"Ref": "AZ"
+				}
+			}
+		},
 		"ESInstanceRT": {
 			"Type": "AWS::EC2::RouteTable",
 			"Properties": {
@@ -226,6 +255,26 @@
 				"Tags": [{
 					"Key": "Name",
 					"Value": "ES_RT"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}]
+			}
+		},
+      "QualiServerInstanceRT": {
+			"Type": "AWS::EC2::RouteTable",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "QualiServer_RT"
 				},
 				{
 					"Key": "Role",
@@ -258,6 +307,17 @@
 				},
 				"RouteTableId": {
 					"Ref": "ESInstanceRT"
+				}
+			}
+		},
+      "QualiServerInstRTAssociation": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "QualiServerInstanceSN"
+				},
+				"RouteTableId": {
+					"Ref": "QualiServerInstanceRT"
 				}
 			}
 		},
@@ -395,6 +455,9 @@
 				},
 				{
 					"Ref": "ESInstanceRT"
+				},
+				{
+					"Ref": "QualiServerInstanceRT"
 				}],
 				"ServiceName": {
 					"Fn::Join": ["",
@@ -476,6 +539,12 @@
 		},
 		"ESInstanceSN": {
 			"Description": "ES instance Subnet",
+			"Value": {
+				"Ref": "ESInstanceSN"
+			}
+		},
+        "QualiServerInstanceSN": {
+			"Description": "Quali Server instance Subnet",
 			"Value": {
 				"Ref": "ESInstanceSN"
 			}

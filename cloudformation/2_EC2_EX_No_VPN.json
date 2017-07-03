@@ -6,6 +6,9 @@
 		"ESInstanceSN": {
 			"Type": "String"
 		},
+		"QualiServerInstanceSN": {
+			"Type": "String"
+		},
 		"QualiXInstanceProfile": {
 			"Type": "String"
 		},
@@ -238,7 +241,7 @@
 					"Ref": "ESInstance2Profile"
 				},
 				"SubnetId": {
-					"Ref": "ESInstanceSN"
+					"Ref": "QualiServerInstanceSN"
 				},
 				"KeyName": {
 					"Ref": "KeyPair"

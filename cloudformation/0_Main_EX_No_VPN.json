@@ -178,6 +178,9 @@
 					"ESCIDR": {
 						"Ref": "2ESCIDR"
 					},
+					"QualiServerCIDR": {
+						"Ref": "3QualiServerCIDR"
+					},
 					"OnPremiseCIDR": {
 						"Ref": "4OnPremiseCIDR"
 					},
@@ -208,6 +211,10 @@
 					"ESInstanceSN": {
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.ESInstanceSN"]
+					},
+					"QualiServerInstanceSN": {
+						"Fn::GetAtt": ["VPCNAT",
+						"Outputs.QualiServerInstanceSN"]
 					},
 					"QualiXInstanceProfile": {
 						"Fn::GetAtt": ["VPCNAT",
