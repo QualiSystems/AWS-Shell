@@ -139,7 +139,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							"Ref": { "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ] }
+							"Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ]
 						},
 						" /u:",
 						{
@@ -197,7 +197,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							"Ref": { "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ] }
+							 "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ]
 						},
 						" /u:",
 						{
@@ -250,8 +250,6 @@
 				"SecurityGroupIds": [{
 					"Ref": "SG1id"
 				}],
-				"UserData": {
-				},
 				"Tags": [{
 					"Key": "Name",
 					"Value": "cloudshell-server"
