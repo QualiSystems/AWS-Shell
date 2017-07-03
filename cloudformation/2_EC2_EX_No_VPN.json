@@ -139,7 +139,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							"Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ]
+							"Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
 						},
 						" /u:",
 						{
@@ -197,7 +197,7 @@
 						"/bin/echo \"",
 						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
 						{
-							 "Fn::GetAtt" : [ "CloudShellServerInstanceEIP", "AllocationId" ]
+							 "Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
 						},
 						" /u:",
 						{
