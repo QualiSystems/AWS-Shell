@@ -231,7 +231,7 @@
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "ES"
+					"Value": "CloudShellServer"
 				},
 				{
 					"Key": "Role",
