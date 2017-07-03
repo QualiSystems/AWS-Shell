@@ -546,7 +546,7 @@
         "QualiServerInstanceSN": {
 			"Description": "Quali Server instance Subnet",
 			"Value": {
-				"Ref": "ESInstanceSN"
+				"Ref": "QualiServerInstanceSN"
 			}
 		},
 		"QualixSN": {
