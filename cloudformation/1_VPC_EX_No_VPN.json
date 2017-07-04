@@ -184,7 +184,7 @@
 					"FromPort": "0",
 					"ToPort": "65535",
 					"CidrIp": {
-                      "Ref": "QualiServerCIDR"
+                      "Ref": "ESCIDR"
                     }
 				}]
 			}
