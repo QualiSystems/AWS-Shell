@@ -53,12 +53,12 @@
 		"8InstanceType": {
 			"Type": "String",
 			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c4.xlarge.",
-			"Default": "t2.nano"
+			"Default": "c4.xlarge"
 		},
 		"CloudShellServerInstanceSize": {
 			"Type": "String",
 			"Description": "The instance type to be used for the Cloud Shell Server instances. The minimum recommended instance type is c4.xlarge.",
-			"Default": "t2.nano"
+			"Default": "c4.xlarge"
 		},
 		"ZUsername": {
 			"Type": "String",
