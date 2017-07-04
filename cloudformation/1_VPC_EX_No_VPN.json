@@ -150,6 +150,45 @@
 				}]
 			}
 		},
+        "SG3": {
+			"Type": "AWS::EC2::SecurityGroup",
+			"Properties": {
+				"GroupDescription": "SG3",
+				"Tags": [{
+					"Key": "Name",
+					"Value": "SG3"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"SecurityGroupIngress": [{
+					"IpProtocol": "tcp",
+					"FromPort": "80",
+					"ToPort": "80",
+					"CidrIp": "0.0.0.0/0"
+				},{
+					"IpProtocol": "tcp",
+					"FromPort": "443",
+					"ToPort": "443",
+					"CidrIp": "0.0.0.0/0"
+				},{
+					"IpProtocol": "tcp",
+					"FromPort": "0",
+					"ToPort": "65535",
+					"CidrIp": {
+                      "Ref": "QualiServerCIDR"
+                    }
+				}]
+			}
+		},
 		"QualixRT": {
 			"Type": "AWS::EC2::RouteTable",
 			"Properties": {
@@ -410,6 +449,22 @@
 				"Path": "/"
 			}
 		},
+      "QualiServerRole": {
+			"Type": "AWS::IAM::Role",
+			"Properties": {
+				"AssumeRolePolicyDocument": {
+					"Version": "2012-10-17",
+					"Statement": [{
+						"Effect": "Allow",
+						"Principal": {
+							"Service": ["ec2.amazonaws.com"]
+						},
+						"Action": ["sts:AssumeRole"]
+					}]
+				},
+				"Path": "/"
+			}
+		},
 		"ESInstance2Profile": {
 			"Type": "AWS::IAM::InstanceProfile",
 			"Properties": {
@@ -478,6 +533,15 @@
 				"Path": "/",
 				"Roles": [{
 					"Ref": "ESRole"
+				}]
+			}
+		},
+        "QualiServerInstanceProfile": {
+			"Type": "AWS::IAM::InstanceProfile",
+			"Properties": {
+				"Path": "/",
+				"Roles": [{
+					"Ref": "QualiServerRole"
 				}]
 			}
 		},
@@ -569,10 +633,21 @@
 				"Ref": "ESInstance2Profile"
 			}
 		},
+        "QualiServerInstanceProfile": {
+			"Value": {
+				"Ref": "QualiServerInstanceProfile"
+			}
+		},
 		"SG2id": {
 			"Description": "SG2 ID",
 			"Value": {
 				"Ref": "SG2"
+			}
+		},
+        "SG3id": {
+			"Description": "SG3 ID",
+			"Value": {
+				"Ref": "SG3"
 			}
 		}
 	}

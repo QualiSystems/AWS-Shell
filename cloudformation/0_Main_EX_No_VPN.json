@@ -52,7 +52,12 @@
 		},
 		"8InstanceType": {
 			"Type": "String",
-			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c3.xlarge.",
+			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c4.xlarge.",
+			"Default": "t2.nano"
+		},
+		"CloudShellServerInstanceSize": {
+			"Type": "String",
+			"Description": "The instance type to be used for the Cloud Shell Server instances. The minimum recommended instance type is c4.xlarge.",
 			"Default": "t2.nano"
 		},
 		"ZUsername": {
@@ -224,6 +229,10 @@
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.ESInstanceProfile"]
 					},
+					"QualiServerInstanceProfile": {
+						"Fn::GetAtt": ["VPCNAT",
+						"Outputs.QualiServerInstanceProfile"]
+					},
 					"SG1id": {
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.SG1id"]
@@ -231,6 +240,10 @@
 					"SG2id": {
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.SG2id"]
+					},
+					"SG3id": {
+						"Fn::GetAtt": ["VPCNAT",
+						"Outputs.SG3id"]
 					},
 					"QualixAMI": {
 						"Fn::FindInMap": ["AMIFromRegion",
@@ -261,6 +274,9 @@
 					},
 					"InstanceSize": {
 						"Ref": "8InstanceType"
+					},
+					"CloudShellServerInstanceSize": {
+						"Ref": "CloudShellServerInstanceSize"
 					},
 					"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell-version/exec.tar"
 				},

@@ -15,10 +15,16 @@
 		"ESInstanceProfile": {
 			"Type": "String"
 		},
+		"QualiServerInstanceProfile": {
+			"Type": "String"
+		},
 		"SG2id": {
 			"Type": "String"
 		},
 		"SG1id": {
+			"Type": "String"
+		},
+		"SG3id": {
 			"Type": "String"
 		},
 		"ESAMI": {
@@ -43,6 +49,9 @@
 			"Type": "String"
 		},
 		"InstanceSize": {
+			"Type": "String"
+		},
+		"CloudShellServerInstanceSize": {
 			"Type": "String"
 		}
 	},
@@ -238,7 +247,7 @@
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
 				"IamInstanceProfile": {
-					"Ref": "ESInstance2Profile"
+					"Ref": "QualiServerInstanceProfile"
 				},
 				"SubnetId": {
 					"Ref": "QualiServerInstanceSN"
@@ -249,9 +258,9 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": { "Ref": "InstanceSize" },
+				"InstanceType": { "Ref": "CloudShellServerInstanceSize" },
 				"SecurityGroupIds": [{
-					"Ref": "SG1id"
+					"Ref": "SG3id"
 				}],
 				"Tags": [{
 					"Key": "Name",
