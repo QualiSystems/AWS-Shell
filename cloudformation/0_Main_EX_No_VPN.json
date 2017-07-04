@@ -89,7 +89,8 @@
 			"us-west-1": {
 				"QualixAMI": "ami-af4333cf",
 				"ESAMI": "ami-ecc9898c",
-				"NatAMI": "ami-004b0f60"
+				"NatAMI": "ami-004b0f60",
+				"QSAMI":"ami-7f2e031f"
 			},
 			"us-west-2": {
 				"QualixAMI": "ami-d2c924b2",
@@ -258,6 +259,13 @@
 							"Ref": "AWS::Region"
 						},
 						"ESAMI"]
+					},
+					"QSAMI": {
+						"Fn::FindInMap": ["AMIFromRegion",
+						{
+							"Ref": "AWS::Region"
+						},
+						"QSAMI"]
 					},
 					"KeyPair": {
 						"Ref": "7KeyPair"
