@@ -173,7 +173,8 @@ class PrepareConnectivityOperation(object):
             vpc_peer_connection_id = self.vpc_service.peer_vpcs(ec2_session=ec2_session,
                                                                 vpc_id1=management_vpc_id,
                                                                 vpc_id2=vpc_id,
-                                                                reservation_model=reservation_model)
+                                                                reservation_model=reservation_model,
+                                                                logger=logger)
         # get mgmt vpc cidr
         mgmt_cidr = self.vpc_service.get_vpc_cidr(ec2_session=ec2_session, vpc_id=management_vpc_id)
 
