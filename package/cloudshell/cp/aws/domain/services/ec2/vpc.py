@@ -1,3 +1,5 @@
+from retrying import retry
+
 from cloudshell.cp.aws.common import retry_helper
 
 
@@ -61,9 +63,10 @@ class VPCService(object):
 
         return vpcs[0]
 
-    def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2, reservation_model):
+    def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2, reservation_model, logger):
         """
         Will create a peering request between 2 vpc's and approve it
+        :param logger:
         :param ec2_session: EC2 session
         :param vpc_id1: VPC Id
         :type vpc_id1: str
@@ -75,19 +78,36 @@ class VPCService(object):
         """
 
         # create peering connection
+        logger.info("Creating VPC Peering between {0} to {1} ".format(vpc_id1, vpc_id1))
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
+        logger.info(
+            "VPC Peering created {0} ,State : {1} ".format(vpc_peer_connection.id, vpc_peer_connection.status['Code']))
+
         # wait until pending acceptance
+        logger.info("Waiting until VPC peering state will be pending-acceptance ")
         self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.PENDING_ACCEPTANCE)
-        # accept peering request
-        vpc_peer_connection.accept()
+        logger.info("VPC peering state {0}".format(vpc_peer_connection.status['Code']))
+
+        # accept peering request (will try 3 times)
+        self.accept_vpc_peering(vpc_peer_connection, logger)
+
         # wait until active
+        logger.info("Waiting until VPC peering state will be {0}".format(self.vpc_peering_waiter.ACTIVE))
         self.vpc_peering_waiter.wait(vpc_peer_connection, self.vpc_peering_waiter.ACTIVE)
+        logger.info("VPC peering state {0}".format(vpc_peer_connection.status['Code']))
+
         # set tags on peering connection
         tags = self.tag_service.get_default_tags(self._get_peering_connection_name(reservation_model),
                                                  reservation_model)
         retry_helper.do_with_retry(lambda: ec2_session.create_tags(Resources=[vpc_peer_connection.id], Tags=tags))
 
         return vpc_peer_connection.id
+
+    @retry(stop_max_attempt_number=3, wait_fixed=1000)
+    def accept_vpc_peering(self, vpc_peer_connection, logger):
+        logger.info("Accepting VPC Peering {0}".format(vpc_peer_connection.id))
+        vpc_peer_connection.accept()
+        logger.info("VPC Peering {0} accepted".format(vpc_peer_connection.id))
 
     def get_peering_connection_by_reservation_id(self, ec2_session, reservation_id):
         """
@@ -138,8 +158,8 @@ class VPCService(object):
                                                  reservation)
 
         self.tag_service.set_ec2_resource_tags(
-                resource=internet_gateway,
-                tags=tags)
+            resource=internet_gateway,
+            tags=tags)
 
         vpc.attach_internet_gateway(InternetGatewayId=internet_gateway.id)
 
