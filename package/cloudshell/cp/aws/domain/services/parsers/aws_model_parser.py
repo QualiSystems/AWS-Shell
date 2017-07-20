@@ -8,7 +8,6 @@ from cloudshell.shell.core.driver_context import ReservationContextDetails
 
 
 class AWSModelsParser(object):
-
     @staticmethod
     def convert_app_resource_to_deployed_app(resource):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
@@ -51,7 +50,7 @@ class AWSModelsParser(object):
         deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
         deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for IP'])
         deployment_resource_model.wait_for_status_check = AWSModelsParser.convert_to_bool(
-            data["Attributes"]['Wait for Status Check'])
+                data["Attributes"]['Wait for Status Check'])
         deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data["Attributes"]['Autoload'])
         deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
         deployment_resource_model.outbound_ports = data["Attributes"]['Outbound Ports']
@@ -60,10 +59,27 @@ class AWSModelsParser(object):
         deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Add Public IP'])
         deployment_resource_model.allocate_elastic_ip = \
             AWSModelsParser.convert_to_bool(data["Attributes"]['Allocate Elastic IP'])
-        deployment_resource_model.user = data["LogicalResourceRequestAttributes"]["User"]
+        deployment_resource_model.user = \
+            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(data["LogicalResourceRequestAttributes"],
+                                                                           "User")
         deployment_resource_model.app_name = data_holder.AppName
 
         return deployment_resource_model
+
+    @staticmethod
+    def get_attribute_value_by_name_ignoring_namespace(attributes, name):
+        """
+        Finds the attribute value by name ignoring attribute namespaces.
+        :param dict attributes: Attributes key value dict to search on.
+        :param str name: Attribute name to search for.
+        :return: Attribute str value. None if not found.
+        :rtype: str
+        """
+        for key, val in attributes.iteritems():
+            last_part = key.split(".")[-1]  # get last part of namespace.
+            if name == last_part:
+                return val
+        return None
 
     @staticmethod
     def convert_to_bool(string):
@@ -81,9 +97,9 @@ class AWSModelsParser(object):
     def get_public_ip_from_connected_resource_details(resource_context):
         public_ip_on_resource = ""
         public_ip = 'Public IP'
-        if resource_context.remote_endpoints is not None and public_ip in resource_context.remote_endpoints[
-            0].attributes:
-            public_ip_on_resource = resource_context.remote_endpoints[0].attributes[public_ip]
+        if resource_context.remote_endpoints is not None:
+            public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                    resource_context.remote_endpoints[0].attributes, public_ip)
         return public_ip_on_resource
 
     @staticmethod
@@ -97,8 +113,8 @@ class AWSModelsParser(object):
     def try_get_deployed_connected_resource_instance_id(resource_context):
         try:
             deployed_instance_id = str(
-                jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
-                    'uid'])
+                    jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
+                        'uid'])
         except Exception as e:
             raise ValueError('Could not find an ID of the AWS Deployed instance' + e.message)
         return deployed_instance_id
