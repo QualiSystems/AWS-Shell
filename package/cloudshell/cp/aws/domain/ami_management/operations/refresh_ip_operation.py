@@ -24,7 +24,7 @@ class RefreshIpOperation(object):
         public_ip_on_aws = deployed_instance.public_ip_address
         private_ip_on_aws = deployed_instance.private_ip_address
 
-        if public_ip_on_aws != public_ip_on_resource :
+        if public_ip_on_aws != public_ip_on_resource:
             cloudshell_session.SetAttributeValue(resource_fullname, RefreshIpOperation.public_ip,
                                                  public_ip_on_aws if public_ip_on_aws is not None else "")
 
