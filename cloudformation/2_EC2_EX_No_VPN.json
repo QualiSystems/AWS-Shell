@@ -1,0 +1,332 @@
+{
+	"Parameters": {
+		"QualixSN": {
+			"Type": "String"
+		},
+		"ESInstanceSN": {
+			"Type": "String"
+		},
+		"QualiServerInstanceSN": {
+			"Type": "String"
+		},
+		"QualiXInstanceProfile": {
+			"Type": "String"
+		},
+		"ESInstanceProfile": {
+			"Type": "String"
+		},
+		"QualiServerInstanceProfile": {
+			"Type": "String"
+		},
+		"SG2id": {
+			"Type": "String"
+		},
+		"SG1id": {
+			"Type": "String"
+		},
+		"SG3id": {
+			"Type": "String"
+		},
+		"ESAMI": {
+			"Type": "String"
+		},
+		"QSAMI": {
+			"Type": "String"
+		},
+		"QualixAMI": {
+			"Type": "String"
+		},
+		"KeyPair": {
+			"Type": "String"
+		},
+		"ESInstance2Profile": {
+			"Type": "String"
+		},
+		"ZUsername": {
+			"Type": "String"
+		},
+		"ZPassword": {
+			"Type": "String"
+		},
+		"ExecutionServerBinaryLocation": {
+			"Type": "String"
+		},
+		"InstanceSize": {
+			"Type": "String"
+		},
+		"CloudShellServerInstanceSize": {
+			"Type": "String"
+		}
+	},
+	"Resources": {
+		"QualixInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"InstanceType": { "Ref": "InstanceSize" },
+				"IamInstanceProfile": {
+					"Ref": "QualiXInstanceProfile"
+				},
+				"SubnetId": {
+					"Ref": "QualixSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "QualiX"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "QualixAMI"
+				},
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				},
+				{
+					"Ref": "SG2id"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+						"echo 'nameserver 4.4.4.4' >> /etc/resolv.conf\n",
+						"curl https://s3-us-west-2.amazonaws.com/qualix-ova/guacamole-quali-install.sh -s -o guacamole-quali-install.sh\n",
+						"chmod +x guacamole-quali-install.sh\n",
+						"./guacamole-quali-install.sh"]]
+					}
+				}
+			}
+		},
+		"ESInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "ESInstanceProfile"
+				},
+				"SubnetId": {
+					"Ref": "ESInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-shells"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": { "Ref": "InstanceSize" },
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+						"chattr +i /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{
+						  "Ref": "ExecutionServerBinaryLocation"
+						},
+						"\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
+						"/bin/echo \"",
+						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
+						{
+							"Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
+						},
+						" /u:",
+						{
+							"Ref": "ZUsername"
+						},
+						" /p:",
+						{
+							"Ref": "ZPassword"
+						},
+						" /esn:ES-Shells-",
+						{
+							"Ref": "AWS::Region"
+						},
+						" /i:",
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
+						"supervisorctl restart ex"]]
+					}
+				}
+			},
+			"DependsOn": "CloudShellServerInstance"
+		},
+		"ESInstance2": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "ESInstance2Profile"
+				},
+				"SubnetId": {
+					"Ref": "ESInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": { "Ref": "InstanceSize" },
+				"SecurityGroupIds": [{
+					"Ref": "SG1id"
+				}],
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+						["#!/bin/bash -xe\n",
+						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+						"chattr +i /etc/resolv.conf\n",
+						"wget -O /root/ExecutionServer/exec.tar ",
+						{
+						  "Ref": "ExecutionServerBinaryLocation"
+						},
+						"\n",
+						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
+						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
+						"/bin/echo \"",
+						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
+						{
+							 "Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
+						},
+						" /u:",
+						{
+							"Ref": "ZUsername"
+						},
+						" /p:",
+						{
+							"Ref": "ZPassword"
+						},
+						" /esn:ES-Commands-",
+						{
+							"Ref": "AWS::Region"
+						},
+						" /i:",
+						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
+						"supervisorctl restart ex"]]
+					}
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-commands"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}]
+			},
+			"DependsOn": "CloudShellServerInstance"
+		},
+		"CloudShellServerInstance": {
+			"Type": "AWS::EC2::Instance",
+			"Properties": {
+				"IamInstanceProfile": {
+					"Ref": "QualiServerInstanceProfile"
+				},
+				"SubnetId": {
+					"Ref": "QualiServerInstanceSN"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"ImageId": {
+					"Ref": "QSAMI"
+				},
+				"InstanceType": { "Ref": "CloudShellServerInstanceSize" },
+				"SecurityGroupIds": [{
+					"Ref": "SG3id"
+				}],
+				"Tags": [{
+					"Key": "Name",
+					"Value": "cloudshell-server"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}]
+			}
+		},
+		"ESInstanceEIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"InstanceId": {
+					"Ref": "ESInstance"
+				},
+				"Domain": ""
+			},
+			"DependsOn": "ESInstance"
+		},
+		"ESInstance2EIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"InstanceId": {
+					"Ref": "ESInstance2"
+				},
+				"Domain": "vpc"
+			},
+			"DependsOn": "ESInstance2"
+		},
+		"QualixInstanceEIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"InstanceId": {
+					"Ref": "QualixInstance"
+				},
+				"Domain": "vpc"
+			},
+			"DependsOn": "QualixInstance"
+		},
+		"CloudShellServerInstanceEIP": {
+			"Type": "AWS::EC2::EIP",
+			"Properties": {
+				"InstanceId": {
+					"Ref": "CloudShellServerInstance"
+				},
+				"Domain": ""
+			},
+			"DependsOn": "CloudShellServerInstance"
+		}
+	},
+	"Description": "EC2 instances - QualiX and ES",
+	"Outputs": {
+		"QualixInstanceEIP": {
+			"Description": "Qualix Instance Elastic IP",
+			"Value": {
+				"Ref": "QualixInstanceEIP"
+			}
+		}
+	}
+}

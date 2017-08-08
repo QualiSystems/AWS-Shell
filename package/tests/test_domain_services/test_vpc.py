@@ -102,7 +102,7 @@ class TestVPCService(TestCase):
 
         reservation_model = Mock()
 
-        res = self.vpc_service.peer_vpcs(self.ec2_session, vpc1, vpc2, reservation_model)
+        res = self.vpc_service.peer_vpcs(self.ec2_session, vpc1, vpc2, reservation_model,Mock())
 
         self.assertTrue(self.ec2_session.create_vpc_peering_connection.called_with(vpc1, vpc2))
         self.assertEquals(peered.status['Code'], VpcPeeringConnectionWaiter.ACTIVE)
