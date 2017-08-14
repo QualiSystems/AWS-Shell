@@ -9,3 +9,4 @@ class AWSEc2CloudProviderResourceModel(object):
         self.aws_access_key_id = ''  # type: str
         self.aws_secret_access_key = ''  # type: str
         self.instance_type = ''  # type: str
+        self.reserved_ips_in_subnet = ''  # type: int
