@@ -284,8 +284,8 @@
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Public IP Options" UserInput="true">
               <AllowedValues>
-                <AllowedValue>No public IP</AllowedValue>
-                <AllowedValue>Public IP</AllowedValue>
+                <AllowedValue>No Public IP</AllowedValue>
+                <AllowedValue>Public IP (single subnet)</AllowedValue>
                 <AllowedValue>Elastic IPs</AllowedValue>
               </AllowedValues>
             </AttachedAttribute>
@@ -298,7 +298,7 @@
             <AttributeValue Name="Wait for IP" Value="false"/>
             <AttributeValue Name="Wait for Credentials" Value="true"/>
             <AttributeValue Name="Storage Type" Value="auto"/>
-            <AttributeValue Name="Public IP Options" Value="No public IP"/>
+            <AttributeValue Name="Public IP Options" Value="No Public IP"/>
           </AttributeValues>
           <ParentModels />
           <Drivers />
