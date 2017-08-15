@@ -144,7 +144,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue=""  Name="Public IP Options" Type="String" Description="Choose your destiny..." IsReadOnly="false">
+    <AttributeInfo DefaultValue=""  Name="Public IP Options" Type="String" Description="Select whether to create a public IP. If the VM will be connected to more than one subnet, and public IP is required in at least one of them, the 'elastic IPs' option ought to be selected." IsReadOnly="false">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
