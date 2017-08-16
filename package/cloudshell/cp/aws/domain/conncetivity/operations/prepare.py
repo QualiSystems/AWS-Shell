@@ -112,6 +112,7 @@ class PrepareConnectivityOperation(object):
                 results.append(self._create_fault_action_result(action, e))
 
         self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Prepare Connectivity completed")
 
         return results
 
@@ -216,7 +217,7 @@ class PrepareConnectivityOperation(object):
         :param logging.Logger logger:
         :return:
         """
-        logger.info("_update_route_to_peered_vpc :: route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
+        logger.info("route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
                     .format(route_table.id, peer_connection_id, target_vpc_cidr))
 
         # need to check for both possibilities since the amazon api for Route is unpredictable
@@ -226,13 +227,18 @@ class PrepareConnectivityOperation(object):
                                                               {'DestinationCidrBlock': str(target_vpc_cidr)})
 
         if route:
-            logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
+            if hasattr(route, "vpc_peering_connection_id") and route.vpc_peering_connection_id == peer_connection_id:
+                logger.info("found existing and valid route to peering gateway, no need to update it")
+                return  # the existing route is correct, we dont need to do anything
+
+            logger.info("found existing route to {0}, replacing it".format(
+                    route.destination_cidr_block if hasattr(route, "destination_cidr_block") else ''))
             self.route_table_service.replace_route(route_table=route_table,
                                                    route=route,
                                                    peer_connection_id=peer_connection_id,
                                                    ec2_client=ec2_client)
         else:
-            logger.info("_update_route_to_peered_vpc :: route not found, creating it")
+            logger.info("route not found, creating it")
             self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
                                                              target_peering_id=peer_connection_id,
                                                              target_vpc_cidr=target_vpc_cidr)

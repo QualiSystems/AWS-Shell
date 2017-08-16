@@ -1,3 +1,5 @@
+import re
+
 import jsonpickle
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
@@ -54,18 +56,34 @@ class AWSModelsParser(object):
                 data["Attributes"]['Wait for Status Check'])
         deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data["Attributes"]['Autoload'])
         deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
-        deployment_resource_model.outbound_ports = data["Attributes"]['Outbound Ports']
         deployment_resource_model.wait_for_credentials = \
             AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for Credentials'])
-        deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Add Public IP'])
-        deployment_resource_model.allocate_elastic_ip = \
-            AWSModelsParser.convert_to_bool(data["Attributes"]['Allocate Elastic IP'])
         deployment_resource_model.user = \
-            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(data["LogicalResourceRequestAttributes"],
-                                                                           "User")
+            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                    data["LogicalResourceRequestAttributes"], "User")
         deployment_resource_model.app_name = data_holder.AppName
+        (deployment_resource_model.add_public_ip, deployment_resource_model.allocate_elastic_ip) =\
+            AWSModelsParser.parse_public_ip_options_attribute(data["Attributes"]['Public IP Options'])
 
         return deployment_resource_model
+
+
+    @staticmethod
+    def parse_public_ip_options_attribute(attr_value):
+        """
+        Parses the value of the "Public IP Options" attribute into a boolean tuple:
+          (Add Public IP, Allocate Elastic IP)
+        :param str attr_value: "Public IP Options" attribute value
+        :return: Tuple of (Add Public IP, Allocate Elastic IP)
+        :rtype: (boolean, boolean)
+        """
+        if re.match("^elastic", attr_value, flags=re.IGNORECASE):
+            return False, True
+
+        if re.match("^public ", attr_value, flags=re.IGNORECASE):
+            return True, False
+
+        return False, False
 
     @staticmethod
     def get_attribute_value_by_name_ignoring_namespace(attributes, name):
