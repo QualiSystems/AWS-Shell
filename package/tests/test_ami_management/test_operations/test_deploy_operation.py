@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock, MagicMock
+from mock import Mock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
@@ -296,7 +296,7 @@ class TestDeployOperation(TestCase):
                           key_pair='keypair',
                           reservation=Mock())
 
-    def test_create_deployment_parameters(self):
+    def test_create_deployment_parameters_single_subnet(self):
         image = Mock()
         image.state = 'available'
         ec2_session = Mock()
@@ -304,6 +304,7 @@ class TestDeployOperation(TestCase):
         ami_model = Mock()
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
+        ami_model.network_configurations = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
 

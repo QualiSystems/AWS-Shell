@@ -1,3 +1,6 @@
+from cloudshell.cp.aws.models.network_actions_models import NetworkAction
+
+
 class DeployAWSEc2AMIInstanceResourceModel(object):
     def __init__(self):
         self.cloud_provider = ''
@@ -25,3 +28,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.allocate_elastic_ip = False  # type: bool
         self.user = ''  # type: str
         self.app_name = ''  # type: str
+        self.network_configurations = None  # type: [NetworkAction]

@@ -8,7 +8,10 @@ from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
+from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.shell.core.driver_context import CancellationContext
+
+from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams
 
 
 class DeployAMIOperation(object):
@@ -151,7 +154,8 @@ class DeployAMIOperation(object):
         """
         instance_id = None
         if exception and hasattr(exception, "data") and exception.data and 'instance_ids' in exception.data:
-            instance_id = exception.data['instance_ids'][0]     # we assume at this point that we are working on a single app
+            instance_id = exception.data['instance_ids'][
+                0]  # we assume at this point that we are working on a single app
         elif instance:
             instance_id = instance.id
         return instance_id
@@ -256,26 +260,73 @@ class DeployAMIOperation(object):
                                                                           ami_deployment_model=ami_deployment_model,
                                                                           aws_ec2_resource_model=aws_ec2_resource_model)
         aws_model.aws_key = key_pair
-        aws_model.add_public_ip = ami_deployment_model.add_public_ip
+        aws_model.add_public_ip = ami_deployment_model.add_public_ip  # todo can we remvoe this?
 
-        subnet = self.subnet_serivce.get_subnet_from_vpc(vpc)
-        aws_model.subnet_id = subnet.id
+        subnet = self.subnet_serivce.get_first_subnet_from_vpc(vpc)  # todo can we remvoe this?
+        aws_model.subnet_id = subnet.id  # todo can we remvoe this?
 
-        self._set_security_group_param(aws_model, reservation, security_group, vpc)
+        security_group_ids = self._get_security_group_param(reservation, security_group, vpc)
+        aws_model.security_group_ids = security_group_ids
+
+        aws_model.network_interfaces = self._get_network_interfaces(vpc, ami_deployment_model, security_group_ids)
 
         return aws_model
+
+    def _get_network_interfaces(self, vpc, ami_deployment_model, security_group_ids):
+        """
+        :param vpc: The reservation VPC
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :param [str] security_group_ids:
+        :return:
+        """
+        if ami_deployment_model.network_configurations is None:
+            return [self._get_netwrok_interface_single_subnet(ami_deployment_model, security_group_ids, vpc)]
+
+        net_interfaces = []
+        device_index = 0
+        for net_config in ami_deployment_model.network_configurations:
+            if not isinstance(net_config.connection_params, SubnetConnectionParams):
+                continue
+            net_interfaces.append(
+                # todo: add fallback to find subnet by cidr if subnet id doesnt exist
+                self._build_network_interface(subnet_id=net_config.connection_params.subnet_id,
+                                              device_index=device_index,
+                                              groups=security_group_ids,  # todo set groups by subnet id
+                                              public_ip=ami_deployment_model.add_public_ip))
+            device_index += 1
+
+        if len(net_interfaces) == 0:
+            return [self._get_netwrok_interface_single_subnet(ami_deployment_model, security_group_ids, vpc)]
+        return net_interfaces
+
+    def _get_netwrok_interface_single_subnet(self, ami_deployment_model, security_group_ids, vpc):
+        return self._build_network_interface(
+                subnet_id=self.subnet_serivce.get_first_subnet_from_vpc(vpc).subnet_id,
+                device_index=0,
+                groups=security_group_ids,
+                public_ip=ami_deployment_model.add_public_ip)
+
+    def _build_network_interface(self, subnet_id, device_index, groups, public_ip):
+        return {
+            'SubnetId': subnet_id,
+            'DeviceIndex': device_index,
+            'Groups': groups,
+            'AssociatePublicIpAddress': public_ip
+        }
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
         return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
 
-    def _set_security_group_param(self, aws_model, reservation, security_group, vpc):
+    def _get_security_group_param(self, reservation, security_group, vpc):
         default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
         default_sg = self.security_group_service.get_security_group_by_name(vpc, default_sg_name)
 
-        aws_model.security_group_ids = [default_sg.id]
+        security_group_ids = [default_sg.id]
 
         if security_group:
-            aws_model.security_group_ids.append(security_group.group_id)
+            security_group_ids.append(security_group.group_id)
+
+        return security_group_ids
 
     def _get_block_device_mappings(self, image, ami_deployment_model, aws_ec2_resource_model):
         """
@@ -411,5 +462,3 @@ class DeployAMIOperation(object):
         if hasattr(image, 'state') and image.state == 'available':
             return
         raise ValueError('AMI {} not found'.format(ami_id))
-
-

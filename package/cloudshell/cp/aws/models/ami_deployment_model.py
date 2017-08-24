@@ -11,3 +11,4 @@ class AMIDeploymentModel(object):
         self.block_device_mappings = []  # type: list[dict]
         self.subnet_id = ''  # type: str
         self.add_public_ip = False  # type: bool
+        self.network_interfaces = []  # type: list[dict]

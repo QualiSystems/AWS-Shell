@@ -32,14 +32,14 @@ class TestSubnetService(TestCase):
         vpc = Mock()
         vpc.subnets = Mock()
         vpc.subnets.all = Mock(return_value=[1])
-        subnet = self.subnet_srv.get_subnet_from_vpc(vpc)
+        subnet = self.subnet_srv.get_first_subnet_from_vpc(vpc)
         self.assertEqual(1, subnet)
 
     def test_get_subnet_from_vpc_fault(self):
         vpc = Mock()
         vpc.subnets = Mock()
         vpc.subnets.all = Mock(return_value=[])
-        self.assertRaises(ValueError, self.subnet_srv.get_subnet_from_vpc, vpc)
+        self.assertRaises(ValueError, self.subnet_srv.get_first_subnet_from_vpc, vpc)
 
     def test_delete_subnet(self):
         subnet = Mock()

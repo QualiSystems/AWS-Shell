@@ -234,7 +234,8 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Deploying AMI')
 
-                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request, command_context.resource)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request,
+                                                                                                  command_context.resource)
 
                 deploy_data = self.deploy_ami_operation \
                     .deploy(ec2_session=shell_context.aws_api.ec2_session,
@@ -258,11 +259,13 @@ class AWSShell(object):
                 shell_context.logger.info('Refresh IP')
 
                 # Get Private Ip on deployed resource
-                private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(command_context)
+                private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
+                    command_context)
                 # Get Public IP on deployed resource
                 public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(command_context)
                 # Get instance id
-                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(command_context)
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                    command_context)
                 # Get connected resource name
                 resource_fullname = self.model_parser.get_connectd_resource_fullname(command_context)
 

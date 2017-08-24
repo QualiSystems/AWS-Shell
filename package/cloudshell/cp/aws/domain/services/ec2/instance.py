@@ -38,13 +38,7 @@ class InstanceService(object):
                 InstanceType=ami_deployment_info.instance_type,
                 KeyName=ami_deployment_info.aws_key,
                 BlockDeviceMappings=ami_deployment_info.block_device_mappings,
-                NetworkInterfaces=[
-                    {
-                        'SubnetId': ami_deployment_info.subnet_id,
-                        'DeviceIndex': 0,
-                        'Groups': ami_deployment_info.security_group_ids,
-                        'AssociatePublicIpAddress': ami_deployment_info.add_public_ip
-                    }]
+                NetworkInterfaces=ami_deployment_info.network_interfaces
                 # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 

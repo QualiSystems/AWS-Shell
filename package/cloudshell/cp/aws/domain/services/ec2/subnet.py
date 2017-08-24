@@ -33,8 +33,14 @@ class SubnetService(object):
         self.tag_service.set_ec2_resource_tags(subnet, tags)
         return subnet
 
+    def get_vpc_subnets(self, vpc):
+        subnets = list(vpc.subnets.all())
+        if not subnets:
+            raise ValueError('The given VPC({0}) has no subnets'.format(vpc.id))
+        return subnets
+
     @staticmethod
-    def get_subnet_from_vpc(vpc):
+    def get_first_subnet_from_vpc(vpc):
         subnets = list(vpc.subnets.all())
         if not subnets:
             raise ValueError('The given VPC({0}) has no subnet'.format(vpc.id))
