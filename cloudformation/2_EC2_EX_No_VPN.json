@@ -111,13 +111,13 @@
 			"Properties": {
 				"NetworkInterfaces": [ {
 					      "AssociatePublicIpAddress": "true",
-					      "DeviceIndex": "0"
+					      "DeviceIndex": "0",
+					      "SubnetId": {
+							"Ref": "ESInstanceSN"
+						}
 				}],
 				"IamInstanceProfile": {
 					"Ref": "ESInstanceProfile"
-				},
-				"SubnetId": {
-					"Ref": "ESInstanceSN"
 				},
 				"KeyName": {
 					"Ref": "KeyPair"
@@ -185,14 +185,15 @@
 			"Properties": {
 				"NetworkInterfaces": [{
 					      "AssociatePublicIpAddress": "true",
-					      "DeviceIndex": "0"
+					      "DeviceIndex": "0",
+					      "SubnetId": {
+						"Ref": "ESInstanceSN"
+					       }
+
 				}],
 				"IamInstanceProfile": {
 					"Ref": "ESInstance2Profile"
-				},
-				"SubnetId": {
-					"Ref": "ESInstanceSN"
-				},
+				},				
 				"KeyName": {
 					"Ref": "KeyPair"
 				},
