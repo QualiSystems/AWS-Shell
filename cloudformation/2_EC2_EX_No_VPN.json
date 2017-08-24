@@ -109,6 +109,10 @@
 		"ESInstance": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
+				"NetworkInterfaces": [ {
+					      "AssociatePublicIpAddress": "true",
+					      "DeviceIndex": "0"
+				}],
 				"IamInstanceProfile": {
 					"Ref": "ESInstanceProfile"
 				},
@@ -179,6 +183,10 @@
 		"ESInstance2": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
+				"NetworkInterfaces": [{
+					      "AssociatePublicIpAddress": "true",
+					      "DeviceIndex": "0"
+				}],
 				"IamInstanceProfile": {
 					"Ref": "ESInstance2Profile"
 				},
