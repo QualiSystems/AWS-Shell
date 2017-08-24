@@ -287,26 +287,6 @@
 				}]
 			}
 		},
-		"ESInstanceEIP": {
-			"Type": "AWS::EC2::EIP",
-			"Properties": {
-				"InstanceId": {
-					"Ref": "ESInstance"
-				},
-				"Domain": ""
-			},
-			"DependsOn": "ESInstance"
-		},
-		"ESInstance2EIP": {
-			"Type": "AWS::EC2::EIP",
-			"Properties": {
-				"InstanceId": {
-					"Ref": "ESInstance2"
-				},
-				"Domain": "vpc"
-			},
-			"DependsOn": "ESInstance2"
-		},
 		"QualixInstanceEIP": {
 			"Type": "AWS::EC2::EIP",
 			"Properties": {
