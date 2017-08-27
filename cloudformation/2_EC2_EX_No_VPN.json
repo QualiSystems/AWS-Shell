@@ -114,7 +114,10 @@
 					      "DeviceIndex": "0",
 					      "SubnetId": {
 							"Ref": "ESInstanceSN"
-						}
+						},
+					      "GroupSet": [{
+							"Ref": "SG1id"
+						}]
 				}],
 				"IamInstanceProfile": {
 					"Ref": "ESInstanceProfile"
@@ -137,10 +140,7 @@
 				"ImageId": {
 					"Ref": "ESAMI"
 				},
-				"InstanceType": { "Ref": "InstanceSize" },
-				"SecurityGroupIds": [{
-					"Ref": "SG1id"
-				}],
+				"InstanceType": { "Ref": "InstanceSize" },				
 				"UserData": {
 					"Fn::Base64": {
 						"Fn::Join": ["",
@@ -188,7 +188,10 @@
 					      "DeviceIndex": "0",
 					      "SubnetId": {
 						"Ref": "ESInstanceSN"
-					       }
+					       },
+					      "GroupSet": [{
+							"Ref": "SG1id"
+						}]
 
 				}],
 				"IamInstanceProfile": {
@@ -201,9 +204,6 @@
 					"Ref": "ESAMI"
 				},
 				"InstanceType": { "Ref": "InstanceSize" },
-				"SecurityGroupIds": [{
-					"Ref": "SG1id"
-				}],
 				"UserData": {
 					"Fn::Base64": {
 						"Fn::Join": ["",
