@@ -17,6 +17,7 @@ from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
+from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
@@ -77,6 +78,8 @@ class AWSShell(object):
                                          cryptography_service=self.cryptography_service,
                                          cancellation_service=self.cancellation_service)
 
+        self.elastic_ip_service = ElasticIpService()
+
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
                                                        security_group_service=self.security_group_service,
@@ -84,6 +87,7 @@ class AWSShell(object):
                                                        vpc_service=self.vpc_service,
                                                        key_pair_service=self.key_pair_service,
                                                        subnet_service=self.subnet_service,
+                                                       elastic_ip_service=self.elastic_ip_service,
                                                        cancellation_service=self.cancellation_service)
 
         self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)

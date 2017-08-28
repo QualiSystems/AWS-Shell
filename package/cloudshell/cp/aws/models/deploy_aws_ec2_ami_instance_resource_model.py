@@ -28,4 +28,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.allocate_elastic_ip = False  # type: bool
         self.user = ''  # type: str
         self.app_name = ''  # type: str
-        self.network_configurations = None  # type: [NetworkAction]
+        self.network_configurations = None  # type: list[NetworkAction]

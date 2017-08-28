@@ -79,29 +79,7 @@ class TestInstanceService(TestCase):
         with self.assertRaises(Exception):
             self.instance_service.get_active_instance_by_id(self.ec2_session, 'id')
 
-    def test_find_and_release_elastic_address(self):
-        # arrange
-        ec2_session = Mock()
-        elastic_ip = "xxx"
-        vpc_address = Mock()
-        ec2_session.vpc_addresses.filter = Mock(return_value=[vpc_address])
 
-        # act
-        self.instance_service.find_and_release_elastic_address(ec2_session=ec2_session, elastic_ip=elastic_ip)
-
-        # assert
-        ec2_session.vpc_addresses.filter.assert_called_once_with(PublicIps=[elastic_ip])
-        vpc_address.release.assert_called_once()
-
-    def test_find_and_release_elastic_address_failed_to_find_ip(self):
-        # arrange
-        ec2_session = Mock()
-        elastic_ip = "xxx"
-        ec2_session.vpc_addresses.filter = Mock(return_value=[])
-
-        # act & assert
-        with self.assertRaisesRegexp(ValueError, "Failed to find elastic ip xxx"):
-            self.instance_service.find_and_release_elastic_address(ec2_session=ec2_session, elastic_ip=elastic_ip)
 
     def test_terminate_instance(self):
         self.instance_waiter.multi_wait = Mock(return_value=[self.instance])
@@ -120,14 +98,3 @@ class TestInstanceService(TestCase):
         self.assertTrue(self.instance_waiter.multi_wait.called_with([self.instance], 'terminated'))
         self.assertIsNotNone(res)
 
-    def test_release_elastic_address(self):
-        vpc_address = Mock()
-        res = self.instance_service.release_elastic_address(vpc_address)
-        self.assertTrue(vpc_address.release.called)
-
-    def test_allocate_elastic_address(self):
-        ec2_client = Mock()
-        result={'PublicIp': 'string'}
-        ec2_client.allocate_address = Mock(return_value=result)
-        res = self.instance_service.allocate_elastic_address(ec2_client)
-        self.assertTrue(ec2_client.allocate_address.called)

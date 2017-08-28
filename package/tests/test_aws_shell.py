@@ -75,11 +75,10 @@ class TestAWSShell(TestCase):
                               wait_for_ip=deploymock.wait_for_ip,
                               auto_power_off=deploymock.auto_power_off,
                               inbound_ports='',
-                              outbound_ports='',
                               deployed_app_attributes=dict(),
                               deployed_app_address='',
                               public_ip='',
-                              elastic_ip='')
+                              network_configuration_results=[])
 
         self.aws_shell.model_parser.convert_to_deployment_resource_model = Mock(return_value=deploymock)
         self.aws_shell.deploy_ami_operation.deploy = Mock(return_value=result)

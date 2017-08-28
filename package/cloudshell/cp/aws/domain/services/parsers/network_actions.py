@@ -24,7 +24,7 @@ class NetworkActionsParser(object):
             network_action.connection_params = ConnectionParamsParser.parse(action["connectionParams"])
             parsed_data.append(network_action)
 
-        return parsed_data
+        return parsed_data if(len(parsed_data) > 0) else None
 
     @staticmethod
     def parse_custom_network_action_attributes(action):

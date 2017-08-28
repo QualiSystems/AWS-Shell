@@ -87,21 +87,6 @@ class InstanceService(object):
             instance.terminate()
         return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
 
-    def associate_elastic_ip(self, ec2_session, instance, elastic_ip):
-        """
-        Assign an elastic ip to the primary interface and primary private ip of the given instance
-        :param ec2_session:
-        :param instance:
-        :param str elastic_ip: The allocation ID
-        :return:
-        """
-        response = list(ec2_session.vpc_addresses.filter(PublicIps=[elastic_ip]))
-        if len(response) == 1:
-            vpc_address = response[0]
-            vpc_address.associate(InstanceId=instance.id, AllowReassociation=False)
-        else:
-            raise ValueError("Failed to find elastic ip {0} allocation id".format(elastic_ip))
-
     def _set_tags(self, instance, name, reservation):
         # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id
@@ -119,33 +104,3 @@ class InstanceService(object):
             raise Exception("Can't perform action. EC2 instance was terminated/removed")
 
         return instance
-
-    @staticmethod
-    def allocate_elastic_address(ec2_client):
-        """
-        :param ec2_client:
-        :return: allocated elastic ip
-        :rtype: str
-        """
-        result = ec2_client.allocate_address(Domain='vpc')
-        return result["PublicIp"]
-
-    @staticmethod
-    def release_elastic_address(vpc_address):
-        """
-        :param vpc_address:
-        """
-        vpc_address.release()
-
-    @staticmethod
-    def find_and_release_elastic_address(ec2_session, elastic_ip):
-        """
-        :param ec2_session:
-        :param str elastic_ip:
-        """
-        response = list(ec2_session.vpc_addresses.filter(PublicIps=[elastic_ip]))
-        if len(response) == 1:
-            vpc_address = response[0]
-            InstanceService.release_elastic_address(vpc_address)
-        else:
-            raise ValueError("Failed to find elastic ip {0}".format(elastic_ip))
