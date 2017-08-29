@@ -50,7 +50,7 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.prepare_connectivity(context, request, cancellation_context)
 
     def CleanupConnectivity(self, context, request):
-        return self.aws_shell.cleanup_connectivity(context)
+        return self.aws_shell.cleanup_connectivity(context, request)
 
     def GetApplicationPorts(self, context, ports):
         return self.aws_shell.get_application_ports(context)

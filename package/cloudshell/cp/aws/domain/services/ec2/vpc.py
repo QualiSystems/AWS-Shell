@@ -1,10 +1,12 @@
 from retrying import retry
 
 from cloudshell.cp.aws.common import retry_helper
+from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
 
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
+    SUBNET_RESERVATION = 'Subnet Reservation: {0}'
     PEERING_CONNECTION = "Peering connection for {0} with management vpc"
 
     def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service):
@@ -46,8 +48,18 @@ class VPCService(object):
         vpc_name = self.VPC_RESERVATION.format(reservation.reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation=reservation, vpc=vpc)
 
-        self.subnet_service.create_subnet_for_vpc(vpc=vpc, cidr=cidr, vpc_name=vpc_name, reservation=reservation)
         return vpc
+
+    def create_subnet_for_vpc(self, reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger):
+        subnet_name = self.SUBNET_RESERVATION.format(reservation.reservation_id)
+        availability_zone = self.get_or_pick_availability_zone(ec2_client, vpc, aws_ec2_datamodel)
+        logger.info("Create subnet (cidr: {0}, availability-zone: {1})".format(cidr, availability_zone))
+        self.subnet_service.create_subnet_for_vpc(
+            vpc=vpc,
+            cidr=cidr,
+            subnet_name=subnet_name,
+            availability_zone=availability_zone,
+            reservation=reservation)
 
     def find_vpc_for_reservation(self, ec2_session, reservation_id):
         filters = [{'Name': 'tag:Name',
@@ -196,7 +208,7 @@ class VPCService(object):
         """
         subnets = list(vpc.subnets.all())
         for subnet in subnets:
-            self.subnet_service.detele_subnet(subnet)
+            self.subnet_service.delete_subnet(subnet)
         return True
 
     def delete_all_instances(self, vpc):
@@ -232,3 +244,28 @@ class VPCService(object):
             },
             VpcId=vpc_id
         )
+
+    def get_or_pick_availability_zone(self, ec2_client, vpc, aws_ec2_datamodel):
+        """
+        Return a list of AvailabilityZones, available
+        :param ec2_client:
+        :param vpc:
+        :param AWSEc2CloudProviderResourceModel aws_ec2_datamodel:
+        :return: str
+        """
+        # pick one of the vpc's subnets
+        used_subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc)
+        if used_subnet:
+            return used_subnet.availability_zone
+
+        # get one zone from the cloud-provider region's AvailabilityZones
+        zones = ec2_client.describe_availability_zones(
+            Filters=[
+                {'Name': 'state', 'Values': ['available']},
+                {'Name': 'region-name', 'Values': [aws_ec2_datamodel.region]}
+            ])
+        if zones['AvailabilityZones']:
+            return zones['AvailabilityZones'][0]['ZoneName']
+
+        # edge case - not supposed to happen
+        raise ValueError('No AvailabilityZone is available for this vpc')
