@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock
 
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
-from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams
+from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, NetworkActionAttribute
 
 
 class TestModelParser(TestCase):
@@ -147,3 +147,51 @@ class TestModelParser(TestCase):
         self.assertEquals(model.network_configurations[0].custom_attributes[0].name, "Vnic Name")
         self.assertEquals(model.network_configurations[0].custom_attributes[0].value, "0")
         self.assertTrue(isinstance(model.network_configurations[0].connection_params, SubnetConnectionParams))
+
+    def test_subnet_connection_params_check_is_public_subnet_true(self):
+        # arrange
+        test_obj = SubnetConnectionParams()
+        attr1 = NetworkActionAttribute()
+        attr1.name = "Some Attribute"
+        attr1.value = "Some Value"
+        attr2 = NetworkActionAttribute()
+        attr2.name = "Public"
+        attr2.value = "True"
+        test_obj.subnetServiceAttributes = [attr1, attr2]
+
+        # act
+        is_public = test_obj.is_public_subnet()
+
+        # assert
+        self.assertTrue(is_public)
+
+    def test_subnet_connection_params_check_is_public_subnet_false(self):
+        # arrange
+        test_obj = SubnetConnectionParams()
+        attr1 = NetworkActionAttribute()
+        attr1.name = "Some Attribute"
+        attr1.value = "Some Value"
+        attr2 = NetworkActionAttribute()
+        attr2.name = "Public"
+        attr2.value = "False"
+        test_obj.subnetServiceAttributes = [attr1, attr2]
+
+        # act
+        is_public = test_obj.is_public_subnet()
+
+        # assert
+        self.assertFalse(is_public)
+
+    def test_subnet_connection_params_check_is_public_subnet_true_when_no_attribute(self):
+        # arrange
+        test_obj = SubnetConnectionParams()
+        attr1 = NetworkActionAttribute()
+        attr1.name = "Some Attribute"
+        attr1.value = "Some Value"
+        test_obj.subnetServiceAttributes = [attr1]
+
+        # act
+        is_public = test_obj.is_public_subnet()
+
+        # assert
+        self.assertTrue(is_public)

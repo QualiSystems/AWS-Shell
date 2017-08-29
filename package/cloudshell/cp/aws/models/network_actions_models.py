@@ -19,7 +19,7 @@ class SubnetConnectionParams(ConnectionParamsBase):
 class PreapreSubnetParams(ConnectionParamsBase):
     def __init__(self):
         ConnectionParamsBase.__init__(self)
-        self.is_public = False  # type: bool
+        self.is_public = True  # type: bool
 
 
 class PrepareNetworkParams(ConnectionParamsBase):

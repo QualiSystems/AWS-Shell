@@ -22,12 +22,12 @@ class TestInstanceService(TestCase):
         self.ec2_session.Instance = Mock(return_value=self.instance)
         self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
 
-    #@Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
+    # @Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
     def test_create_instance(self):
         ami_dep = Mock()
         cancellation_context = Mock()
         new_instance = Mock()
-        new_instance.instance_id='id'
+        new_instance.instance_id = 'id'
         self.ec2_session.create_instances = Mock(return_value=[new_instance])
 
         res = self.instance_service.create_instance(ec2_session=self.ec2_session,
@@ -79,8 +79,6 @@ class TestInstanceService(TestCase):
         with self.assertRaises(Exception):
             self.instance_service.get_active_instance_by_id(self.ec2_session, 'id')
 
-
-
     def test_terminate_instance(self):
         self.instance_waiter.multi_wait = Mock(return_value=[self.instance])
         res = self.instance_service.terminate_instance(self.instance)
@@ -98,3 +96,27 @@ class TestInstanceService(TestCase):
         self.assertTrue(self.instance_waiter.multi_wait.called_with([self.instance], 'terminated'))
         self.assertIsNotNone(res)
 
+    def test_wait_for_instance_to_run_in_aws_with_status_check(self):
+        # arrange
+        ec2_client = Mock()
+        instance = Mock()
+        cancellation_context = Mock()
+        logger = Mock()
+
+        # act
+        self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
+                                                              instance=instance,
+                                                              wait_for_status_check=True,
+                                                              cancellation_context=cancellation_context,
+                                                              logger=logger)
+
+        # assert
+        self.instance_service.instance_waiter.wait.assert_called_once_with(
+                instance=instance,
+                state=self.instance_service.instance_waiter.RUNNING,
+                cancellation_context=cancellation_context)
+        self.instance_service.instance_waiter.wait_status_ok.assert_called_once_with(
+                ec2_client=ec2_client,
+                instance=instance,
+                logger=logger,
+                cancellation_context=cancellation_context)
