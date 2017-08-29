@@ -29,9 +29,6 @@ class ElasticIpService(object):
 
             return
 
-        # get all network interfaces
-        network_interfaces_list = list(instance.network_interfaces_attribute.all())
-
         # allocate elastic ip for each interface inside a public subnet
         for action in ami_deployment_model.network_configurations:
             if not isinstance(action.connection_params, SubnetConnectionParams) \
@@ -41,7 +38,7 @@ class ElasticIpService(object):
             # find network interface using device index
             action_result = first_or_default(network_config_results, lambda x: x.action_id == action.id)
             interface = filter(lambda x: x["Attachment"]["DeviceIndex"] == action_result.device_index,
-                               network_interfaces_list)[0]
+                               instance.network_interfaces_attribute)[0]
 
             # allocate and assign elastic ip
             elastic_ip = self.allocate_elastic_address(ec2_client=ec2_client)

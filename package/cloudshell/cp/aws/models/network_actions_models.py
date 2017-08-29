@@ -58,5 +58,5 @@ class DeployNetworkingResultDto(object):
         self.type = 'connectToSubnet'
         self.success = success
         self.interface = interface_data
-        self.infoMessage = info,
+        self.infoMessage = info
         self.errorMessage = error

@@ -12,7 +12,7 @@ from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.shell.core.driver_context import CancellationContext
-from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, DeployNetworkingResultModel,\
+from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, DeployNetworkingResultModel, \
     DeployNetworkingResultDto
 
 
@@ -142,7 +142,9 @@ class DeployAMIOperation(object):
                                                     logger=logger)
 
         deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
-        network_actions_results_dtos = self._prepare_network_config_results_dto(network_config_results)
+        network_actions_results_dtos = \
+            self._prepare_network_config_results_dto(network_config_results=network_config_results,
+                                                     ami_deployment_model=ami_deployment_model)
 
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
@@ -157,7 +159,15 @@ class DeployAMIOperation(object):
                             public_ip=instance.public_ip_address,
                             network_configuration_results=network_actions_results_dtos)
 
-    def _prepare_network_config_results_dto(self, network_config_results):
+    def _prepare_network_config_results_dto(self, network_config_results, ami_deployment_model):
+        """
+        :param list[DeployNetworkingResultModel] network_config_results:
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :return:
+         :rtype" list[DeployNetworkingResultDto]
+        """
+        if not ami_deployment_model.network_configurations:
+            return []  # for the moment if we didnt received a connectivity action we shouldnot return anything
         return list(map(self._convertDeployNetworkResultModelToDto, network_config_results))
 
     def _convertDeployNetworkResultModelToDto(self, network_config_result):
@@ -179,7 +189,7 @@ class DeployAMIOperation(object):
 
     def _prepare_network_config_results(self, ami_deployment_model):
         """
-        :param ami_deployment_model:
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
         :rtype: list[DeployNetworkingResultModel]
         """
         network_config_results = []
@@ -537,12 +547,12 @@ class DeployAMIOperation(object):
         :param instance:
         :param list[DeployNetworkingResultModel] network_config_results:
         """
-        network_interfaces = list(instance.network_interfaces_attribute.all())
-        for interface in network_interfaces:
+        for interface in instance.network_interfaces_attribute:
             result = first_or_default(network_config_results,
                                       lambda x: x.device_index == interface["Attachment"]["DeviceIndex"])
             result.interface_id = interface["NetworkInterfaceId"]
             result.private_ip = interface["PrivateIpAddress"]
             result.mac_address = interface["MacAddress"]
-            if interface["Association"]["PublicIp"]:
+            if "Association" in interface and "PublicIp" in interface["Association"] \
+                    and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]

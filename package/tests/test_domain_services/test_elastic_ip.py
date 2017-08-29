@@ -207,7 +207,7 @@ class TestElasticIpService(TestCase):
         # arrange
         ami_model = Mock()
         ami_model.network_configurations = [Mock(), Mock()]
-        
+
         # act
         result = self.elastic_ip_service._is_single_subnet_mode(ami_deployment_model=ami_model)
 
