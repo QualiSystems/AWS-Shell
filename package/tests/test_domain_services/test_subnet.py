@@ -43,7 +43,7 @@ class TestSubnetService(TestCase):
 
     def test_delete_subnet(self):
         subnet = Mock()
-        res = self.subnet_srv.detele_subnet(subnet)
+        res = self.subnet_srv.delete_subnet(subnet)
         self.assertTrue(res)
         self.assertTrue(subnet.delete.called)
 

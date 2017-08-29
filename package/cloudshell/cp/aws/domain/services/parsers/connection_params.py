@@ -12,15 +12,18 @@ class ConnectionParamsParser(object):
         :param dict params_data:
         :rtype: ConnectionParamsBase
         """
-        params_type = params_data["type"]
         params = None
+        if not params_data:
+            return params;
+
+        params_type = params_data["type"]
 
         if params_type == "connectToSubnetParams":
             params = SubnetConnectionParams()
             params.subnet_id = params_data['subnetId']
 
         elif params_type == "prepareSubnetParams":
-            params = PreapreSubnetParams()
+            params = PrepareSubnetParams()
             params.is_public = convert_to_bool(params_data['isPublic'])
 
         elif params_type == "prepareNetworkParams":
@@ -49,11 +52,10 @@ class ConnectionParamsParser(object):
         :param dict data:
         :rtype: [NetworkActionAttribute]
         """
-
-        if "subnetServiceAttributes" not in data:
-            return None
-
         result = []
+
+        if not isinstance(data.get("subnetServiceAttributes"), list):
+            return result
 
         for raw_action_attribute in data["subnetServiceAttributes"]:
             if raw_action_attribute["type"] == "subnetServiceAttribute":
@@ -61,5 +63,4 @@ class ConnectionParamsParser(object):
                 attribute_obj.name = raw_action_attribute["attributeName"]
                 attribute_obj.value = raw_action_attribute["attributeValue"]
                 result.append(attribute_obj)
-
         return result

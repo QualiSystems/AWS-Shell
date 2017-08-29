@@ -16,7 +16,7 @@ class SubnetConnectionParams(ConnectionParamsBase):
         return True  # default public subnet value is True
 
 
-class PreapreSubnetParams(ConnectionParamsBase):
+class PrepareSubnetParams(ConnectionParamsBase):
     def __init__(self):
         ConnectionParamsBase.__init__(self)
         self.is_public = True  # type: bool

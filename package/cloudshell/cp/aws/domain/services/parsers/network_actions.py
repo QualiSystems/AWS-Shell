@@ -21,7 +21,7 @@ class NetworkActionsParser(object):
             network_action.id = action["actionId"]
             network_action.type = action["type"]
             network_action.custom_attributes = NetworkActionsParser.parse_custom_network_action_attributes(action)
-            network_action.connection_params = ConnectionParamsParser.parse(action["connectionParams"])
+            network_action.connection_params = ConnectionParamsParser.parse(action.get("connectionParams"))
             parsed_data.append(network_action)
 
         return parsed_data if(len(parsed_data) > 0) else None
@@ -33,6 +33,8 @@ class NetworkActionsParser(object):
         :rtype: [NetworkActionAttribute]
         """
         result = []
+        if not isinstance(action.get("customActionAttributes"), list):
+            return result
 
         for raw_action_attribute in action["customActionAttributes"]:
             attribute_obj = NetworkActionAttribute()
