@@ -98,6 +98,7 @@ class TestDeployOperation(TestCase):
         ami_datamodel.outbound_ports = "20"
         ami_datamodel.add_public_ip = None
         ami_datamodel.allocate_elastic_ip = True
+        ami_datamodel.network_configurations = None
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.instance_service.create_instance = Mock(return_value=instance)
@@ -109,6 +110,9 @@ class TestDeployOperation(TestCase):
         reservation = Mock()
         ami_deployment_model = Mock()
         self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_model)
+        self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
+        network_config_results_dto = Mock()
+        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
 
         # act
         res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
@@ -131,11 +135,11 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.auto_delete, True)
         self.assertEqual(res.autoload, ami_datamodel.autoload)
         self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
-        self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
                                                        'User': ami_credentials.user_name,
-                                                       'Public IP': res.elastic_ip})
+                                                       'Public IP': instance.public_ip_address})
+        self.assertEquals(res.network_configuration_results, network_config_results_dto)
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
