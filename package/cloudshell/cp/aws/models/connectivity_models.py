@@ -13,3 +13,9 @@ class PrepareNetworkActionResult(ConnectivityActionResult):
         self.vpcId = ''
         self.securityGroupId = ''
         self.type = 'PrepareNetwork'
+
+
+class PrepareSubnetActionResult(ConnectivityActionResult):
+    def __init__(self):
+        ConnectivityActionResult.__init__(self)
+        self.subnetId = ''
