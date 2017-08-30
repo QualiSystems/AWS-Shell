@@ -157,7 +157,7 @@ class TestAWSShell(TestCase):
                     s3_session=self.expected_shell_context.aws_api.s3_session,
                     reservation=self.reservation_model,
                     aws_ec2_datamodel=self.expected_shell_context.aws_ec2_resource_model,
-                    actions=Any(lambda x: len(x) == 1 and x.type == "prepareNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
+                    actions=Any(lambda x: len(x) == 1 and x[0].type == "prepareNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
                     cancellation_context=cancellation_context,
                     logger=self.expected_shell_context.logger)
             self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
