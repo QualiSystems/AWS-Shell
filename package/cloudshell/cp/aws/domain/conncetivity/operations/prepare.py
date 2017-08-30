@@ -64,6 +64,13 @@ class PrepareConnectivityOperation(object):
 
         logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
 
+        # Move prepareNetwork action to be first
+        networkAction = next((x for x in actions if isinstance(x.connection_params, PrepareNetworkParams)), None)
+        if not networkAction:
+            raise ValueError("Actions list must contain a PrepareNetworkAction.")
+        actions.remove(networkAction)
+        actions.insert(0, networkAction)
+
         results = []
         for action in actions:
             try:
