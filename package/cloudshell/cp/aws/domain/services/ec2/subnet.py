@@ -44,8 +44,10 @@ class SubnetService(object):
             raise ValueError('The given VPC({0}) has no subnet'.format(vpc.id))
         return subnets[0]
 
-    def get_first_or_none_subnet_from_vpc(self, vpc):
+    def get_first_or_none_subnet_from_vpc(self, vpc, cidr = None):
         subnets = list(vpc.subnets.all())
+        if cidr:
+            subnets = [s for s in subnets if s.cidr_block]
         if not subnets:
             return None
         return subnets[0]

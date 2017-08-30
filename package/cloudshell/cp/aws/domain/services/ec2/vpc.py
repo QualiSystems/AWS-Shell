@@ -50,11 +50,17 @@ class VPCService(object):
 
         return vpc
 
-    def create_subnet_for_vpc(self, reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger):
+    def get_or_create_subnet_for_vpc(self, reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger):
+
+        logger.info("Check if subnet (cidr={0}) already exists".format(cidr));
+        subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc=vpc, cidr=cidr)
+        if subnet:
+            return subnet
+
         subnet_name = self.SUBNET_RESERVATION.format(reservation.reservation_id)
         availability_zone = self.get_or_pick_availability_zone(ec2_client, vpc, aws_ec2_datamodel)
         logger.info("Create subnet (cidr: {0}, availability-zone: {1})".format(cidr, availability_zone))
-        self.subnet_service.create_subnet_for_vpc(
+        return self.subnet_service.create_subnet_for_vpc(
             vpc=vpc,
             cidr=cidr,
             subnet_name=subnet_name,

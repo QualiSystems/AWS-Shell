@@ -165,9 +165,7 @@ class PrepareConnectivityOperation(object):
 
         # get reservation vpc
         self.cancellation_service.check_if_cancelled(cancellation_context)
-        vpc = self.vpc_service.find_vpc_for_reservation(
-            ec2_session=ec2_session,
-            reservation_id=reservation.reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation.reservation_id)
         if not vpc:
             raise ValueError('Vpc for reservation {0} not found.'.format(reservation.reservation_id))
 
@@ -178,7 +176,7 @@ class PrepareConnectivityOperation(object):
 
         # create subnet
         self.cancellation_service.check_if_cancelled(cancellation_context)
-        self.vpc_service.create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
+        self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
 
         return self._create_prepare_subnet_result(action)
 
