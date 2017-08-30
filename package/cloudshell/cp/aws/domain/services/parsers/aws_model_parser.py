@@ -161,7 +161,7 @@ class AWSModelsParser(object):
         if "NetworkConfigurationsRequest" not in deployment_request:
             return None
 
-        #actions = deployment_request["NetworkConfigurationsRequest"]["actions"]
-        actions = deployment_request["NetworkConfigurationsRequest"]
+        actions = deployment_request["NetworkConfigurationsRequest"]["actions"]
+        #actions = deployment_request["NetworkConfigurationsRequest"]
 
         return NetworkActionsParser.parse_network_actions_data(actions)

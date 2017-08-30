@@ -4,6 +4,7 @@ from mock import Mock, call, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
+from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, NetworkAction, \
     SubnetConnectionParams
 
@@ -404,8 +405,11 @@ class TestDeployOperation(TestCase):
 
         models = [model1, model2]
 
+        aws_model = DeployAWSEc2AMIInstanceResourceModel()
+        aws_model.network_configurations = [Mock()]
+
         # act
-        dtos = self.deploy_operation._prepare_network_config_results_dto(models)
+        dtos = self.deploy_operation._prepare_network_config_results_dto(models, aws_model)
 
         self.assertEquals(len(dtos), 2)
         dto1 = dtos[0]
