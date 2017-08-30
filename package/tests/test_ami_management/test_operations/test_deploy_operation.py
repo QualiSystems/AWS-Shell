@@ -1,9 +1,12 @@
 from unittest import TestCase
 
-from mock import Mock, MagicMock
+from mock import Mock, call, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
+from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, NetworkAction, \
+    SubnetConnectionParams
 
 
 class TestDeployOperation(TestCase):
@@ -21,6 +24,7 @@ class TestDeployOperation(TestCase):
         self.credentials_manager = Mock()
         self.cancellation_service = Mock()
         self.logger = Mock()
+        self.elastic_ip_service = Mock()
         self.deploy_operation = DeployAMIOperation(self.instance_service,
                                                    self.credentials_manager,
                                                    self.security_group_service,
@@ -28,6 +32,7 @@ class TestDeployOperation(TestCase):
                                                    self.vpc_service,
                                                    self.key_pair,
                                                    self.subnet_service,
+                                                   self.elastic_ip_service,
                                                    self.cancellation_service)
 
     def test_deploy_rollback_called(self):
@@ -40,6 +45,7 @@ class TestDeployOperation(TestCase):
         self.deploy_operation._get_block_device_mappings = Mock()
         self.deploy_operation._rollback_deploy = Mock()
         self.instance_service.create_instance = Mock(side_effect=Exception)
+        self.deploy_operation._prepare_network_config_results = Mock()
 
         # act & assert
         self.assertRaises(Exception, self.deploy_operation.deploy, self.ec2_session, self.s3_session, inst_name,
@@ -52,30 +58,32 @@ class TestDeployOperation(TestCase):
         self.deploy_operation._extract_instance_id_on_cancellation = Mock()
         inst_id = Mock()
         security_group = Mock()
-        allocated_elastic_ip = Mock()
         instance = Mock()
+        network_config_results = [Mock(public_ip='pub1'), Mock(public_ip='pub2')]
         self.deploy_operation.instance_service.get_instance_by_id = Mock(return_value=instance)
 
         # act
         self.deploy_operation._rollback_deploy(ec2_session=self.ec2_session,
                                                instance_id=inst_id,
                                                custom_security_group=security_group,
-                                               elastic_ip=allocated_elastic_ip,
+                                               network_config_results=network_config_results,
                                                logger=self.logger)
 
         # assert
         self.deploy_operation.instance_service.get_instance_by_id.assert_called_once_with(ec2_session=self.ec2_session,
                                                                                           id=inst_id)
         self.deploy_operation.instance_service.terminate_instance.assert_called_once_with(instance=instance)
-        self.deploy_operation.security_group_service.delete_security_group(security_group)
-        self.deploy_operation.instance_service.find_and_release_elastic_address(ec2_session=self.ec2_session,
-                                                                                elastic_ip=allocated_elastic_ip)
+        self.deploy_operation.security_group_service.delete_security_group.assert_called_once_with(security_group)
+        self.deploy_operation.elastic_ip_service.find_and_release_elastic_address.assert_has_calls(
+                [call(ec2_session=self.ec2_session, elastic_ip='pub1'),
+                 call(ec2_session=self.ec2_session, elastic_ip='pub2')],
+                any_order=True)
 
     def test_extract_instance_id_on_cancellation(self):
         # prepare
         instance = Mock()
         instance_id = 'some_id'
-        cancellation_exception = CancellationException("cancelled_test", {'instance_ids' : [instance_id]})
+        cancellation_exception = CancellationException("cancelled_test", {'instance_ids': [instance_id]})
 
         # act
         extracted_id = self.deploy_operation._extract_instance_id_on_cancellation(cancellation_exception, instance)
@@ -91,6 +99,7 @@ class TestDeployOperation(TestCase):
         ami_datamodel.outbound_ports = "20"
         ami_datamodel.add_public_ip = None
         ami_datamodel.allocate_elastic_ip = True
+        ami_datamodel.network_configurations = None
         instance = Mock()
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.instance_service.create_instance = Mock(return_value=instance)
@@ -102,6 +111,9 @@ class TestDeployOperation(TestCase):
         reservation = Mock()
         ami_deployment_model = Mock()
         self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_model)
+        self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
+        network_config_results_dto = Mock()
+        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
 
         # act
         res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
@@ -124,11 +136,11 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res.auto_delete, True)
         self.assertEqual(res.autoload, ami_datamodel.autoload)
         self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
-        self.assertEqual(res.outbound_ports, ami_datamodel.outbound_ports)
         self.assertEqual(res.vm_uuid, instance.instance_id)
         self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
                                                        'User': ami_credentials.user_name,
-                                                       'Public IP': res.elastic_ip})
+                                                       'Public IP': instance.public_ip_address})
+        self.assertEquals(res.network_configuration_results, network_config_results_dto)
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
@@ -294,9 +306,10 @@ class TestDeployOperation(TestCase):
                           vpc=Mock(),
                           security_group=None,
                           key_pair='keypair',
-                          reservation=Mock())
+                          reservation=Mock(),
+                          network_config_results=Mock())
 
-    def test_create_deployment_parameters(self):
+    def test_create_deployment_parameters_single_subnet(self):
         image = Mock()
         image.state = 'available'
         ec2_session = Mock()
@@ -304,6 +317,7 @@ class TestDeployOperation(TestCase):
         ami_model = Mock()
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
+        ami_model.network_configurations = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
 
@@ -313,10 +327,101 @@ class TestDeployOperation(TestCase):
                                                                         vpc=vpc,
                                                                         security_group=None,
                                                                         key_pair='keypair',
-                                                                        reservation=Mock())
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock())
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
         self.assertEquals(aws_model.aws_key, 'keypair')
         self.assertTrue(len(aws_model.security_group_ids) == 1)
-        return aws_model
+        self.assertTrue(len(aws_model.network_interfaces) == 1)
+
+    def test_prepare_network_interfaces_multi_subnets_with_public_ip(self):
+        ami_model = Mock()
+        ami_model.add_public_ip = True
+        ami_model.network_configurations = [Mock(), Mock()]
+
+        with self.assertRaisesRegexp(ValueError, "Public IP option is not supported with multiple subnets"):
+            self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
+                                                              vpc=Mock(),
+                                                              security_group_ids=MagicMock(),
+                                                              network_config_results=MagicMock())
+
+    def test_prepare_network_interfaces_multi_subnets(self):
+        # arrange
+        vpc = Mock()
+        security_group_ids = MagicMock()
+
+        action1 = NetworkAction()
+        action1.id = 'action1'
+        action1.connection_params = SubnetConnectionParams()
+        action1.connection_params.subnet_id = 'sub1'
+
+        action2 = NetworkAction()
+        action2.id = 'action2'
+        action2.connection_params = SubnetConnectionParams()
+        action2.connection_params.subnet_id = 'sub2'
+
+        ami_model = Mock()
+        ami_model.network_configurations = [action1, action2]
+        ami_model.add_public_ip = False
+
+        res_model_1 = DeployNetworkingResultModel('action1')
+        res_model_2 = DeployNetworkingResultModel('action2')
+        network_config_results = [res_model_1, res_model_2]
+
+        # act
+        net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
+                                                                           vpc=vpc,
+                                                                           security_group_ids=security_group_ids,
+                                                                           network_config_results=network_config_results)
+
+        # assert
+        self.assertEquals(len(net_interfaces), 2)
+        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
+        self.assertEquals(net_interfaces[0]['DeviceIndex'], 0)
+        self.assertEquals(net_interfaces[0]['Groups'], security_group_ids)
+        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
+        self.assertEquals(net_interfaces[1]['DeviceIndex'], 1)
+        self.assertEquals(net_interfaces[1]['Groups'], security_group_ids)
+        self.assertEquals(res_model_1.device_index, 0)
+        self.assertEquals(res_model_2.device_index, 1)
+
+    def test_prepare_network_config_results_dto(self):
+        # arrange
+        model1 = DeployNetworkingResultModel(action_id='aaa')
+        model1.device_index = 0
+        model1.interface_id = "interface1"
+        model1.mac_address = "mac1"
+        model1.private_ip = "priv1"
+        model1.public_ip = "pub1"
+
+        model2 = DeployNetworkingResultModel(action_id='bbb')
+        model2.device_index = 1
+        model2.interface_id = "interface2"
+        model2.mac_address = "mac2"
+        model2.private_ip = "priv2"
+        model2.public_ip = "pub2"
+
+        models = [model1, model2]
+
+        aws_model = DeployAWSEc2AMIInstanceResourceModel()
+        aws_model.network_configurations = [Mock()]
+
+        # act
+        dtos = self.deploy_operation._prepare_network_config_results_dto(models, aws_model)
+
+        self.assertEquals(len(dtos), 2)
+        dto1 = dtos[0]
+        dto2 = dtos[1]
+        self.assertEquals(dto1.actionId, "aaa")
+        self.assertEquals(dto2.actionId, "bbb")
+        self.assertTrue(dto1.success)
+        self.assertTrue(dto2.success)
+        self.assertEquals(dto1.type, "connectToSubnet")
+        self.assertEquals(dto2.type, "connectToSubnet")
+        self.assertTrue('"interface_id": "interface1"' in dto1.interface)
+        self.assertTrue('"device_index": 0' in dto1.interface)
+        self.assertTrue('"private_ip": "priv1"' in dto1.interface)
+        self.assertTrue('"public_ip": "pub1"' in dto1.interface)
+        self.assertTrue('"mac_address": "mac1"' in dto1.interface)

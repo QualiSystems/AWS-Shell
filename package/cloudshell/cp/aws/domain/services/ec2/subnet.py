@@ -12,38 +12,50 @@ class SubnetService(object):
         self.tag_service = tag_service
         self.subnet_waiter = subnet_waiter
 
-    def create_subnet_for_vpc(self, vpc, cidr, vpc_name, reservation):
+    def create_subnet_for_vpc(self, vpc, cidr, subnet_name, availability_zone, reservation):
         """
         Will create a subnet for the given vpc
         :param reservation: reservation model
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param vpc: VPC instanve
-        :param cidr: CIDR
-        :type cidr: str
-        :param vpc_name: The vpc name
-        :type vpc_name: str
+        :param str cidr: CIDR
+        :param str subnet_name:
+        :param str availability_zone:
         :return:
         """
-        subnet = vpc.create_subnet(CidrBlock=cidr)
+        subnet = vpc.create_subnet(CidrBlock=cidr, AvailabilityZone=availability_zone)
         self.subnet_waiter.wait(subnet, self.subnet_waiter.AVAILABLE)
 
-        subnet_name = self._get_subnet_name(vpc_name)
+        #subnet_name = self._get_subnet_name(vpc_name)
         tags = self.tag_service.get_default_tags(subnet_name, reservation)
-
         self.tag_service.set_ec2_resource_tags(subnet, tags)
         return subnet
 
+    def get_vpc_subnets(self, vpc):
+        subnets = list(vpc.subnets.all())
+        if not subnets:
+            raise ValueError('The given VPC({0}) has no subnets'.format(vpc.id))
+        return subnets
+
     @staticmethod
-    def get_subnet_from_vpc(vpc):
+    def get_first_subnet_from_vpc(vpc):
         subnets = list(vpc.subnets.all())
         if not subnets:
             raise ValueError('The given VPC({0}) has no subnet'.format(vpc.id))
+        return subnets[0]
+
+    def get_first_or_none_subnet_from_vpc(self, vpc, cidr = None):
+        subnets = list(vpc.subnets.all())
+        if cidr:
+            subnets = [s for s in subnets if s.cidr_block]
+        if not subnets:
+            return None
         return subnets[0]
 
     @staticmethod
     def _get_subnet_name(name):
         return SUBNET_NAME.format(name)
 
-    def detele_subnet(self, subnet):
+    def delete_subnet(self, subnet):
         subnet.delete()
         return True

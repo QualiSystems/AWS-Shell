@@ -9,7 +9,7 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-
+from tests.test_common.test_mock_helper import Any
 
 class TestAWSShell(TestCase):
     def setUp(self):
@@ -75,11 +75,10 @@ class TestAWSShell(TestCase):
                               wait_for_ip=deploymock.wait_for_ip,
                               auto_power_off=deploymock.auto_power_off,
                               inbound_ports='',
-                              outbound_ports='',
                               deployed_app_attributes=dict(),
                               deployed_app_address='',
                               public_ip='',
-                              elastic_ip='')
+                              network_configuration_results=[])
 
         self.aws_shell.model_parser.convert_to_deployment_resource_model = Mock(return_value=deploymock)
         self.aws_shell.deploy_ami_operation.deploy = Mock(return_value=result)
@@ -113,6 +112,7 @@ class TestAWSShell(TestCase):
 
     def test_cleanup_connectivity(self):
         # prepare
+        req = '{"driverRequest": {"actions": [{"type": "cleanupNetwork", "actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"}]}}'
         self.aws_shell.clean_up_operation.cleanup = Mock(return_value=True)
 
         result = None
@@ -120,7 +120,7 @@ class TestAWSShell(TestCase):
             shell_context.return_value = self.mock_context
 
             # act
-            result = self.aws_shell.cleanup_connectivity(self.command_context)
+            result = self.aws_shell.cleanup_connectivity(self.command_context, req)
 
         # assert
         self.aws_shell.clean_up_operation.cleanup.assert_called_with(
@@ -129,13 +129,14 @@ class TestAWSShell(TestCase):
                 s3_session=self.expected_shell_context.aws_api.s3_session,
                 aws_ec2_data_model=self.expected_shell_context.aws_ec2_resource_model,
                 reservation_id=self.command_context.reservation.reservation_id,
+                actions=Any(lambda x: len(x) == 1 and x[0].type == "cleanupNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
                 logger=self.expected_shell_context.logger)
         self.assertEquals(result, '{"driverResponse": {"actionResults": [true]}}')
 
     def test_prepare_connectivity(self):
         # Assert
         cancellation_context = Mock()
-        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareNetwork", "connectionParams": {"type": "prepareNetworkParams", "cidr": "10.0.0.0/24"}}]}}'
         self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
         res = None
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
@@ -155,7 +156,7 @@ class TestAWSShell(TestCase):
                     s3_session=self.expected_shell_context.aws_api.s3_session,
                     reservation=self.reservation_model,
                     aws_ec2_datamodel=self.expected_shell_context.aws_ec2_resource_model,
-                    request=data_holder_mock.driverRequest,
+                    actions=Any(lambda x: len(x) == 1 and x[0].type == "prepareNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
                     cancellation_context=cancellation_context,
                     logger=self.expected_shell_context.logger)
             self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
