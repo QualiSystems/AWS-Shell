@@ -47,7 +47,7 @@ class SubnetService(object):
     def get_first_or_none_subnet_from_vpc(self, vpc, cidr = None):
         subnets = list(vpc.subnets.all())
         if cidr:
-            subnets = [s for s in subnets if s.cidr_block]
+            subnets = [s for s in subnets if s.cidr_block == cidr]
         if not subnets:
             return None
         return subnets[0]

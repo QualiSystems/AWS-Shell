@@ -85,6 +85,7 @@ class TestPrepareConnectivity(TestCase):
     def test_prepare_conn_command_fault_res(self):
         action = NetworkAction()
         action.id = "1234"
+        action.connection_params = PrepareNetworkParams()
         cancellation_context = Mock()
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,

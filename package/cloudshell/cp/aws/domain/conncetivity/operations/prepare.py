@@ -8,7 +8,8 @@ from cloudshell.shell.core.driver_context import CancellationContext
 from cloudshell.cp.aws.domain.context import ec2_client
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.connectivity_models import PrepareNetworkActionResult, ConnectivityActionResult
+from cloudshell.cp.aws.models.connectivity_models import PrepareNetworkActionResult, ConnectivityActionResult, \
+    PrepareSubnetActionResult
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.models.network_actions_models import *
 
@@ -63,6 +64,13 @@ class PrepareConnectivityOperation(object):
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
         logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
+
+        # Move prepareNetwork action to be first
+        networkAction = next((x for x in actions if isinstance(x.connection_params, PrepareNetworkParams)), None)
+        if not networkAction:
+            raise ValueError("Actions list must contain a PrepareNetworkAction.")
+        actions.remove(networkAction)
+        actions.insert(0, networkAction)
 
         results = []
         for action in actions:
@@ -176,9 +184,9 @@ class PrepareConnectivityOperation(object):
 
         # create subnet
         self.cancellation_service.check_if_cancelled(cancellation_context)
-        self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
+        subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
 
-        return self._create_prepare_subnet_result(action)
+        return self._create_prepare_subnet_result(action, subnet)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -351,9 +359,10 @@ class PrepareConnectivityOperation(object):
 
         return action_result
 
-    def _create_prepare_subnet_result(self, action):
-        action_result = ConnectivityActionResult()
+    def _create_prepare_subnet_result(self, action, subnet):
+        action_result = PrepareSubnetActionResult()
         action_result.actionId = action.id
+        action_result.subnetId = subnet.subnet_id
         action_result.success = True
         action_result.infoMessage = 'PrepareSubnet finished successfully'
 
