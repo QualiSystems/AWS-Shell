@@ -118,7 +118,7 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Cleanup Connectivity')
 
-                connectivity_actions = self.request_str_to_actions_list(request)[0]
+                connectivity_actions = self.request_str_to_actions_list(request)
 
                 result = self.clean_up_operation \
                     .cleanup(ec2_client=shell_context.aws_api.ec2_client,
