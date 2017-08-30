@@ -10,6 +10,7 @@ class TestSubnetService(TestCase):
 
         self.vpc = Mock()
         self.cidr = '10.0.0.0/24'
+        self.availability_zone = "a1"
         self.vpc_name = 'name'
         self.reservation_id = 'res'
         self.tag_srv = Mock()
@@ -21,9 +22,9 @@ class TestSubnetService(TestCase):
         self.vpc.create_subnet = Mock(return_value=subnet)
         self.subnet_srv._get_subnet_name=Mock(return_value=self.vpc_name)
 
-        self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.reservation_id)
+        self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.availability_zone, self.reservation_id)
 
-        self.vpc.create_subnet.assert_called_with(CidrBlock=self.cidr)
+        self.vpc.create_subnet.assert_called_with(CidrBlock=self.cidr,AvailabilityZone='a1')
         self.subnet_waiter.wait.assert_called_with(subnet, self.subnet_waiter.AVAILABLE)
         self.tag_srv.get_default_tags.assert_called_with(self.vpc_name, self.reservation_id)
         self.assertEqual(subnet, self.vpc.create_subnet())

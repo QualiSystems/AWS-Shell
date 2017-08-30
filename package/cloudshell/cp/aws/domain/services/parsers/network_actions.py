@@ -10,6 +10,7 @@ class NetworkActionsParser(object):
     def parse_network_actions_data(actions_data):
         """
         :param [dict] actions_data:
+        :rtype list[NetworkAction]
         """
         if not isinstance(actions_data, list):
             return None

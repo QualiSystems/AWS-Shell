@@ -4,7 +4,7 @@ from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
-
+from cloudshell.cp.aws.models.network_actions_models import *
 
 class TestPrepareConnectivity(TestCase):
     def setUp(self):
@@ -29,6 +29,9 @@ class TestPrepareConnectivity(TestCase):
 
     def test_prepare_conn_command(self):
         # Arrange
+        action = NetworkAction()
+        action.id = "1234"
+        action.connection_params = PrepareNetworkParams()
         request = DeployDataHolder({"actions": [
             {"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356", "actionTarget": None, "customActionAttributes": [
                 {"attributeName": "Network", "attributeValue": "10.0.0.0/24", "type": "customAttribute"}],
@@ -46,7 +49,7 @@ class TestPrepareConnectivity(TestCase):
                                                          s3_session=self.s3_session,
                                                          reservation=self.reservation,
                                                          aws_ec2_datamodel=self.aws_dm,
-                                                         request=request,
+                                                         actions=[action],
                                                          cancellation_context=cancellation_context,
                                                          logger=Mock())
 
@@ -55,10 +58,9 @@ class TestPrepareConnectivity(TestCase):
                                                                           bucket=self.aws_dm.key_pairs_location,
                                                                           reservation_id=self.reservation.reservation_id)
         self.crypto_service.encrypt.assert_called_once_with(access_key)
-        self.assertEqual(request.actions[0].actionId, results[0].actionId)
-        self.assertEqual(results[0].type, 'PrepareNetwork')
+        self.assertEqual(results[0].actionId, action.id)
         self.assertTrue(results[0].success)
-        self.assertEqual(results[0].infoMessage, 'PrepareConnectivity finished successfully')
+        self.assertEqual(results[0].infoMessage, 'PrepareNetwork finished successfully')
         self.assertEqual(results[0].errorMessage, '')
         self.assertEqual(results[0].access_key, crypto_dto.encrypted_input)
         self.assertEqual(results[0].secret_key, crypto_dto.encrypted_asymmetric_key)
@@ -81,9 +83,8 @@ class TestPrepareConnectivity(TestCase):
                           Mock())
 
     def test_prepare_conn_command_fault_res(self):
-        request = DeployDataHolder({"actions": [
-            {"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356", "actionTarget": None,
-             "type": "prepareNetwork"}]})
+        action = NetworkAction()
+        action.id = "1234"
         cancellation_context = Mock()
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
@@ -91,12 +92,11 @@ class TestPrepareConnectivity(TestCase):
                                                          s3_session=self.s3_session,
                                                          reservation=self.reservation,
                                                          aws_ec2_datamodel=self.aws_dm,
-                                                         request=request,
+                                                         actions=[action],
                                                          cancellation_context=cancellation_context,
                                                          logger=Mock())
 
-        self.assertEqual(request.actions[0].actionId, results[0].actionId)
-        self.assertEqual(results[0].type, 'PrepareNetwork')
+        self.assertEqual(results[0].actionId, action.id)
         self.assertFalse(results[0].success)
         self.assertEqual(results[0].infoMessage, '')
         self.assertIsNotNone(results[0].errorMessage)
