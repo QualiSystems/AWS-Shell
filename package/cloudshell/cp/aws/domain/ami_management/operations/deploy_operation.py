@@ -84,7 +84,7 @@ class DeployAMIOperation(object):
 
         instance = None
         security_group = None
-        network_config_results = self._prepare_network_config_results(ami_deployment_model)
+        network_config_results = self._prepare_network_result_models(ami_deployment_model)
         try:
             security_group = self._create_security_group_for_instance(ami_deployment_model=ami_deployment_model,
                                                                       ec2_session=ec2_session,
@@ -187,7 +187,7 @@ class DeployAMIOperation(object):
                                          success=True,
                                          interface_data=interface_data_json_str)
 
-    def _prepare_network_config_results(self, ami_deployment_model):
+    def _prepare_network_result_models(self, ami_deployment_model):
         """
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
         :rtype: list[DeployNetworkingResultModel]
@@ -472,20 +472,6 @@ class DeployAMIOperation(object):
         :rtype: int
         """
         return int(storage_size) * 30
-
-    def _set_elastic_ip(self, ec2_session, ec2_client, instance):
-        """
-        :param ec2_session: EC2 session
-        :param ec2_client: EC2 client
-        :param instance:
-        :return: allocated elastic ip
-        :rtype: str
-        """
-        elastic_ip = self.instance_service.allocate_elastic_address(ec2_client=ec2_client)
-        self.instance_service.associate_elastic_ip_to_instance(ec2_session=ec2_session,
-                                                               instance=instance,
-                                                               elastic_ip=elastic_ip)
-        return elastic_ip
 
     def _prepare_deployed_app_attributes(self, instance, ami_credentials, ami_deployment_model):
         """
