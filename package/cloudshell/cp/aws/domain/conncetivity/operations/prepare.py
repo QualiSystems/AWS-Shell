@@ -186,6 +186,16 @@ class PrepareConnectivityOperation(object):
         self.cancellation_service.check_if_cancelled(cancellation_context)
         subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
 
+        # set to private route table, if needed
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        if not action.connection_params.is_public:
+            logger.info("Subnet is private - getting and attaching private routing table")
+            private_route_table = self.vpc_service.get_or_throw_private_route_table(ec2_session, reservation, vpc.vpc_id)
+            ec2_client.associate_route_table(RouteTableId=private_route_table.route_table_id,
+                                             SubnetId=subnet.subnet_id)
+        else:
+            logger.info("Subnet is public - no need to attach private routing table")
+
         return self._create_prepare_subnet_result(action, subnet)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
@@ -262,19 +272,30 @@ class PrepareConnectivityOperation(object):
                                              ec2_client=ec2_client)
 
         # add route in sandbox route table to the management vpc
-        sandbox_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
+        sandbox_main_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
                                                                             vpc_id=vpc_id)
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
-                                         route_table=sandbox_route_table,
+                                         route_table=sandbox_main_route_table,
+                                         target_vpc_cidr=mgmt_cidr,
+                                         logger=logger,
+                                         ec2_session=ec2_session,
+                                         ec2_client=ec2_client)
+
+        # add route in sandbox *private* route table to the management vpc
+        sandbox_private_route_table = self.vpc_service.get_or_create_private_route_table(ec2_session, reservation_model, vpc_id)
+
+        self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
+                                         route_table=sandbox_private_route_table,
                                          target_vpc_cidr=mgmt_cidr,
                                          logger=logger,
                                          ec2_session=ec2_session,
                                          ec2_client=ec2_client)
 
         # add route in sandbox route table to the internet gateway
-        route_igw = self.route_table_service.find_first_route(sandbox_route_table, {'gateway_id': internet_gateway_id})
+        # ***DO NOT ADD IT TO sandbox_private_route_table!***
+        route_igw = self.route_table_service.find_first_route(sandbox_main_route_table, {'gateway_id': internet_gateway_id})
         if not route_igw:
-            self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
+            self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_main_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)

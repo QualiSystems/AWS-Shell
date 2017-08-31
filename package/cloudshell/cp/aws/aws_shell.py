@@ -62,7 +62,7 @@ class AWSShell(object):
         self.vpc_peering_waiter = VpcPeeringConnectionWaiter()
         self.key_pair_service = KeyPairService(self.s3_service)
         self.vpc_waiter = VPCWaiter()
-        self.route_tables_service = RouteTablesService()
+        self.route_tables_service = RouteTablesService(self.tag_service)
         self.cryptography_service = CryptographyService()
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
@@ -72,7 +72,8 @@ class AWSShell(object):
                                       instance_service=self.instance_service,
                                       vpc_waiter=self.vpc_waiter,
                                       vpc_peering_waiter=self.vpc_peering_waiter,
-                                      sg_service=self.security_group_service)
+                                      sg_service=self.security_group_service,
+                                      route_table_service=self.route_tables_service)
         self.prepare_connectivity_operation = \
             PrepareConnectivityOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,

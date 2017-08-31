@@ -53,6 +53,7 @@ class CleanupConnectivityOperation(object):
             self.vpc_service.remove_all_subnets(vpc)
             self.vpc_service.remove_all_peering(vpc)
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
+            self.vpc_service.remove_custom_route_tables(ec2_session, vpc)
 
             self.vpc_service.delete_vpc(vpc)
             
