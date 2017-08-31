@@ -58,7 +58,7 @@ class PrepareConnectivityOperation(object):
         :param list[NetworkAction] actions: Parsed prepare connectivity actions
         :param CancellationContext cancellation_context:
         :param logging.Logger logger:
-        :return:
+        :rtype list[ConnectivityActionResult]
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
@@ -388,17 +388,6 @@ class PrepareConnectivityOperation(object):
         action_result.infoMessage = 'PrepareSubnet finished successfully'
 
         return action_result
-
-    @staticmethod
-    def _extract_cidr(action):
-        cidrs = [custom_attribute.attributeValue
-                 for custom_attribute in action.customActionAttributes
-                 if custom_attribute.attributeName == 'Network']
-        if not cidrs:
-            raise ValueError(INVALID_REQUEST_ERROR.format('CIDR is missing'))
-        if len(cidrs) > 1:
-            raise ValueError(INVALID_REQUEST_ERROR.format('Too many CIDRs parameters were found'))
-        return cidrs[0]
 
     @staticmethod
     def _create_fault_action_result(action, e):

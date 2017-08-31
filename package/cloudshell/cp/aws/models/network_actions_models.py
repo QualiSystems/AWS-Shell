@@ -35,11 +35,17 @@ class NetworkActionAttribute(object):
 
 
 class NetworkAction(object):
-    def __init__(self):
-        self.id = ''  # type: str
-        self.type = ''  # type: str
-        self.connection_params = None  # type: ConnectionParamsBase
-        self.custom_attributes = []  # type: [NetworkActionAttribute]
+    def __init__(self, id=None, type=None, connection_params=None, custom_attributes=None):
+        """
+        :param str id:
+        :param str type:
+        :param ConnectionParamsBase connection_params:
+        :param [NetworkActionAttribute] custom_attributes:
+        """
+        self.id = id or ''
+        self.type = type or ''
+        self.connection_params = connection_params
+        self.custom_attributes = custom_attributes or []
 
 
 class DeployNetworkingResultModel(object):
