@@ -184,15 +184,17 @@ class PrepareConnectivityOperation(object):
 
         # create subnet
         self.cancellation_service.check_if_cancelled(cancellation_context)
-        subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
+        alias = action.connection_params.alias or "Subnet-{0}".format(cidr)
+        subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, alias, vpc, ec2_client, aws_ec2_datamodel, logger)
 
         # set to private route table, if needed
         self.cancellation_service.check_if_cancelled(cancellation_context)
         if not action.connection_params.is_public:
             logger.info("Subnet is private - getting and attaching private routing table")
             private_route_table = self.vpc_service.get_or_throw_private_route_table(ec2_session, reservation, vpc.vpc_id)
-            ec2_client.associate_route_table(RouteTableId=private_route_table.route_table_id,
-                                             SubnetId=subnet.subnet_id)
+            self.route_table_service.set_subnet_with_route_table(ec2_client=ec2_client,
+                                                         subnet_id=subnet.subnet_id,
+                                                         route_table_id=private_route_table.route_table_id)
         else:
             logger.info("Subnet is public - no need to attach private routing table")
 
