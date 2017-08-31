@@ -51,3 +51,33 @@ class TestSubnetService(TestCase):
     def test_get_subnet_name(self):
         subnet_name = self.subnet_srv._get_subnet_name('some_subnet')
         self.assertEquals(subnet_name, 'VPC Name: some_subnet')
+
+    def test_get_vpc_subnets(self):
+        # arrange
+        subnet1 = Mock()
+        subnet2 = Mock()
+        vpc = Mock()
+        vpc.subnets.all = Mock(return_value=[subnet1, subnet2])
+
+        # act
+        subnets = self.subnet_srv.get_vpc_subnets(vpc)
+
+        # assert
+        vpc.subnets.all.assert_called_once()
+        self.assertTrue(subnet1 in subnets)
+        self.assertTrue(subnet2 in subnets)
+        self.assertEquals(len(subnets), 2)
+
+    def test_get_first_or_none_subnet_from_vpc_returns_first(self):
+        # arrange
+        subnet1 = Mock()
+        subnet2 = Mock()
+        vpc = Mock()
+        vpc.subnets.all = Mock(return_value=[subnet1, subnet2])
+
+        # act
+        subnet_result = self.subnet_srv.get_first_or_none_subnet_from_vpc(vpc=vpc)
+
+        # assert
+        vpc.subnets.all.assert_called_once()
+        self.assertEquals(subnet1, subnet_result)
