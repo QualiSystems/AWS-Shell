@@ -7,9 +7,10 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
     SUBNET_RESERVATION = 'Subnet Reservation: {0}'
+    PRIVATE_ROUTE_TABLE_RESERVATION = 'Private RoutingTable Reservation: {0}'
     PEERING_CONNECTION = "Peering connection for {0} with management vpc"
 
-    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service):
+    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service, route_table_service):
         """
         :param tag_service: Tag Service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
@@ -23,6 +24,8 @@ class VPCService(object):
         :type vpc_peering_waiter: cloudshell.cp.aws.domain.services.waiters.vpc_peering.VpcPeeringConnectionWaiter
         :param sg_service: Security Group Service
         :type sg_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
+        :param route_table_service:
+        :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
         """
         self.tag_service = tag_service
         self.subnet_service = subnet_service
@@ -30,6 +33,7 @@ class VPCService(object):
         self.vpc_waiter = vpc_waiter
         self.vpc_peering_waiter = vpc_peering_waiter
         self.sg_service = sg_service
+        self.route_table_service = route_table_service
 
     def create_vpc_for_reservation(self, ec2_session, reservation, cidr):
         """
@@ -66,6 +70,32 @@ class VPCService(object):
             subnet_name=subnet_name,
             availability_zone=availability_zone,
             reservation=reservation)
+
+    def get_or_throw_private_route_table(self, ec2_session, reservation, vpc_id):
+        """
+        :param ec2_session:
+        :param reservation:
+        :param vpc_id:
+        :return:
+        """
+        route_table_name = self.PRIVATE_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
+        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name )
+        if not route_table:
+            raise ValueError("Routing table for non-public subnet was not found")
+        return route_table
+
+    def get_or_create_private_route_table(self, ec2_session, reservation, vpc_id):
+        """
+        :param ec2_session:
+        :param reservation:
+        :param vpc_id:
+        :return:
+        """
+        route_table_name = self.PRIVATE_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
+        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name )
+        if not route_table:
+            route_table = self.route_table_service.create_route_table(ec2_session, reservation, vpc_id, route_table_name)
+        return route_table
 
     def find_vpc_for_reservation(self, ec2_session, reservation_id):
         filters = [{'Name': 'tag:Name',
@@ -275,3 +305,14 @@ class VPCService(object):
 
         # edge case - not supposed to happen
         raise ValueError('No AvailabilityZone is available for this vpc')
+
+    def remove_custom_route_tables(self, ec2_session, vpc):
+        """
+        Will remove all the routing tables of that vpc
+        :param vpc: EC2 VPC instance
+        :return:
+        """
+        custom_tables = self.route_table_service.get_custom_route_tables(ec2_session, vpc.id)
+        for table in custom_tables:
+            self.route_table_service.delete_table(table)
+        return True
