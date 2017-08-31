@@ -15,11 +15,12 @@ class TestRouteTableService(TestCase):
         self.vpc.route_tables = Mock()
         self.vpc.id = self.vpc_id
         self.ec2_session.Vpc = Mock(return_value=self.vpc)
+        self.tag_service = Mock()
 
         self.mocked_route_table = Mock()
         self.mocked_route_table.associations_attribute = [{}]
 
-        self.route_table_service = RouteTablesService()
+        self.route_table_service = RouteTablesService(self.tag_service)
 
     def test_get_main_route_table(self):
         # prepare

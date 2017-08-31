@@ -22,12 +22,14 @@ class TestVPCService(TestCase):
         self.vpc_peering_waiter = Mock()
         self.instance_service = Mock()
         self.sg_service = Mock()
+        self.route_table_service = Mock()
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
                                       instance_service=self.instance_service,
                                       vpc_waiter=self.vpc_waiter,
                                       vpc_peering_waiter=self.vpc_peering_waiter,
-                                      sg_service=self.sg_service)
+                                      sg_service=self.sg_service,
+                                      route_table_service=self.route_table_service)
 
     def test_get_all_internet_gateways(self):
         internet_gate = Mock()
