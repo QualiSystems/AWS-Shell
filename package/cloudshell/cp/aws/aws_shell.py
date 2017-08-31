@@ -21,6 +21,7 @@ from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.network_interface import NetworkInterfaceService
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
@@ -63,6 +64,8 @@ class AWSShell(object):
         self.vpc_waiter = VPCWaiter()
         self.route_tables_service = RouteTablesService()
         self.cryptography_service = CryptographyService()
+        self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
+        self.elastic_ip_service = ElasticIpService()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -79,8 +82,6 @@ class AWSShell(object):
                                          cryptography_service=self.cryptography_service,
                                          cancellation_service=self.cancellation_service)
 
-        self.elastic_ip_service = ElasticIpService()
-
         self.deploy_ami_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                        ami_credential_service=self.ami_credentials_service,
                                                        security_group_service=self.security_group_service,
@@ -89,6 +90,7 @@ class AWSShell(object):
                                                        key_pair_service=self.key_pair_service,
                                                        subnet_service=self.subnet_service,
                                                        elastic_ip_service=self.elastic_ip_service,
+                                                       network_interface_service=self.network_interface_service,
                                                        cancellation_service=self.cancellation_service)
 
         self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)

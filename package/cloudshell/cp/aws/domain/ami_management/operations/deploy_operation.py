@@ -2,7 +2,7 @@ import traceback
 import uuid
 from multiprocessing import TimeoutError
 
-from cloudshell.cp.aws.domain.common.exceptions import CancellationException
+from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
@@ -12,45 +12,44 @@ from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.shell.core.driver_context import CancellationContext
-from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, DeployNetworkingResultModel, \
-    DeployNetworkingResultDto
+from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
+from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
+from cloudshell.cp.aws.domain.services.ec2.tags import TagService
+from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
+from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
+from cloudshell.cp.aws.domain.services.ec2.network_interface import NetworkInterfaceService
+from cloudshell.cp.aws.models.network_actions_models import *
 
 
 class DeployAMIOperation(object):
     MAX_IO1_IOPS = 20000
 
     def __init__(self, instance_service, ami_credential_service, security_group_service, tag_service,
-                 vpc_service, key_pair_service, subnet_service, elastic_ip_service, cancellation_service):
+                 vpc_service, key_pair_service, subnet_service, elastic_ip_service, network_interface_service,
+                 cancellation_service):
         """
-        :param instance_service: Instance Service
-        :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
-        :param ami_credential_service: AMI Credential Service
-        :type ami_credential_service: cloudshell.cp.aws.domain.services.ec2.instance_credentials.InstanceCredentialsService
-        :param security_group_service: Security Group Service
-        :type security_group_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
-        :param tag_service: Tag service
-        :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
-        :param vpc_service: VPC service
-        :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
-        :param key_pair_service: Key Pair Service
-        :type key_pair_service: cloudshell.cp.aws.domain.services.ec2.keypair.KeyPairService
-        :param subnet_service: Subnet Service
-        :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
-        :param elastic_ip_service: Elastic Ips Service
-        :type elastic_ip_service: ElasticIpService
-        :param cancellation_service:
-        :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
+        :param InstanceService instance_service: Instance Service
+        :param InstanceCredentialsService ami_credential_service: AMI Credential Service
+        :param SecurityGroupService security_group_service: Security Group Service
+        :param TagService tag_service: Tag service
+        :param VPCService vpc_service: VPC service
+        :param KeyPairService key_pair_service: Key Pair Service
+        :param SubnetService subnet_service: Subnet Service
+        :param ElasticIpService elastic_ip_service: Elastic Ips Service
+        :param NetworkInterfaceService network_interface_service:
+        :param CommandCancellationService cancellation_service:
         """
-
         self.tag_service = tag_service
         self.instance_service = instance_service
         self.security_group_service = security_group_service
         self.credentials_service = ami_credential_service
         self.vpc_service = vpc_service
         self.key_pair_service = key_pair_service
-        self.subnet_serivce = subnet_service
+        self.subnet_service = subnet_service
         self.cancellation_service = cancellation_service
         self.elastic_ip_service = elastic_ip_service
+        self.network_interface_service = network_interface_service
 
     def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model,
                ami_deployment_model, ec2_client, cancellation_context, logger):
@@ -319,7 +318,7 @@ class DeployAMIOperation(object):
         aws_model.aws_key = key_pair
         aws_model.add_public_ip = ami_deployment_model.add_public_ip  # todo can we remvoe this?
 
-        subnet = self.subnet_serivce.get_first_subnet_from_vpc(vpc)  # todo can we remvoe this?
+        subnet = self.subnet_service.get_first_subnet_from_vpc(vpc)  # todo can we remvoe this?
         aws_model.subnet_id = subnet.id  # todo can we remvoe this?
 
         security_group_ids = self._get_security_group_param(reservation, security_group, vpc)
@@ -343,25 +342,29 @@ class DeployAMIOperation(object):
         """
         if ami_deployment_model.network_configurations is None:
             network_config_results[0].device_index = 0
-            return [self._get_netwrok_interface_single_subnet(ami_deployment_model, security_group_ids, vpc)]
+            return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
+                        add_public_ip=ami_deployment_model.add_public_ip,
+                        security_group_ids=security_group_ids,
+                        vpc=vpc)]
 
         if ami_deployment_model.add_public_ip and len(ami_deployment_model.network_configurations) > 1:
             raise ValueError("Public IP option is not supported with multiple subnets")
 
         net_interfaces = []
         device_index = 0
-        exclude_public_ip_prop = len(ami_deployment_model.network_configurations) > 1
+        public_ip_prop_value = \
+            None if len(ami_deployment_model.network_configurations) > 1 else ami_deployment_model.add_public_ip
 
         for net_config in ami_deployment_model.network_configurations:
             if not isinstance(net_config.connection_params, SubnetConnectionParams):
                 continue
             net_interfaces.append(
                     # todo: add fallback to find subnet by cidr if subnet id doesnt exist
-                    self._build_network_interface(subnet_id=net_config.connection_params.subnet_id,
-                                                  device_index=device_index,
-                                                  groups=security_group_ids,  # todo set groups by subnet id
-                                                  public_ip=
-                                                  None if exclude_public_ip_prop else ami_deployment_model.add_public_ip))
+                    self.network_interface_service.build_network_interface_dto(
+                            subnet_id=net_config.connection_params.subnet_id,
+                            device_index=device_index,
+                            groups=security_group_ids,  # todo: set groups by subnet id
+                            public_ip=public_ip_prop_value))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.id)
@@ -371,28 +374,12 @@ class DeployAMIOperation(object):
 
         if len(net_interfaces) == 0:
             network_config_results[0].device_index = 0
-            return [self._get_netwrok_interface_single_subnet(ami_deployment_model, security_group_ids, vpc)]
+            return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
+                        add_public_ip=ami_deployment_model.add_public_ip,
+                        security_group_ids=security_group_ids,
+                        vpc=vpc)]
 
         return net_interfaces
-
-    def _get_netwrok_interface_single_subnet(self, ami_deployment_model, security_group_ids, vpc):
-        return self._build_network_interface(
-                subnet_id=self.subnet_serivce.get_first_subnet_from_vpc(vpc).subnet_id,
-                device_index=0,
-                groups=security_group_ids,
-                public_ip=ami_deployment_model.add_public_ip)
-
-    def _build_network_interface(self, subnet_id, device_index, groups, public_ip=None):
-        net_if = {
-            'SubnetId': subnet_id,
-            'DeviceIndex': device_index,
-            'Groups': groups
-        }
-
-        if public_ip is not None:
-            net_if['AssociatePublicIpAddress'] = public_ip
-
-        return net_if
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
         return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
