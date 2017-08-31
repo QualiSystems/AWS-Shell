@@ -45,7 +45,7 @@ class TestDeployOperation(TestCase):
         self.deploy_operation._get_block_device_mappings = Mock()
         self.deploy_operation._rollback_deploy = Mock()
         self.instance_service.create_instance = Mock(side_effect=Exception)
-        self.deploy_operation._prepare_network_config_results = Mock()
+        self.deploy_operation._prepare_network_result_models = Mock()
 
         # act & assert
         self.assertRaises(Exception, self.deploy_operation.deploy, self.ec2_session, self.s3_session, inst_name,
@@ -109,10 +109,12 @@ class TestDeployOperation(TestCase):
         cancellation_context = Mock()
         inst_name = 'my name'
         reservation = Mock()
-        ami_deployment_model = Mock()
-        self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_model)
+        ami_deployment_info = Mock()
+        self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_info)
         self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
         network_config_results_dto = Mock()
+        network_config_results = MagicMock()
+        self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
         self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
 
         # act
@@ -159,11 +161,18 @@ class TestDeployOperation(TestCase):
         self.instance_service.create_instance.assert_called_once_with(ec2_session=self.ec2_session,
                                                                       name=inst_name,
                                                                       reservation=reservation,
-                                                                      ami_deployment_info=ami_deployment_model,
+                                                                      ami_deployment_info=ami_deployment_info,
                                                                       ec2_client=self.ec2_client,
                                                                       wait_for_status_check=ami_datamodel.wait_for_status_check,
                                                                       cancellation_context=cancellation_context,
                                                                       logger=self.logger)
+
+        self.deploy_operation.elastic_ip_service.set_elastic_ips.assert_called_once_with(
+                ec2_session=self.ec2_session,
+                ec2_client=self.ec2_client,
+                instance=instance,
+                ami_deployment_model=ami_datamodel,
+                network_config_results=network_config_results)
 
     def test_get_block_device_mappings_throws_max_storage_error(self):
         ec_model = Mock()
@@ -387,6 +396,18 @@ class TestDeployOperation(TestCase):
         self.assertEquals(res_model_1.device_index, 0)
         self.assertEquals(res_model_2.device_index, 1)
 
+    def test_prepare_network_config_results_dto_returns_empty_array_when_no_network_config(self):
+        # arrange
+        aws_model = Mock()
+        aws_model.network_configurations = None
+
+        # act
+        dtos = self.deploy_operation._prepare_network_config_results_dto(Mock(), aws_model)
+
+        # assert
+        self.assertTrue(isinstance(dtos, list))
+        self.assertFalse(dtos)
+
     def test_prepare_network_config_results_dto(self):
         # arrange
         model1 = DeployNetworkingResultModel(action_id='aaa')
@@ -425,3 +446,100 @@ class TestDeployOperation(TestCase):
         self.assertTrue('"private_ip": "priv1"' in dto1.interface)
         self.assertTrue('"public_ip": "pub1"' in dto1.interface)
         self.assertTrue('"mac_address": "mac1"' in dto1.interface)
+
+    def test_deploy_raised_no_vpc(self):
+        # arrange
+        my_vpc_service = Mock()
+        my_vpc_service.find_vpc_for_reservation = Mock(return_value=None)
+        deploy_operation = DeployAMIOperation(self.instance_service,
+                                              self.credentials_manager,
+                                              self.security_group_service,
+                                              self.tag_service,
+                                              my_vpc_service,
+                                              self.key_pair,
+                                              self.subnet_service,
+                                              self.elastic_ip_service,
+                                              self.cancellation_service)
+
+        # act & assert
+        with self.assertRaisesRegexp(ValueError, 'VPC is not set for this reservation'):
+            deploy_operation.deploy(ec2_session=Mock(),
+                                    s3_session=Mock(),
+                                    name=Mock(),
+                                    reservation=Mock(),
+                                    aws_ec2_cp_resource_model=Mock(),
+                                    ami_deployment_model=Mock(),
+                                    ec2_client=Mock(),
+                                    cancellation_context=Mock(),
+                                    logger=self.logger)
+
+    def test__prepare_network_result_models_returns_empty_model_when_no_network_config(self):
+        # arrange
+        ami_model = Mock(network_configurations=None)
+
+        # act
+        models = self.deploy_operation._prepare_network_result_models(ami_model)
+
+        # assert
+        self.assertEquals(len(models), 1)
+        self.assertEquals(models[0].action_id, '')
+        self.assertTrue(isinstance(models[0], DeployNetworkingResultModel))
+
+    def test__prepare_network_result_models_returns_result_model_per_action(self):
+        # arrange
+        action1 = Mock(spec=NetworkAction, id=Mock(spec=str))
+        action1.connection_params = Mock(spec=SubnetConnectionParams)
+
+        action2 = Mock(spec=NetworkAction, id=Mock(spec=str))
+        action2.connection_params = Mock(spec=SubnetConnectionParams)
+
+        ami_model = Mock(network_configurations=[action1, action2])
+
+        # act
+        models = self.deploy_operation._prepare_network_result_models(ami_model)
+
+        # assert
+        self.assertEquals(len(models), 2)
+        self.assertTrue(isinstance(models[0], DeployNetworkingResultModel))
+        self.assertTrue(isinstance(models[1], DeployNetworkingResultModel))
+        self.assertEquals(models[0].action_id, action1.id)
+        self.assertEquals(models[1].action_id, action2.id)
+
+    def test_populate_network_config_results_with_interface_data(self):
+        # arrange
+        instance = Mock()
+        instance.network_interfaces_attribute = [
+            {
+                "Attachment": {"DeviceIndex": 0},
+                "NetworkInterfaceId": "int1",
+                "PrivateIpAddress": "pri_ip_1",
+                "MacAddress": "mac1",
+                "Association": {"PublicIp": "pub_ip_1"}
+            },
+            {
+                "Attachment": {"DeviceIndex": 1},
+                "NetworkInterfaceId": "int2",
+                "PrivateIpAddress": "pri_ip_2",
+                "MacAddress": "mac2"
+            }
+        ]
+        network_config_results = [DeployNetworkingResultModel("action1"), DeployNetworkingResultModel("action2")]
+        network_config_results[0].device_index = 0
+        network_config_results[1].device_index = 1
+
+        # act
+        self.deploy_operation._populate_network_config_results_with_interface_data(
+                instance=instance,
+                network_config_results=network_config_results)
+
+        # assert
+        self.assertEquals(network_config_results[0].interface_id, "int1")
+        self.assertEquals(network_config_results[0].private_ip, "pri_ip_1")
+        self.assertEquals(network_config_results[0].mac_address, "mac1")
+        self.assertEquals(network_config_results[0].public_ip, "pub_ip_1")
+
+        self.assertEquals(network_config_results[1].interface_id, "int2")
+        self.assertEquals(network_config_results[1].private_ip, "pri_ip_2")
+        self.assertEquals(network_config_results[1].mac_address, "mac2")
+        self.assertEquals(network_config_results[1].public_ip, "")
+
