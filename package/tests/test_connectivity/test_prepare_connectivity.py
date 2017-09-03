@@ -23,10 +23,12 @@ class TestPrepareConnectivity(TestCase):
         self.crypto_service = Mock()
         self.cancellation_service = Mock()
         self.cancellation_context = Mock()
-
+        self.subnet_service = Mock()
+        self.subnet_waiter = Mock()
         self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service, self.route_table_service,
-                                                         self.crypto_service, self.cancellation_service)
+                                                         self.crypto_service, self.cancellation_service,
+                                                         self.subnet_service, self.subnet_waiter)
 
     def test_prepare_conn_must_receive_network_action(self):
         with self.assertRaises(Exception) as error:
@@ -141,7 +143,8 @@ class TestPrepareConnectivity(TestCase):
         key_pair_service = Mock()
         key_pair_service.load_key_pair_by_name = Mock(return_value=None)
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
-                                                    self.route_table_service, self.crypto_service, self.cancellation_service)
+                                                    self.route_table_service, self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
         key_pair = Mock()
         key_pair_service.create_key_pair = Mock(return_value=key_pair)
 
@@ -166,7 +169,8 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service)
+                                                    self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_security_group(self.ec2_session, self.reservation, vpc, management_sg_id)
 
@@ -185,7 +189,8 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
                                                     self.route_table_service, self.crypto_service,
-                                                    self.cancellation_service)
+                                                    self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_vpc(cidr, self.ec2_session, reservation_id)
 

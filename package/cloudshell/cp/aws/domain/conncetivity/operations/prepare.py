@@ -49,6 +49,11 @@ class PrepareConnectivityOperation(object):
         self.cancellation_service = cancellation_service
         self.subnet_service = subnet_service
         self.subnet_waiter = subnet_waiter
+        self.prepare_subnet_executor = PrepareSubnetExecutor(cancellation_service=self.cancellation_service,
+                                                            vpc_service=self.vpc_service,
+                                                            subnet_service=self.subnet_service,
+                                                            tag_service=self.tag_service,
+                                                            subnet_waiter=self.subnet_waiter)
 
     def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, actions,
                              cancellation_context, logger):
@@ -88,17 +93,14 @@ class PrepareConnectivityOperation(object):
 
         # Execute prepareSubnet actions
         subnet_actions = [a for a in actions if isinstance(a.connection_params, PrepareSubnetParams)]
-        subnet_results = PrepareSubnetExecutor(ec2_session=ec2_session,
-                              ec2_client=ec2_client,
-                              cancellation_service=self.cancellation_service,
-                              cancellation_context=cancellation_context,
-                              vpc_service=self.vpc_service,
-                              subnet_service=self.subnet_service,
-                              tag_service=self.tag_service,
-                              subnet_waiter=self.subnet_waiter,
-                              logger=logger,
-                              reservation=reservation,
-                              aws_ec2_datamodel=aws_ec2_datamodel).execute(subnet_actions)
+        subnet_results = self.prepare_subnet_executor.execute(
+            subnet_actions=subnet_actions,
+            reservation=reservation,
+            aws_ec2_datamodel=aws_ec2_datamodel,
+            cancellation_context=cancellation_context,
+            logger=logger,
+            ec2_session=ec2_session,
+            ec2_client=ec2_client)
         for subnet_result in subnet_results:
             results.append(subnet_result)
 
