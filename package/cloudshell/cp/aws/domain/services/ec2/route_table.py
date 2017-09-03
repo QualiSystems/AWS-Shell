@@ -129,6 +129,3 @@ class RouteTablesService(object):
                 if tag["Key"] == "Name" and tag["Value"] == table_name:
                     return table
         return None
-
-    def set_subnet_with_route_table(self, ec2_client, subnet_id, route_table_id):
-        ec2_client.associate_route_table(RouteTableId=route_table_id, SubnetId=subnet_id)
