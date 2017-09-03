@@ -32,6 +32,8 @@ class SubnetWaiter(object):
         if state not in self.INSTANCE_STATES:
             raise ValueError('Unsupported instance state')
 
+        retry_helper.do_with_retry(lambda: subnet.reload())
+
         start_time = time.time()
         while subnet.state != state:
 

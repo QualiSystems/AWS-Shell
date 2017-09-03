@@ -78,7 +78,9 @@ class AWSShell(object):
                                          tag_service=self.tag_service,
                                          route_table_service=self.route_tables_service,
                                          cryptography_service=self.cryptography_service,
-                                         cancellation_service=self.cancellation_service)
+                                         cancellation_service=self.cancellation_service,
+                                         subnet_service=self.subnet_service,
+                                         subnet_waiter=self.subnet_waiter)
 
         self.elastic_ip_service = ElasticIpService()
 

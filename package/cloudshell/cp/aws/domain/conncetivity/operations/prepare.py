@@ -5,6 +5,7 @@ from pip._vendor.retrying import retry
 
 from cloudshell.shell.core.driver_context import CancellationContext
 
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
 from cloudshell.cp.aws.domain.context import ec2_client
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
@@ -18,7 +19,7 @@ INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 class PrepareConnectivityOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
-                 cryptography_service, cancellation_service):
+                 cryptography_service, cancellation_service, subnet_service, subnet_waiter):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -34,6 +35,10 @@ class PrepareConnectivityOperation(object):
         :type cryptography_service: CryptographyService
         :param cancellation_service:
         :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
+        :param subnet_service: Subnet Service
+        :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param subnet_waiter: Subnet Waiter
+        :type subnet_waiter: cloudshell.cp.aws.domain.services.waiters.subnet.SubnetWaiter
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
@@ -42,6 +47,8 @@ class PrepareConnectivityOperation(object):
         self.route_table_service = route_table_service
         self.cryptography_service = cryptography_service
         self.cancellation_service = cancellation_service
+        self.subnet_service = subnet_service
+        self.subnet_waiter = subnet_waiter
 
     def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, actions,
                              cancellation_context, logger):
@@ -64,32 +71,36 @@ class PrepareConnectivityOperation(object):
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
         logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
-
-        # Move prepareNetwork action to be first
-        networkAction = next((x for x in actions if isinstance(x.connection_params, PrepareNetworkParams)), None)
-        if not networkAction:
-            raise ValueError("Actions list must contain a PrepareNetworkAction.")
-        actions.remove(networkAction)
-        actions.insert(0, networkAction)
-
         results = []
-        for action in actions:
-            try:
-                result = None
-                if isinstance(action.connection_params, PrepareNetworkParams):
-                    result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
-                                                   action, cancellation_context, logger)
-                elif isinstance(action.connection_params, PrepareSubnetParams):
-                    result = self._prepare_subnet(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
-                                                  action, cancellation_context, logger)
-                else:
-                    raise ValueError('Action type {0} is not valid for PrepareConnectivity command'.format(action.type))
 
-                results.append(result)
+        # Execute prepareNetwork action first
+        network_action = next((a for a in actions if isinstance(a.connection_params, PrepareNetworkParams)), None)
+        if not network_action:
+            raise ValueError("Actions list must contain a PrepareNetworkAction.")
 
-            except Exception as e:
-                logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
-                results.append(self._create_fault_action_result(action, e))
+        try:
+            result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
+                                           network_action, cancellation_context, logger)
+            results.append(result)
+        except Exception as e:
+            logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
+            results.append(self._create_fault_action_result(network_action, e))
+
+        # Execute prepareSubnet actions
+        subnet_actions = [a for a in actions if isinstance(a.connection_params, PrepareSubnetParams)]
+        subnet_results = PrepareSubnetExecutor(ec2_session=ec2_session,
+                              ec2_client=ec2_client,
+                              cancellation_service=self.cancellation_service,
+                              cancellation_context=cancellation_context,
+                              vpc_service=self.vpc_service,
+                              subnet_service=self.subnet_service,
+                              tag_service=self.tag_service,
+                              subnet_waiter=self.subnet_waiter,
+                              logger=logger,
+                              reservation=reservation,
+                              aws_ec2_datamodel=aws_ec2_datamodel).execute(subnet_actions)
+        for subnet_result in subnet_results:
+            results.append(subnet_result)
 
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Prepare Connectivity completed")
@@ -299,6 +310,8 @@ class PrepareConnectivityOperation(object):
         if not route_igw:
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_main_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
+        # add default tags to main routing table
+        self.vpc_service.set_main_route_table_tags(sandbox_main_route_table, reservation_model)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,

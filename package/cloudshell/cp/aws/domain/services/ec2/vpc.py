@@ -7,6 +7,7 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 class VPCService(object):
     VPC_RESERVATION = 'VPC Reservation: {0}'
     SUBNET_RESERVATION = '{0} Reservation: {1}'
+    MAIN_ROUTE_TABLE_RESERVATION = 'Main RoutingTable Reservation: {0}'
     PRIVATE_ROUTE_TABLE_RESERVATION = 'Private RoutingTable Reservation: {0}'
     PEERING_CONNECTION = "Peering connection for {0} with management vpc"
 
@@ -316,3 +317,8 @@ class VPCService(object):
         for table in custom_tables:
             self.route_table_service.delete_table(table)
         return True
+
+    def set_main_route_table_tags(self, main_route_table, reservation):
+        table_name = self.MAIN_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
+        tags = self.tag_service.get_default_tags(table_name , reservation)
+        self.tag_service.set_ec2_resource_tags(main_route_table, tags)

@@ -9,6 +9,7 @@ class TagNames(object):
     Domain = 'Domain'
     Name = 'Name'
     Isolation = 'Isolation'
+    IsPublic = 'IsPublic'
 
 
 class IsolationTagValues(object):
@@ -64,6 +65,9 @@ class TagService(object):
 
     def get_reservation_tag(self, reservation_id):
         return self._get_kvp(TagNames.ReservationId, reservation_id)
+
+    def get_is_public_tag(self, value):
+        return self._get_kvp(TagNames.IsPublic, str(value))
 
     @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def set_ec2_resource_tags(self, resource, tags):

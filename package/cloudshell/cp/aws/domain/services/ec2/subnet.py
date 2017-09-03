@@ -34,7 +34,7 @@ class SubnetService(object):
         return subnet
 
     def create_subnet_nowait(self, vpc, cidr, availability_zone,):
-        subnet = vpc.create_subnet(CidrBlock=cidr, AvailabilityZone=availability_zone)
+        return vpc.create_subnet(CidrBlock=cidr, AvailabilityZone=availability_zone)
 
     def get_vpc_subnets(self, vpc):
         subnets = list(vpc.subnets.all())
