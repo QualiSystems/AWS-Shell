@@ -25,15 +25,19 @@ class TestDeployOperation(TestCase):
         self.cancellation_service = Mock()
         self.logger = Mock()
         self.elastic_ip_service = Mock()
-        self.deploy_operation = DeployAMIOperation(self.instance_service,
-                                                   self.credentials_manager,
-                                                   self.security_group_service,
-                                                   self.tag_service,
-                                                   self.vpc_service,
-                                                   self.key_pair,
-                                                   self.subnet_service,
-                                                   self.elastic_ip_service,
-                                                   self.cancellation_service)
+        self.network_interface_service = Mock()
+        self.device_index_strategy = Mock()
+        self.deploy_operation = DeployAMIOperation(instance_service=self.instance_service,
+                                                   ami_credential_service=self.credentials_manager,
+                                                   security_group_service=self.security_group_service,
+                                                   tag_service=self.tag_service,
+                                                   vpc_service=self.vpc_service,
+                                                   key_pair_service=self.key_pair,
+                                                   subnet_service=self.subnet_service,
+                                                   elastic_ip_service=self.elastic_ip_service,
+                                                   network_interface_service=self.network_interface_service,
+                                                   cancellation_service=self.cancellation_service,
+                                                   device_index_strategy=self.device_index_strategy)
 
     def test_deploy_rollback_called(self):
         # arrange
@@ -459,7 +463,9 @@ class TestDeployOperation(TestCase):
                                               self.key_pair,
                                               self.subnet_service,
                                               self.elastic_ip_service,
-                                              self.cancellation_service)
+                                              self.network_interface_service,
+                                              self.cancellation_service,
+                                              self.device_index_strategy)
 
         # act & assert
         with self.assertRaisesRegexp(ValueError, 'VPC is not set for this reservation'):

@@ -33,6 +33,7 @@ from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmC
 from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
 from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
+from cloudshell.cp.aws.domain.services.strategy.device_index import AllocateMissingValuesDeviceIndexStrategy
 from cloudshell.cp.aws.domain.services.waiters.instance import InstanceWaiter
 from cloudshell.cp.aws.domain.services.waiters.password import PasswordWaiter
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
@@ -92,7 +93,8 @@ class AWSShell(object):
                                                        subnet_service=self.subnet_service,
                                                        elastic_ip_service=self.elastic_ip_service,
                                                        network_interface_service=self.network_interface_service,
-                                                       cancellation_service=self.cancellation_service)
+                                                       cancellation_service=self.cancellation_service,
+                                                       device_index_strategy=AllocateMissingValuesDeviceIndexStrategy())
 
         self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)
 

@@ -8,6 +8,7 @@ from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupSe
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
+from cloudshell.cp.aws.domain.services.strategy.device_index import *
 from cloudshell.cp.aws.models.ami_deployment_model import AMIDeploymentModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
@@ -27,7 +28,7 @@ class DeployAMIOperation(object):
 
     def __init__(self, instance_service, ami_credential_service, security_group_service, tag_service,
                  vpc_service, key_pair_service, subnet_service, elastic_ip_service, network_interface_service,
-                 cancellation_service):
+                 cancellation_service, device_index_strategy):
         """
         :param InstanceService instance_service: Instance Service
         :param InstanceCredentialsService ami_credential_service: AMI Credential Service
@@ -39,6 +40,7 @@ class DeployAMIOperation(object):
         :param ElasticIpService elastic_ip_service: Elastic Ips Service
         :param NetworkInterfaceService network_interface_service:
         :param CommandCancellationService cancellation_service:
+        :param AbstractDeviceIndexStrategy device_index_strategy:
         """
         self.tag_service = tag_service
         self.instance_service = instance_service
@@ -50,6 +52,7 @@ class DeployAMIOperation(object):
         self.cancellation_service = cancellation_service
         self.elastic_ip_service = elastic_ip_service
         self.network_interface_service = network_interface_service
+        self.device_index_strategy = device_index_strategy
 
     def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model,
                ami_deployment_model, ec2_client, cancellation_context, logger):
@@ -351,15 +354,19 @@ class DeployAMIOperation(object):
             raise ValueError("Public IP option is not supported with multiple subnets")
 
         net_interfaces = []
-        device_index = 0
         public_ip_prop_value = \
             None if len(ami_deployment_model.network_configurations) > 1 else ami_deployment_model.add_public_ip
+
+        self.device_index_strategy.apply(ami_deployment_model.network_configurations)
 
         for net_config in ami_deployment_model.network_configurations:
             if not isinstance(net_config.connection_params, SubnetConnectionParams):
                 continue
+
+            device_index = net_config.connection_params.device_index
+
             net_interfaces.append(
-                    # todo: add fallback to find subnet by cidr if subnet id doesnt exist
+                    # todo: add fallback to find subnet by cidr if subnet id doesnt exist?
                     self.network_interface_service.build_network_interface_dto(
                             subnet_id=net_config.connection_params.subnet_id,
                             device_index=device_index,
@@ -369,8 +376,6 @@ class DeployAMIOperation(object):
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.id)
             res.device_index = device_index
-
-            device_index += 1
 
         if len(net_interfaces) == 0:
             network_config_results[0].device_index = 0
