@@ -179,7 +179,8 @@ class TestElasticIpService(TestCase):
                                            ec2_client=ec2_client,
                                            instance=instance,
                                            ami_deployment_model=ami_deployment_model,
-                                           network_config_results=network_config_results)
+                                           network_config_results=network_config_results,
+                                           logger=Mock())
 
         # assert
         #self.assertEquals(instance.network_interfaces_attribute.call_count, 2)
