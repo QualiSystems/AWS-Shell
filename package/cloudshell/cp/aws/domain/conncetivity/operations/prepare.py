@@ -171,47 +171,6 @@ class PrepareConnectivityOperation(object):
                                                             management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
         return self._create_prepare_network_result(action, security_group, vpc, access_key)
 
-    def _prepare_subnet(self, ec2_client, ec2_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
-        """
-        :type ec2_client:
-        :type ec2_session:
-        :type reservation:
-        :type aws_ec2_datamodel:
-        :type action: NetworkAction
-        :type cancellation_context:
-        :type logger:
-        :return:
-        """
-        logger.info("PrepareSubnet");
-
-        # get reservation vpc
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation.reservation_id)
-        if not vpc:
-            raise ValueError('Vpc for reservation {0} not found.'.format(reservation.reservation_id))
-
-        # get cidr from action
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        cidr = action.connection_params.cidr
-        logger.info("Received CIDR {0} from server".format(cidr))
-
-        # create subnet
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        alias = action.connection_params.alias or "Subnet-{0}".format(cidr)
-        subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, alias, vpc, ec2_client, aws_ec2_datamodel, logger)
-
-        # set to private route table, if needed
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        if not action.connection_params.is_public:
-            logger.info("Subnet is private - getting and attaching private routing table")
-            private_route_table = self.vpc_service.get_or_throw_private_route_table(ec2_session, reservation, vpc.vpc_id)
-            self.route_table_service.set_subnet_with_route_table(ec2_client=ec2_client,
-                                                         subnet_id=subnet.subnet_id,
-                                                         route_table_id=private_route_table.route_table_id)
-        else:
-            logger.info("Subnet is public - no need to attach private routing table")
-
-        return self._create_prepare_subnet_result(action, subnet)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):

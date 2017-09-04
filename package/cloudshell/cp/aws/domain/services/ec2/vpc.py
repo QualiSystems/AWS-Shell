@@ -64,7 +64,7 @@ class VPCService(object):
 
         subnet_name = self.SUBNET_RESERVATION.format(alias, reservation.reservation_id)
         availability_zone = self.get_or_pick_availability_zone(ec2_client, vpc, aws_ec2_datamodel)
-        logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(cidr, availability_zone))
+        logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(alias, cidr, availability_zone))
         return self.subnet_service.create_subnet_for_vpc(
             vpc=vpc,
             cidr=cidr,
@@ -301,7 +301,7 @@ class VPCService(object):
                 {'Name': 'state', 'Values': ['available']},
                 {'Name': 'region-name', 'Values': [aws_ec2_datamodel.region]}
             ])
-        if zones['AvailabilityZones']:
+        if zones and zones.get('AvailabilityZones'):
             return zones['AvailabilityZones'][0]['ZoneName']
 
         # edge case - not supposed to happen

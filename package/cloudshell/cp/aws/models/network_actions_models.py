@@ -17,10 +17,16 @@ class SubnetConnectionParams(ConnectionParamsBase):
 
 
 class PrepareSubnetParams(ConnectionParamsBase):
-    def __init__(self):
+    def __init__(self, cidr=None, alias='', is_public=True):
+        """
+        :param str cidr:
+        :param str alias:
+        :param bool is_public:
+        """
         ConnectionParamsBase.__init__(self)
-        self.is_public = True  # type: bool
-        self.alias = ''  # type: str
+        self.cidr = cidr
+        self.is_public = is_public
+        self.alias = alias
 
 
 class PrepareNetworkParams(ConnectionParamsBase):

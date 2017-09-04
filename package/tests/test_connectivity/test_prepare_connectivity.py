@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock, MagicMock
+from mock import Mock, MagicMock, patch
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
@@ -63,11 +63,29 @@ class TestPrepareConnectivity(TestCase):
         self.assertEqual(results[1].actionId, "SubA")
         self.assertEqual(results[2].actionId, "SubB")
 
-    def test_prepare_subnet_must_have_a_vpc(self):
+    def test_prepare_conn_execute_the_subnet_actions(self):
         # Arrage
+        actions = []
+        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
+        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
+        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
         # Act
+        with patch('cloudshell.cp.aws.domain.conncetivity.operations.prepare.PrepareSubnetExecutor') as ctor:
+            obj = Mock()
+            obj.execute = Mock(return_value=["ResA","ResB"])
+            ctor.return_value = obj
+            results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                                             ec2_session=self.ec2_session,
+                                                             s3_session=self.s3_session,
+                                                             reservation=self.reservation,
+                                                             aws_ec2_datamodel=self.aws_dm,
+                                                             actions=actions,
+                                                             cancellation_context=self.cancellation_context,
+                                                             logger=Mock())
         # Assert
-        pass
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[1], "ResA")
+        self.assertEqual(results[2], "ResB")
 
     def test_prepare_conn_command(self):
         # Arrange
