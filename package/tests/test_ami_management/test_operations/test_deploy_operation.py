@@ -361,6 +361,9 @@ class TestDeployOperation(TestCase):
                                                               network_config_results=MagicMock())
 
     def test_prepare_network_interfaces_multi_subnets(self):
+        def build_network_interface_handler(*args, **kwargs):
+            return {'SubnetId': kwargs['subnet_id']}
+
         # arrange
         vpc = Mock()
         security_group_ids = MagicMock()
@@ -369,11 +372,13 @@ class TestDeployOperation(TestCase):
         action1.id = 'action1'
         action1.connection_params = SubnetConnectionParams()
         action1.connection_params.subnet_id = 'sub1'
+        action1.connection_params.device_index = 0
 
         action2 = NetworkAction()
         action2.id = 'action2'
         action2.connection_params = SubnetConnectionParams()
         action2.connection_params.subnet_id = 'sub2'
+        action2.connection_params.device_index = 1
 
         ami_model = Mock()
         ami_model.network_configurations = [action1, action2]
@@ -383,6 +388,9 @@ class TestDeployOperation(TestCase):
         res_model_2 = DeployNetworkingResultModel('action2')
         network_config_results = [res_model_1, res_model_2]
 
+        self.deploy_operation.network_interface_service.build_network_interface_dto = \
+            Mock(side_effect=build_network_interface_handler)
+
         # act
         net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
                                                                            vpc=vpc,
@@ -390,15 +398,11 @@ class TestDeployOperation(TestCase):
                                                                            network_config_results=network_config_results)
 
         # assert
-        self.assertEquals(len(net_interfaces), 2)
-        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
-        self.assertEquals(net_interfaces[0]['DeviceIndex'], 0)
-        self.assertEquals(net_interfaces[0]['Groups'], security_group_ids)
-        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
-        self.assertEquals(net_interfaces[1]['DeviceIndex'], 1)
-        self.assertEquals(net_interfaces[1]['Groups'], security_group_ids)
         self.assertEquals(res_model_1.device_index, 0)
         self.assertEquals(res_model_2.device_index, 1)
+        self.assertEquals(len(net_interfaces), 2)
+        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
+        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
 
     def test_prepare_network_config_results_dto_returns_empty_array_when_no_network_config(self):
         # arrange
@@ -548,4 +552,3 @@ class TestDeployOperation(TestCase):
         self.assertEquals(network_config_results[1].private_ip, "pri_ip_2")
         self.assertEquals(network_config_results[1].mac_address, "mac2")
         self.assertEquals(network_config_results[1].public_ip, "")
-
