@@ -127,7 +127,7 @@ class TestElasticIpService(TestCase):
                                            instance=instance,
                                            ami_deployment_model=ami_deployment_model,
                                            network_config_results=network_config_results,
-                                           logger=self.logger)
+                                           logger=Mock())
 
         # assert
         elastic_ip_service.allocate_elastic_address.assert_called_once_with(ec2_client=ec2_client)
