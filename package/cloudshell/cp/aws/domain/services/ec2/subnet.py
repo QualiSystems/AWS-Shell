@@ -12,6 +12,8 @@ class SubnetService(object):
         self.tag_service = tag_service
         self.subnet_waiter = subnet_waiter
 
+
+
     def create_subnet_for_vpc(self, vpc, cidr, subnet_name, availability_zone, reservation):
         """
         Will create a subnet for the given vpc
@@ -30,6 +32,9 @@ class SubnetService(object):
         tags = self.tag_service.get_default_tags(subnet_name, reservation)
         self.tag_service.set_ec2_resource_tags(subnet, tags)
         return subnet
+
+    def create_subnet_nowait(self, vpc, cidr, availability_zone,):
+        return vpc.create_subnet(CidrBlock=cidr, AvailabilityZone=availability_zone)
 
     def get_vpc_subnets(self, vpc):
         subnets = list(vpc.subnets.all())
@@ -52,6 +57,10 @@ class SubnetService(object):
             return None
         return subnets[0]
 
+    def get_subnet_from_vpc(self, vpc, cidr):
+        subnets = list(vpc.subnets.all())
+        return next((s for s in subnets if s.cidr_block == cidr), None)
+
     @staticmethod
     def _get_subnet_name(name):
         return SUBNET_NAME.format(name)
@@ -59,3 +68,6 @@ class SubnetService(object):
     def delete_subnet(self, subnet):
         subnet.delete()
         return True
+
+    def set_subnet_route_table(self, ec2_client, subnet_id, route_table_id):
+        ec2_client.associate_route_table(RouteTableId=route_table_id, SubnetId=subnet_id)

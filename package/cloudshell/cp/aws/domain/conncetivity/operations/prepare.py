@@ -5,6 +5,7 @@ from pip._vendor.retrying import retry
 
 from cloudshell.shell.core.driver_context import CancellationContext
 
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
 from cloudshell.cp.aws.domain.context import ec2_client
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
@@ -18,7 +19,7 @@ INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 class PrepareConnectivityOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
-                 cryptography_service, cancellation_service):
+                 cryptography_service, cancellation_service, subnet_service, subnet_waiter):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -34,6 +35,10 @@ class PrepareConnectivityOperation(object):
         :type cryptography_service: CryptographyService
         :param cancellation_service:
         :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
+        :param subnet_service: Subnet Service
+        :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param subnet_waiter: Subnet Waiter
+        :type subnet_waiter: cloudshell.cp.aws.domain.services.waiters.subnet.SubnetWaiter
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
@@ -42,6 +47,8 @@ class PrepareConnectivityOperation(object):
         self.route_table_service = route_table_service
         self.cryptography_service = cryptography_service
         self.cancellation_service = cancellation_service
+        self.subnet_service = subnet_service
+        self.subnet_waiter = subnet_waiter
 
     def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, actions,
                              cancellation_context, logger):
@@ -58,38 +65,44 @@ class PrepareConnectivityOperation(object):
         :param list[NetworkAction] actions: Parsed prepare connectivity actions
         :param CancellationContext cancellation_context:
         :param logging.Logger logger:
-        :return:
+        :rtype list[ConnectivityActionResult]
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
         logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
-
-        # Move prepareNetwork action to be first
-        networkAction = next((x for x in actions if isinstance(x.connection_params, PrepareNetworkParams)), None)
-        if not networkAction:
-            raise ValueError("Actions list must contain a PrepareNetworkAction.")
-        actions.remove(networkAction)
-        actions.insert(0, networkAction)
-
         results = []
-        for action in actions:
-            try:
-                result = None
-                if isinstance(action.connection_params, PrepareNetworkParams):
-                    result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
-                                                   action, cancellation_context, logger)
-                elif isinstance(action.connection_params, PrepareSubnetParams):
-                    result = self._prepare_subnet(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
-                                                  action, cancellation_context, logger)
-                else:
-                    raise ValueError('Action type {0} is not valid for PrepareConnectivity command'.format(action.type))
 
-                results.append(result)
+        # Execute prepareNetwork action first
+        network_action = next((a for a in actions if isinstance(a.connection_params, PrepareNetworkParams)), None)
+        if not network_action:
+            raise ValueError("Actions list must contain a PrepareNetworkAction.")
 
-            except Exception as e:
-                logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
-                results.append(self._create_fault_action_result(action, e))
+        try:
+            result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
+                                           network_action, cancellation_context, logger)
+            results.append(result)
+        except Exception as e:
+            logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
+            results.append(self._create_fault_action_result(network_action, e))
+
+        # Execute prepareSubnet actions
+        subnet_actions = [a for a in actions if isinstance(a.connection_params, PrepareSubnetParams)]
+        subnet_results = PrepareSubnetExecutor(
+            cancellation_service=self.cancellation_service,
+            vpc_service=self.vpc_service,
+            subnet_service=self.subnet_service,
+            tag_service=self.tag_service,
+            subnet_waiter=self.subnet_waiter,
+            reservation=reservation,
+            aws_ec2_datamodel=aws_ec2_datamodel,
+            cancellation_context=cancellation_context,
+            logger=logger,
+            ec2_session=ec2_session,
+            ec2_client=ec2_client).execute(subnet_actions)
+
+        for subnet_result in subnet_results:
+            results.append(subnet_result)
 
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Prepare Connectivity completed")
@@ -158,45 +171,6 @@ class PrepareConnectivityOperation(object):
                                                             management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
         return self._create_prepare_network_result(action, security_group, vpc, access_key)
 
-    def _prepare_subnet(self, ec2_client, ec2_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
-        """
-        :type ec2_client:
-        :type ec2_session:
-        :type reservation:
-        :type aws_ec2_datamodel:
-        :type action: NetworkAction
-        :type cancellation_context:
-        :type logger:
-        :return:
-        """
-        logger.info("PrepareSubnet");
-
-        # get reservation vpc
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session, reservation_id=reservation.reservation_id)
-        if not vpc:
-            raise ValueError('Vpc for reservation {0} not found.'.format(reservation.reservation_id))
-
-        # get cidr from action
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        cidr = action.connection_params.cidr
-        logger.info("Received CIDR {0} from server".format(cidr))
-
-        # create subnet
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        subnet = self.vpc_service.get_or_create_subnet_for_vpc(reservation, cidr, vpc, ec2_client, aws_ec2_datamodel, logger)
-
-        # set to private route table, if needed
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        if not action.connection_params.is_public:
-            logger.info("Subnet is private - getting and attaching private routing table")
-            private_route_table = self.vpc_service.get_or_throw_private_route_table(ec2_session, reservation, vpc.vpc_id)
-            ec2_client.associate_route_table(RouteTableId=private_route_table.route_table_id,
-                                             SubnetId=subnet.subnet_id)
-        else:
-            logger.info("Subnet is public - no need to attach private routing table")
-
-        return self._create_prepare_subnet_result(action, subnet)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -297,6 +271,8 @@ class PrepareConnectivityOperation(object):
         if not route_igw:
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_main_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
+        # add default tags to main routing table
+        self.vpc_service.set_main_route_table_tags(sandbox_main_route_table, reservation_model)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
@@ -388,17 +364,6 @@ class PrepareConnectivityOperation(object):
         action_result.infoMessage = 'PrepareSubnet finished successfully'
 
         return action_result
-
-    @staticmethod
-    def _extract_cidr(action):
-        cidrs = [custom_attribute.attributeValue
-                 for custom_attribute in action.customActionAttributes
-                 if custom_attribute.attributeName == 'Network']
-        if not cidrs:
-            raise ValueError(INVALID_REQUEST_ERROR.format('CIDR is missing'))
-        if len(cidrs) > 1:
-            raise ValueError(INVALID_REQUEST_ERROR.format('Too many CIDRs parameters were found'))
-        return cidrs[0]
 
     @staticmethod
     def _create_fault_action_result(action, e):

@@ -25,6 +25,7 @@ class ConnectionParamsParser(object):
         elif params_type == "prepareSubnetParams":
             params = PrepareSubnetParams()
             params.is_public = convert_to_bool(params_data['isPublic'])
+            params.alias = params_data.get('alias', '')
 
         elif params_type == "prepareNetworkParams":
             params = PrepareNetworkParams()
