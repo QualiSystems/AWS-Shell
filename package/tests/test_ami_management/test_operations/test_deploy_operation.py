@@ -176,7 +176,8 @@ class TestDeployOperation(TestCase):
                 ec2_client=self.ec2_client,
                 instance=instance,
                 ami_deployment_model=ami_datamodel,
-                network_config_results=network_config_results)
+                network_config_results=network_config_results,
+                logger=self.logger)
 
     def test_get_block_device_mappings_throws_max_storage_error(self):
         ec_model = Mock()
@@ -320,7 +321,8 @@ class TestDeployOperation(TestCase):
                           security_group=None,
                           key_pair='keypair',
                           reservation=Mock(),
-                          network_config_results=Mock())
+                          network_config_results=Mock(),
+                          logger=self.logger)
 
     def test_create_deployment_parameters_single_subnet(self):
         image = Mock()
@@ -341,7 +343,8 @@ class TestDeployOperation(TestCase):
                                                                         security_group=None,
                                                                         key_pair='keypair',
                                                                         reservation=Mock(),
-                                                                        network_config_results=MagicMock())
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger)
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
@@ -358,7 +361,8 @@ class TestDeployOperation(TestCase):
             self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
                                                               vpc=Mock(),
                                                               security_group_ids=MagicMock(),
-                                                              network_config_results=MagicMock())
+                                                              network_config_results=MagicMock(),
+                                                              logger=self.logger)
 
     def test_prepare_network_interfaces_multi_subnets(self):
         def build_network_interface_handler(*args, **kwargs):
@@ -395,7 +399,8 @@ class TestDeployOperation(TestCase):
         net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
                                                                            vpc=vpc,
                                                                            security_group_ids=security_group_ids,
-                                                                           network_config_results=network_config_results)
+                                                                           network_config_results=network_config_results,
+                                                                           logger=self.logger)
 
         # assert
         self.assertEquals(res_model_1.device_index, 0)
