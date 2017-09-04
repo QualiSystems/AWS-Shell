@@ -3,6 +3,7 @@ from unittest import TestCase
 from mock import Mock
 
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
+from tests.test_common.test_mock_helper import Any
 
 
 class TestRouteTableService(TestCase):
@@ -118,3 +119,51 @@ class TestRouteTableService(TestCase):
 
         # assert
         self.assertIsNone(result)
+
+    def test_get_custom_route_tables(self):
+        # Arrange
+        tables = [Mock(), Mock(), Mock()]
+        self.route_table_service.get_main_route_table = Mock(return_value=tables[0])
+        self.route_table_service.get_all_route_tables = Mock(return_value=tables)
+        tables[0].id = "0"
+        tables[1].id = "1"
+        tables[2].id = "2"
+        # Act
+        results = self.route_table_service.get_custom_route_tables(ec2_session=self.ec2_session, vpc_id=self.vpc_id)
+        # Assert
+        self.assertEqual(results, [tables[1], tables[2]])
+
+    def test_create_route_table(self):
+        # Arrange
+        table = Mock()
+        tags = Mock()
+        self.vpc.create_route_table = Mock(return_value=table)
+        self.tag_service.get_default_tags = Mock(return_value=tags)
+        # Act
+        self.route_table_service.create_route_table(ec2_session=self.ec2_session, reservation=self.reservation,
+                                                    vpc_id=self.vpc_id, table_name="MyTable")
+        # Assert
+        self.vpc.create_route_table.assert_called_once()
+        self.tag_service.get_default_tags.assert_called_once_with("MyTable", self.reservation)
+        self.tag_service.set_ec2_resource_tags.assert_called_once_with(table, tags)
+
+    def test_get_route_table(self):
+        # Arrange
+        table = Mock()
+        table.tags = [{"Key":"Name", "Value":"Table1"}]
+        self.route_table_service.get_all_route_tables = Mock(return_value=[table])
+        # Act
+        table1 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id, table_name="Table1")
+        table2 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id, table_name="Table2")
+        # Assert
+        self.assertEqual(table1, table)
+        self.assertEqual(table2, None)
+
+    def test_delete_table(self):
+        # Arrange
+        table = Mock()
+        # Act
+        result = self.route_table_service.delete_table(table)
+        # Assert
+        table.delete.assert_called_once()
+        self.assertTrue(result)

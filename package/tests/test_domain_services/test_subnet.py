@@ -81,3 +81,11 @@ class TestSubnetService(TestCase):
         # assert
         vpc.subnets.all.assert_called_once()
         self.assertEquals(subnet1, subnet_result)
+
+    def test_set_subnet_route_table(self):
+        # arrange
+        ec2_client = Mock()
+        # act
+        self.subnet_srv.set_subnet_route_table(ec2_client=ec2_client, subnet_id="123", route_table_id="456")
+        # assert
+        ec2_client.associate_route_table.assert_called_with(RouteTableId="456", SubnetId="123")

@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock, MagicMock
+from mock import Mock, MagicMock, patch
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
@@ -22,27 +22,82 @@ class TestPrepareConnectivity(TestCase):
         self.route_table_service = Mock()
         self.crypto_service = Mock()
         self.cancellation_service = Mock()
-
+        self.cancellation_context = Mock()
+        self.subnet_service = Mock()
+        self.subnet_waiter = Mock()
         self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service, self.route_table_service,
-                                                         self.crypto_service, self.cancellation_service)
+                                                         self.crypto_service, self.cancellation_service,
+                                                         self.subnet_service, self.subnet_waiter)
+
+    def test_prepare_conn_must_receive_network_action(self):
+        with self.assertRaises(Exception) as error:
+            self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                                   ec2_session=self.ec2_session,
+                                                   s3_session=self.s3_session,
+                                                   reservation=self.reservation,
+                                                   aws_ec2_datamodel=self.aws_dm,
+                                                   actions=[NetworkAction()],
+                                                   cancellation_context=self.cancellation_context,
+                                                   logger=Mock())
+        self.assertEqual(error.exception.message, "Actions list must contain a PrepareNetworkAction.")
+
+    def test_prepare_conn_execute_the_network_action_first(self):
+        # Arrage
+        actions = []
+        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
+        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
+        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        # Act
+        results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                               ec2_session=self.ec2_session,
+                                               s3_session=self.s3_session,
+                                               reservation=self.reservation,
+                                               aws_ec2_datamodel=self.aws_dm,
+                                               actions=actions,
+                                               cancellation_context=self.cancellation_context,
+                                               logger=Mock())
+        # Assert
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[0].actionId, "Net")
+        self.assertEqual(results[1].actionId, "SubA")
+        self.assertEqual(results[2].actionId, "SubB")
+
+    def test_prepare_conn_execute_the_subnet_actions(self):
+        # Arrage
+        actions = []
+        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
+        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
+        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        # Act
+        with patch('cloudshell.cp.aws.domain.conncetivity.operations.prepare.PrepareSubnetExecutor') as ctor:
+            obj = Mock()
+            obj.execute = Mock(return_value=["ResA","ResB"])
+            ctor.return_value = obj
+            results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
+                                                             ec2_session=self.ec2_session,
+                                                             s3_session=self.s3_session,
+                                                             reservation=self.reservation,
+                                                             aws_ec2_datamodel=self.aws_dm,
+                                                             actions=actions,
+                                                             cancellation_context=self.cancellation_context,
+                                                             logger=Mock())
+        # Assert
+        self.assertEqual(len(results), 3)
+        self.assertEqual(results[1], "ResA")
+        self.assertEqual(results[2], "ResB")
 
     def test_prepare_conn_command(self):
         # Arrange
-        action = NetworkAction()
-        action.id = "1234"
-        action.connection_params = PrepareNetworkParams()
-        request = DeployDataHolder({"actions": [
-            {"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356", "actionTarget": None, "customActionAttributes": [
-                {"attributeName": "Network", "attributeValue": "10.0.0.0/24", "type": "customAttribute"}],
-             "type": "prepareNetwork"}]})
+        action = NetworkAction(id="1234", connection_params=PrepareNetworkParams())
+
         self.vpc_serv.get_peering_connection_by_reservation_id = Mock(return_value=None)
         access_key = Mock()
         self.prepare_conn._get_or_create_key_pair = Mock(return_value=access_key)
         crypto_dto = Mock()
         self.crypto_service.encrypt = Mock(return_value=crypto_dto)
         self.route_table_service.get_all_route_tables = Mock(return_value=MagicMock())
-        cancellation_context = Mock()
+
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
                                                          ec2_session=self.ec2_session,
@@ -50,7 +105,7 @@ class TestPrepareConnectivity(TestCase):
                                                          reservation=self.reservation,
                                                          aws_ec2_datamodel=self.aws_dm,
                                                          actions=[action],
-                                                         cancellation_context=cancellation_context,
+                                                         cancellation_context=self.cancellation_context,
                                                          logger=Mock())
 
         self.prepare_conn._get_or_create_key_pair.assert_called_once_with(ec2_session=self.ec2_session,
@@ -106,7 +161,8 @@ class TestPrepareConnectivity(TestCase):
         key_pair_service = Mock()
         key_pair_service.load_key_pair_by_name = Mock(return_value=None)
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
-                                                    self.route_table_service, self.crypto_service, self.cancellation_service)
+                                                    self.route_table_service, self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
         key_pair = Mock()
         key_pair_service.create_key_pair = Mock(return_value=key_pair)
 
@@ -118,41 +174,6 @@ class TestPrepareConnectivity(TestCase):
                                                                      'bucket',
                                                                      'res_id'))
         self.assertEquals(access_key, key_pair.key_material)
-
-    def test_extract_cidr(self):
-        action1 = DeployDataHolder({
-            "customActionAttributes": [{
-                "attributeName": "Network",
-                "attributeValue": "10.0.0.0/24",
-                "type": "customAttribute"}],
-            "type": "prepareNetwork"})
-
-        cidr = self.prepare_conn._extract_cidr(action1)
-        self.assertEqual(cidr, '10.0.0.0/24')
-
-        action2 = DeployDataHolder({
-            "customActionAttributes": [
-                {
-                    "attributeName": "Network",
-                    "attributeValue": "10.0.0.0/24",
-                    "type": "customAttribute"
-                },
-                {
-                    "attributeName": "Network",
-                    "attributeValue": "10.0.0.0/24",
-                    "type": "customAttribute"
-                }
-            ],
-            "type": "prepareNetwork"})
-
-        self.assertRaises(ValueError, self.prepare_conn._extract_cidr, action2)
-
-        action3 = DeployDataHolder({
-            "customActionAttributes": [
-            ],
-            "type": "prepareNetwork"})
-
-        self.assertRaises(ValueError, self.prepare_conn._extract_cidr, action3)
 
     def test_get_or_create_security_group(self):
         sg_name = Mock()
@@ -166,7 +187,8 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service)
+                                                    self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_security_group(self.ec2_session, self.reservation, vpc, management_sg_id)
 
@@ -176,7 +198,7 @@ class TestPrepareConnectivity(TestCase):
         self.assertEqual(sg, res)
 
     def test_get_or_create_vpc(self):
-        action = Mock()
+        cidr = Mock()
         reservation_id = Mock()
         vpc = Mock()
         vpc_service = Mock()
@@ -185,12 +207,11 @@ class TestPrepareConnectivity(TestCase):
 
         prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
                                                     self.route_table_service, self.crypto_service,
-                                                    self.cancellation_service)
-        cidr = Mock()
-        prepare_conn._extract_cidr = Mock(return_value=cidr)
-        res = prepare_conn._get_or_create_vpc(action, self.ec2_session, reservation_id)
+                                                    self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
+
+        res = prepare_conn._get_or_create_vpc(cidr, self.ec2_session, reservation_id)
 
         self.assertTrue(vpc_service.find_vpc_for_reservation.called_with(self.ec2_session, reservation_id))
         self.assertTrue(vpc_service.create_vpc_for_reservation.called_with(self.ec2_session, reservation_id, cidr))
-        self.assertTrue(prepare_conn._extract_cidr.called_with(action))
         self.assertEqual(vpc, res)
