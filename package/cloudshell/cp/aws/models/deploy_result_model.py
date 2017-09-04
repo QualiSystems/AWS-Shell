@@ -1,4 +1,4 @@
-from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultDto
+from cloudshell.cp.aws.models.network_actions_models import ConnectToSubnetActionResult
 
 
 class DeployResult(object):
@@ -19,7 +19,7 @@ class DeployResult(object):
         :param [dict] deployed_app_attributes:
         :param str deployed_app_address:
         :param str public_ip:
-        :param list[DeployNetworkingResultDto] network_configuration_results:
+        :param list[ConnectToSubnetActionResult] network_configuration_results:
         :return:
         """
 
@@ -34,4 +34,4 @@ class DeployResult(object):
         self.deployed_app_attributes = deployed_app_attributes
         self.deployed_app_address = deployed_app_address
         self.public_ip = public_ip
-        self.network_configuration_results = network_configuration_results  # type: list[DeployNetworkingResultDto]
+        self.network_configuration_results = network_configuration_results  # type: list[ConnectToSubnetActionResult]

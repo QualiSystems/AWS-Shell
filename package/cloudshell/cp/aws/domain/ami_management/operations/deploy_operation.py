@@ -175,7 +175,7 @@ class DeployAMIOperation(object):
     def _convertDeployNetworkResultModelToDto(self, network_config_result):
         """
         :param DeployNetworkingResultModel network_config_result:
-        :rtype: DeployNetworkingResultDto
+        :rtype: ConnectToSubnetActionResult
         """
         import json
         interface_data_json_str = json.dumps({
@@ -185,9 +185,9 @@ class DeployAMIOperation(object):
             'public_ip': network_config_result.public_ip,
             'mac_address': network_config_result.mac_address
         })
-        return DeployNetworkingResultDto(action_id=network_config_result.action_id,
-                                         success=True,
-                                         interface_data=interface_data_json_str)
+        return ConnectToSubnetActionResult(action_id=network_config_result.action_id,
+                                           success=True,
+                                           interface_data=interface_data_json_str)
 
     def _prepare_network_result_models(self, ami_deployment_model):
         """

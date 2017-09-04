@@ -1,7 +1,7 @@
 import traceback
 
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.connectivity_models import ConnectivityActionResult
+from cloudshell.cp.aws.models.network_actions_models import ConnectivityActionResult
 
 
 class CleanupConnectivityOperation(object):

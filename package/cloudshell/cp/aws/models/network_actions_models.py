@@ -86,14 +86,34 @@ class DeployNetworkingResultModel(object):
         self.public_ip = ''  # type: str
         self.mac_address = ''  # type: str
 
+class ConnectivityActionResult(object):
+    def __init__(self):
+        self.actionId = ''
+        self.success = True
+        self.infoMessage = ''
+        self.errorMessage = ''
 
-class DeployNetworkingResultDto(object): # todo: make is to inherit from ConnectivityActionResult
+
+class PrepareNetworkActionResult(ConnectivityActionResult):
+    def __init__(self):
+        ConnectivityActionResult.__init__(self)
+        self.vpcId = ''
+        self.securityGroupId = ''
+        self.type = 'PrepareNetwork'
+
+
+class PrepareSubnetActionResult(ConnectivityActionResult):
+    def __init__(self):
+        ConnectivityActionResult.__init__(self)
+        self.subnetId = ''
+
+
+class ConnectToSubnetActionResult(ConnectivityActionResult):
     def __init__(self, action_id, success, interface_data, info='', error=''):
+        ConnectivityActionResult.__init__(self)
         self.actionId = action_id  # type: str
         self.type = 'connectToSubnet'
         self.success = success
         self.interface = interface_data
         self.infoMessage = info
         self.errorMessage = error
-
-

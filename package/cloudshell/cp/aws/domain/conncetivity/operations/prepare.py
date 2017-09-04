@@ -1,18 +1,14 @@
 import traceback
 
 import jsonpickle
-from pip._vendor.retrying import retry
-
 from cloudshell.shell.core.driver_context import CancellationContext
 
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
-from cloudshell.cp.aws.domain.context import ec2_client
+from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.connectivity_models import PrepareNetworkActionResult, ConnectivityActionResult, \
-    PrepareSubnetActionResult
-from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.models.network_actions_models import *
+from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkActionResult, PrepareSubnetActionResult
 
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
