@@ -74,7 +74,7 @@ class DeployNetworkingResultModel(object):
         self.mac_address = ''  # type: str
 
 
-class DeployNetworkingResultDto(object):
+class DeployNetworkingResultDto(object): # todo: make is to inherit from ConnectivityActionResult
     def __init__(self, action_id, success, interface_data, info='', error=''):
         self.actionId = action_id  # type: str
         self.type = 'connectToSubnet'
@@ -82,3 +82,5 @@ class DeployNetworkingResultDto(object):
         self.interface = interface_data
         self.infoMessage = info
         self.errorMessage = error
+
+

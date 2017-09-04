@@ -1,10 +1,11 @@
 from botocore.exceptions import ClientError
 
+from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 
 
 class DeleteAMIOperation(object):
-    def __init__(self, instance_service, ec2_storage_service, security_group_service, tag_service):
+    def __init__(self, instance_service, ec2_storage_service, security_group_service, tag_service, elastic_ip_service):
         """
         :param instance_service:
         :type instance_service: cloudshell.cp.aws.domain.services.ec2.instance.InstanceService
@@ -14,11 +15,13 @@ class DeleteAMIOperation(object):
         :type security_group_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         :param tag_service:
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
+        :param ElasticIpService elastic_ip_service:
         """
         self.instance_service = instance_service
         self.ec2_storage_service = ec2_storage_service
         self.security_group_service = security_group_service
         self.tag_service = tag_service
+        self.elastic_ip_service = elastic_ip_service
 
     def delete_instance(self, logger, ec2_session, instance_id):
         """
@@ -67,7 +70,7 @@ class DeleteAMIOperation(object):
         self.instance_service.terminate_instance(instance)
 
         for address in vpc_addresses:
-            self.instance_service.release_elastic_address(address)
+            self.elastic_ip_service.release_elastic_address(address)
 
         # find the exclusive security groups of the instance and delete them
         if security_groups_description:

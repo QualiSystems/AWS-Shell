@@ -1,3 +1,4 @@
+# todo: move to network_actions_model.py
 
 class ConnectivityActionResult(object):
     def __init__(self):

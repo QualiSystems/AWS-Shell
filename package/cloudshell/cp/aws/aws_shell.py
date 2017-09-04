@@ -104,7 +104,8 @@ class AWSShell(object):
         self.delete_ami_operation = DeleteAMIOperation(instance_service=self.instance_service,
                                                        ec2_storage_service=self.ec2_storage_service,
                                                        security_group_service=self.security_group_service,
-                                                       tag_service=self.tag_service)
+                                                       tag_service=self.tag_service,
+                                                       elastic_ip_service=self.elastic_ip_service)
 
         self.clean_up_operation = CleanupConnectivityOperation(vpc_service=self.vpc_service,
                                                                key_pair_service=self.key_pair_service,
