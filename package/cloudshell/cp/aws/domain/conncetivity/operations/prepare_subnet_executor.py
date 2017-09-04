@@ -9,8 +9,8 @@ from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.connectivity_models import PrepareSubnetActionResult
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction, PrepareSubnetParams
+from cloudshell.cp.aws.models.network_actions_models import NetworkAction, PrepareSubnetParams, \
+    PrepareSubnetActionResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
 

@@ -7,7 +7,7 @@ class ElasticIpService(object):
     def __init__(self):
         pass
 
-    def set_elastic_ips(self, ec2_session, ec2_client, instance, ami_deployment_model, network_config_results):
+    def set_elastic_ips(self, ec2_session, ec2_client, instance, ami_deployment_model, network_config_results, logger):
         """
 
         :param ec2_session: EC2 session
@@ -15,6 +15,7 @@ class ElasticIpService(object):
         :param instance:
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
         :param list[DeployNetworkingResultModel] network_config_results:
+        :param logging.Logger logger:
         :return:
         """
         if not ami_deployment_model.allocate_elastic_ip:
@@ -26,7 +27,8 @@ class ElasticIpService(object):
             self.associate_elastic_ip_to_instance(ec2_session=ec2_session,
                                                   instance=instance,
                                                   elastic_ip=elastic_ip)
-
+            logger.info("Single subnet mode detected. Allocated & associated elastic ip {0} to instance {1}"
+                        .format(elastic_ip, instance.id))
             return
 
         # allocate elastic ip for each interface inside a public subnet
@@ -43,9 +45,12 @@ class ElasticIpService(object):
             # allocate and assign elastic ip
             elastic_ip = self.allocate_elastic_address(ec2_client=ec2_client)
             action_result.public_ip = elastic_ip  # set elastic ip data in deploy result
+            interface_id = interface["NetworkInterfaceId"]
             self.associate_elastic_ip_to_network_interface(ec2_session=ec2_session,
-                                                           interface_id=interface["NetworkInterfaceId"],
+                                                           interface_id=interface_id,
                                                            elastic_ip=elastic_ip)
+            logger.info("Multi-subnet mode detected. Allocated & associated elastic ip {0} to interface {1}"
+                        .format(elastic_ip, interface_id))
 
     def _is_single_subnet_mode(self, ami_deployment_model):
         # todo move code to networking service
