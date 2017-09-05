@@ -25,15 +25,19 @@ class TestDeployOperation(TestCase):
         self.cancellation_service = Mock()
         self.logger = Mock()
         self.elastic_ip_service = Mock()
-        self.deploy_operation = DeployAMIOperation(self.instance_service,
-                                                   self.credentials_manager,
-                                                   self.security_group_service,
-                                                   self.tag_service,
-                                                   self.vpc_service,
-                                                   self.key_pair,
-                                                   self.subnet_service,
-                                                   self.elastic_ip_service,
-                                                   self.cancellation_service)
+        self.network_interface_service = Mock()
+        self.device_index_strategy = Mock()
+        self.deploy_operation = DeployAMIOperation(instance_service=self.instance_service,
+                                                   ami_credential_service=self.credentials_manager,
+                                                   security_group_service=self.security_group_service,
+                                                   tag_service=self.tag_service,
+                                                   vpc_service=self.vpc_service,
+                                                   key_pair_service=self.key_pair,
+                                                   subnet_service=self.subnet_service,
+                                                   elastic_ip_service=self.elastic_ip_service,
+                                                   network_interface_service=self.network_interface_service,
+                                                   cancellation_service=self.cancellation_service,
+                                                   device_index_strategy=self.device_index_strategy)
 
     def test_deploy_rollback_called(self):
         # arrange
@@ -172,7 +176,8 @@ class TestDeployOperation(TestCase):
                 ec2_client=self.ec2_client,
                 instance=instance,
                 ami_deployment_model=ami_datamodel,
-                network_config_results=network_config_results)
+                network_config_results=network_config_results,
+                logger=self.logger)
 
     def test_get_block_device_mappings_throws_max_storage_error(self):
         ec_model = Mock()
@@ -316,7 +321,8 @@ class TestDeployOperation(TestCase):
                           security_group=None,
                           key_pair='keypair',
                           reservation=Mock(),
-                          network_config_results=Mock())
+                          network_config_results=Mock(),
+                          logger=self.logger)
 
     def test_create_deployment_parameters_single_subnet(self):
         image = Mock()
@@ -337,7 +343,8 @@ class TestDeployOperation(TestCase):
                                                                         security_group=None,
                                                                         key_pair='keypair',
                                                                         reservation=Mock(),
-                                                                        network_config_results=MagicMock())
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger)
 
         self.assertEquals(aws_model.min_count, 1)
         self.assertEquals(aws_model.max_count, 1)
@@ -354,9 +361,13 @@ class TestDeployOperation(TestCase):
             self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
                                                               vpc=Mock(),
                                                               security_group_ids=MagicMock(),
-                                                              network_config_results=MagicMock())
+                                                              network_config_results=MagicMock(),
+                                                              logger=self.logger)
 
     def test_prepare_network_interfaces_multi_subnets(self):
+        def build_network_interface_handler(*args, **kwargs):
+            return {'SubnetId': kwargs['subnet_id']}
+
         # arrange
         vpc = Mock()
         security_group_ids = MagicMock()
@@ -365,11 +376,13 @@ class TestDeployOperation(TestCase):
         action1.id = 'action1'
         action1.connection_params = SubnetConnectionParams()
         action1.connection_params.subnet_id = 'sub1'
+        action1.connection_params.device_index = 0
 
         action2 = NetworkAction()
         action2.id = 'action2'
         action2.connection_params = SubnetConnectionParams()
         action2.connection_params.subnet_id = 'sub2'
+        action2.connection_params.device_index = 1
 
         ami_model = Mock()
         ami_model.network_configurations = [action1, action2]
@@ -379,22 +392,22 @@ class TestDeployOperation(TestCase):
         res_model_2 = DeployNetworkingResultModel('action2')
         network_config_results = [res_model_1, res_model_2]
 
+        self.deploy_operation.network_interface_service.build_network_interface_dto = \
+            Mock(side_effect=build_network_interface_handler)
+
         # act
         net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
                                                                            vpc=vpc,
                                                                            security_group_ids=security_group_ids,
-                                                                           network_config_results=network_config_results)
+                                                                           network_config_results=network_config_results,
+                                                                           logger=self.logger)
 
         # assert
-        self.assertEquals(len(net_interfaces), 2)
-        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
-        self.assertEquals(net_interfaces[0]['DeviceIndex'], 0)
-        self.assertEquals(net_interfaces[0]['Groups'], security_group_ids)
-        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
-        self.assertEquals(net_interfaces[1]['DeviceIndex'], 1)
-        self.assertEquals(net_interfaces[1]['Groups'], security_group_ids)
         self.assertEquals(res_model_1.device_index, 0)
         self.assertEquals(res_model_2.device_index, 1)
+        self.assertEquals(len(net_interfaces), 2)
+        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
+        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
 
     def test_prepare_network_config_results_dto_returns_empty_array_when_no_network_config(self):
         # arrange
@@ -459,7 +472,9 @@ class TestDeployOperation(TestCase):
                                               self.key_pair,
                                               self.subnet_service,
                                               self.elastic_ip_service,
-                                              self.cancellation_service)
+                                              self.network_interface_service,
+                                              self.cancellation_service,
+                                              self.device_index_strategy)
 
         # act & assert
         with self.assertRaisesRegexp(ValueError, 'VPC is not set for this reservation'):
@@ -542,4 +557,3 @@ class TestDeployOperation(TestCase):
         self.assertEquals(network_config_results[1].private_ip, "pri_ip_2")
         self.assertEquals(network_config_results[1].mac_address, "mac2")
         self.assertEquals(network_config_results[1].public_ip, "")
-

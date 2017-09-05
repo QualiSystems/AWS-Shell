@@ -1,3 +1,6 @@
+VNIC_NAME_ATTRIBUTE = "Vnic Name"
+
+
 class ConnectionParamsBase(object):
     def __init__(self):
         self.cidr = ''  # type: str
@@ -14,6 +17,25 @@ class SubnetConnectionParams(ConnectionParamsBase):
             if attr.name == "Public":
                 return True if attr.value.lower() == "true" else False
         return True  # default public subnet value is True
+
+    @property
+    def device_index(self):
+        for attr in self.subnetServiceAttributes:
+            if attr.name == VNIC_NAME_ATTRIBUTE:
+                return int(attr.value)
+        return None
+
+    @device_index.setter
+    def device_index(self, value):
+        for attr in self.subnetServiceAttributes:
+            if attr.name == VNIC_NAME_ATTRIBUTE:
+                attr.value = int(value)
+                return
+
+        vnic_name_attr = NetworkActionAttribute()
+        vnic_name_attr.name = VNIC_NAME_ATTRIBUTE
+        vnic_name_attr.value = int(value)
+        self.subnetServiceAttributes.append(vnic_name_attr)
 
 
 class PrepareSubnetParams(ConnectionParamsBase):
@@ -64,9 +86,31 @@ class DeployNetworkingResultModel(object):
         self.public_ip = ''  # type: str
         self.mac_address = ''  # type: str
 
+class ConnectivityActionResult(object):
+    def __init__(self):
+        self.actionId = ''
+        self.success = True
+        self.infoMessage = ''
+        self.errorMessage = ''
 
-class DeployNetworkingResultDto(object):
+
+class PrepareNetworkActionResult(ConnectivityActionResult):
+    def __init__(self):
+        ConnectivityActionResult.__init__(self)
+        self.vpcId = ''
+        self.securityGroupId = ''
+        self.type = 'PrepareNetwork'
+
+
+class PrepareSubnetActionResult(ConnectivityActionResult):
+    def __init__(self):
+        ConnectivityActionResult.__init__(self)
+        self.subnetId = ''
+
+
+class ConnectToSubnetActionResult(ConnectivityActionResult):
     def __init__(self, action_id, success, interface_data, info='', error=''):
+        ConnectivityActionResult.__init__(self)
         self.actionId = action_id  # type: str
         self.type = 'connectToSubnet'
         self.success = success
