@@ -57,10 +57,6 @@ class SubnetService(object):
             return None
         return subnets[0]
 
-    def get_subnet_from_vpc(self, vpc, cidr):
-        subnets = list(vpc.subnets.all())
-        return next((s for s in subnets if s.cidr_block == cidr), None)
-
     @staticmethod
     def _get_subnet_name(name):
         return SUBNET_NAME.format(name)
