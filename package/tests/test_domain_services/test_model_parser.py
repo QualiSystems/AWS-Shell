@@ -2,6 +2,7 @@ from unittest import TestCase
 
 from mock import Mock
 
+from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, NetworkActionAttribute
 
@@ -195,3 +196,9 @@ class TestModelParser(TestCase):
 
         # assert
         self.assertTrue(is_public)
+
+    def test_parse_bool_value_as_string_and_as_boolean(self):
+        self.assertTrue(convert_to_bool("True"))
+        self.assertTrue(convert_to_bool(True))
+        self.assertFalse(convert_to_bool("False"))
+        self.assertFalse(convert_to_bool(False))
