@@ -150,7 +150,9 @@ class DeployAMIOperation(object):
 
         logger.info("Preparing result")
 
-        deployed_app_attributes = self._prepare_deployed_app_attributes(instance, ami_credentials, ami_deployment_model)
+        deployed_app_attributes = self._prepare_deployed_app_attributes(ami_credentials=ami_credentials,
+                                                                        ami_deployment_model=ami_deployment_model,
+                                                                        network_config_results=network_config_results)
         network_actions_results_dtos = \
             self._prepare_network_config_results_dto(network_config_results=network_config_results,
                                                      ami_deployment_model=ami_deployment_model)
@@ -350,7 +352,8 @@ class DeployAMIOperation(object):
 
         return aws_model
 
-    def _prepare_network_interfaces(self, vpc, ami_deployment_model, security_group_ids, network_config_results, logger):
+    def _prepare_network_interfaces(self, vpc, ami_deployment_model, security_group_ids, network_config_results,
+                                    logger):
         """
         :param vpc: The reservation VPC
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
@@ -488,12 +491,12 @@ class DeployAMIOperation(object):
         """
         return int(storage_size) * 30
 
-    def _prepare_deployed_app_attributes(self, instance, ami_credentials, ami_deployment_model):
+    def _prepare_deployed_app_attributes(self, ami_credentials, ami_deployment_model, network_config_results):
         """
 
-        :param instance:
         :param cloudshell.cp.aws.models.ami_credentials.AMICredentials ami_credentials:
         :param cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model.DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :param list[DeployNetworkingResultModel] network_config_results:
         :return:
         :rtype: dict
         """
@@ -505,7 +508,8 @@ class DeployAMIOperation(object):
             deployed_app_attr['User'] = ami_credentials.user_name
 
         if ami_deployment_model.add_public_ip or ami_deployment_model.allocate_elastic_ip:
-            deployed_app_attr['Public IP'] = instance.public_ip_address
+            deployed_app_attr['Public IP'] = first_or_default(network_config_results,
+                                                              lambda x: x.device_index == 0).public_ip
 
         return deployed_app_attr
 

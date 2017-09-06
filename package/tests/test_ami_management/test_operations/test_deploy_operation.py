@@ -117,7 +117,7 @@ class TestDeployOperation(TestCase):
         self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_info)
         self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
         network_config_results_dto = Mock()
-        network_config_results = MagicMock()
+        network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
         self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
         self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
 
