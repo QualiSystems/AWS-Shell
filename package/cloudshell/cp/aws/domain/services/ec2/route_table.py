@@ -103,7 +103,6 @@ class RouteTablesService(object):
         table.delete()
         return True
 
-
     def create_route_table(self, ec2_session, reservation, vpc_id, table_name):
         """
         :param ec2_session: Ec2 Session
