@@ -41,6 +41,9 @@ from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.shell.core.driver_context import CancellationContext
 
+from package.cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
+    SetAppSecurityGroupsOperation
+
 
 class AWSShell(object):
     def __init__(self):
@@ -117,6 +120,8 @@ class AWSShell(object):
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
+        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation()
+
     def cleanup_connectivity(self, command_context, request):
         """
         Will delete the reservation vpc and all related resources including all remaining instances
@@ -138,10 +143,10 @@ class AWSShell(object):
                              s3_session=shell_context.aws_api.s3_session,
                              aws_ec2_data_model=shell_context.aws_ec2_resource_model,
                              reservation_id=command_context.reservation.reservation_id,
-                             actions = connectivity_actions,
+                             actions=connectivity_actions,
                              logger=shell_context.logger)
                 return self.command_result_parser.set_command_result(
-                        {'driverResponse': {'actionResults': [result]}})
+                    {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request, cancellation_context):
         """
@@ -160,14 +165,14 @@ class AWSShell(object):
                 connectivity_actions = self.request_str_to_actions_list(request)
 
                 results = self.prepare_connectivity_operation.prepare_connectivity(
-                        ec2_client=shell_context.aws_api.ec2_client,
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        s3_session=shell_context.aws_api.s3_session,
-                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
-                        aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
-                        actions=connectivity_actions,
-                        cancellation_context=cancellation_context,
-                        logger=shell_context.logger)
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    s3_session=shell_context.aws_api.s3_session,
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                    aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                    actions=connectivity_actions,
+                    cancellation_context=cancellation_context,
+                    logger=shell_context.logger)
 
                 return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
@@ -241,7 +246,7 @@ class AWSShell(object):
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
                 return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                        data_holder.vmdetails.vmCustomParams)
+                    data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
@@ -309,3 +314,16 @@ class AWSShell(object):
                 return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
                                                                 aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
                                                                 reservation_id=reservation_id)
+
+    def set_app_security_groups(self, context, request):
+        """
+        Set security groups (inbound rules only)
+        :param ResourceCommandContext context:
+        :param request: The json request
+        :return:
+        """
+        with AwsShellContext(context=context) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Set App Security Groups')
+
+                self.set_app_security_groups_operation.set_app_security_groups()
