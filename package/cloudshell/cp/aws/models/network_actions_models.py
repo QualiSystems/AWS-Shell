@@ -5,6 +5,7 @@ class ConnectionParamsBase(object):
     def __init__(self):
         self.cidr = ''  # type: str
         self.subnetServiceAttributes = []  # type: list[NetworkActionAttribute]
+        self.custom_attributes = []  # type: list[NetworkActionAttribute]
 
 
 class SubnetConnectionParams(ConnectionParamsBase):
@@ -20,22 +21,24 @@ class SubnetConnectionParams(ConnectionParamsBase):
 
     @property
     def device_index(self):
-        for attr in self.subnetServiceAttributes:
+        for attr in self.custom_attributes:
             if attr.name == VNIC_NAME_ATTRIBUTE:
-                return int(attr.value)
+                try:
+                    return int(attr.value)
+                except:
+                    return None
         return None
 
     @device_index.setter
     def device_index(self, value):
-        for attr in self.subnetServiceAttributes:
+        for attr in self.custom_attributes:
             if attr.name == VNIC_NAME_ATTRIBUTE:
                 attr.value = int(value)
                 return
-
         vnic_name_attr = NetworkActionAttribute()
         vnic_name_attr.name = VNIC_NAME_ATTRIBUTE
         vnic_name_attr.value = int(value)
-        self.subnetServiceAttributes.append(vnic_name_attr)
+        self.custom_attributes.append(vnic_name_attr)
 
 
 class PrepareSubnetParams(ConnectionParamsBase):
@@ -64,17 +67,15 @@ class NetworkActionAttribute(object):
 
 
 class NetworkAction(object):
-    def __init__(self, id=None, type=None, connection_params=None, custom_attributes=None):
+    def __init__(self, id=None, type=None, connection_params=None):
         """
         :param str id:
         :param str type:
         :param ConnectionParamsBase connection_params:
-        :param [NetworkActionAttribute] custom_attributes:
         """
         self.id = id or ''
         self.type = type or ''
         self.connection_params = connection_params
-        self.custom_attributes = custom_attributes or []
 
 
 class DeployNetworkingResultModel(object):
