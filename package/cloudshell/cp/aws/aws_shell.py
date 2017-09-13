@@ -120,7 +120,7 @@ class AWSShell(object):
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
-        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation()
+        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation(instance_service=self.instance_service)
 
     def cleanup_connectivity(self, command_context, request):
         """
@@ -328,4 +328,5 @@ class AWSShell(object):
 
                 app_security_group_model = self.model_parser.convert_to_app_security_group_model(request)
 
-                self.set_app_security_groups_operation.set_app_security_groups(app_security_group_model)
+                self.set_app_security_groups_operation.set_app_security_groups(app_security_group_model,
+                                                                               ec2_session=shell_context.aws_api.ec2_session)

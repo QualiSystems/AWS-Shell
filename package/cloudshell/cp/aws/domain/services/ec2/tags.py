@@ -10,11 +10,19 @@ class TagNames(object):
     Name = 'Name'
     Isolation = 'Isolation'
     IsPublic = 'IsPublic'
+    Type = 'Type'
 
 
 class IsolationTagValues(object):
     Exclusive = 'Exclusive'
     Shared = 'Shared'
+
+
+class TypeTagValues(object):
+    Default = 'Default'
+    Isolated = 'Isolated'
+    InboundPorts = 'InboundPorts'
+    Interface = 'Interface'
 
 
 class TagService(object):
@@ -41,6 +49,12 @@ class TagService(object):
     def find_isolation_tag_value(self, tags):
         for tag in tags:
             if tag['Key'] == TagNames.Isolation:
+                return tag['Value']
+        return None
+
+    def find_type_tag_value(self, tags):
+        for tag in tags:
+            if tag['Key'] == TagNames.Type:
                 return tag['Value']
         return None
 

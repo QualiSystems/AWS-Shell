@@ -26,7 +26,7 @@ class AWSModelsParser(object):
 
     @staticmethod
     def get_deployed_app_from_set_app_security_groups_request(request):
-        json_str = jsonpickle.decode(request.deployed_app_json)
+        json_str = jsonpickle.decode(request.deployed_app)
         data_holder = DeployDataHolder(json_str)
         return data_holder
 

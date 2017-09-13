@@ -1,7 +1,16 @@
+from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
+from cloudshell.cp.aws.domain.services.ec2.tags import TypeTagValues
 from cloudshell.cp.aws.models.port_data import PortData
 
 
 class SecurityGroupService(object):
+    def __init__(self, tag_service):
+        """
+        :param TagService tag_service:
+        :return:
+        """
+        self.tag_service = tag_service
+
     CLOUDSHELL_SANDBOX_SG = "Cloudshell Sandbox SG {0}"
     CLOUDSHELL_CUSTOM_SECURITY_GROUP = "Cloudshell Custom SG {0}"
     CLOUDSHELL_SECURITY_GROUP_DESCRIPTION = "Cloudshell Security Group"
@@ -128,3 +137,24 @@ class SecurityGroupService(object):
                     'CidrIp': port_data.destination
                 }
             ]}
+
+    def get_or_create_custom_security_group(self, network_interface):
+        """
+        Returns or create (if doesn't exist) and then returns a custom security group for the nic
+        Custom security group is defined by the following attributes and their values:
+        "Isolation=Exclusive" and "Type=Interface"
+        :type network_interface: AWS::EC2::NetworkInterface
+        :rtype AppSecurityGroupModel:
+        """
+        nic_security_groups = network_interface.groups
+
+        for security_group in nic_security_groups:
+            isolation_tag = self.tag_service.find_isolation_tag_value(security_group.tags)
+            type_tag = self.tag_service.find_type_tag_value(security_group.tags)
+            if isolation_tag == IsolationTagValues.Exclusive and type_tag == TypeTagValues.Interface:
+                return security_group
+
+        self.create_security_group()
+
+
+
