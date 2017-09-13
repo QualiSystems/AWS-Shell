@@ -23,7 +23,10 @@ class SubnetConnectionParams(ConnectionParamsBase):
     def device_index(self):
         for attr in self.custom_attributes:
             if attr.name == VNIC_NAME_ATTRIBUTE:
-                return int(attr.value) if attr.value else None
+                try:
+                    return int(attr.value)
+                except:
+                    return None
         return None
 
     @device_index.setter
