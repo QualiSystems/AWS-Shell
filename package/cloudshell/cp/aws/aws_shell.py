@@ -318,7 +318,7 @@ class AWSShell(object):
     def set_app_security_groups(self, context, request):
         """
         Set security groups (inbound rules only)
-        :param ResourceCommandContext context:
+        :param context: todo - set the type of the parameter
         :param request: The json request
         :return:
         """
@@ -326,4 +326,6 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Set App Security Groups')
 
-                self.set_app_security_groups_operation.set_app_security_groups()
+                app_security_group_model = self.model_parser.convert_to_app_security_group_model(request)
+
+                self.set_app_security_groups_operation.set_app_security_groups(app_security_group_model)
