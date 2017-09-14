@@ -331,4 +331,5 @@ class AWSShell(object):
                 app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
                 self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models,
-                                                                                ec2_session=shell_context.aws_api.ec2_session)
+                                                                                ec2_session=shell_context.aws_api.ec2_session,
+                                                                                logger=shell_context.logger)

@@ -43,9 +43,9 @@ class AWSModelsParser(object):
         for security_group in security_groups:
             security_group_model = AppSecurityGroupModel()
             security_group_model.deployed_app = DeployedApp()
-            security_group_model.deployed_app.name = security_group.deployedApp.Name
+            security_group_model.deployed_app.name = security_group.deployedApp.name
             security_group_model.deployed_app.vm_details = VmDetails()
-            security_group_model.deployed_app.vm_details.uid = security_group.deployedApp.Vmdetails.UID
+            security_group_model.deployed_app.vm_details.uid = security_group.deployedApp.vmdetails.uid
             security_group_model.security_group_configurations = SecurityGroupParser.parse_security_group_configurations(
                 security_group.securityGroupsConfigurations)
 

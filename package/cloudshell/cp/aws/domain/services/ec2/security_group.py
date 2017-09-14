@@ -140,29 +140,35 @@ class SecurityGroupService(object):
                 }
             ]}
 
-    def get_or_create_custom_security_group(self, ec2_session, network_interface, vpc_id):
+    def get_or_create_custom_security_group(self, ec2_session, logger, network_interface, vpc_id):
         """
         Returns or create (if doesn't exist) and then returns a custom security group for the nic
         Custom security group is defined by the following attributes and their values:
         "Isolation=Exclusive" and "Type=Interface"
         :param ec2_session:
+        :param logging.Logger logger:
         :type network_interface: AWS::EC2::NetworkInterface
         :param vpc_id:
         :rtype AppSecurityGroupModel:
         """
         security_group_descriptions = network_interface.groups
 
+        # return a custom security group if already exists
         for security_group_description in security_group_descriptions:
             security_group = ec2_session.SecurityGroup(security_group_description['GroupId'])
             if SecurityGroupService._is_custom_security_group(self.tag_service, security_group):
+                logger.info("Custom security group exists for nic '{}'.".format(network_interface.network_interface_id))
                 return security_group
 
+        # name for a new (non existed yet) custom security group
         security_group_name = SecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))
 
         # create a new security group in vpc
         custom_security_group = self.create_security_group(ec2_session, vpc_id, security_group_name)
 
-        # add tags to the custom security group
+        logger.info("Custom security group '{}' created.".format(security_group_name))
+
+        # add tags to the created security group that will define it as a custom security group
         tags = self.tag_service.get_custom_security_group_tags()
         self.tag_service.set_ec2_resource_tags(custom_security_group, tags)
 
