@@ -162,6 +162,11 @@ class SecurityGroupService(object):
         # create a new security group in vpc
         custom_security_group = self.create_security_group(ec2_session, vpc_id, security_group_name)
 
+        # add tags to the custom security group
+        tags = self.tag_service.get_custom_security_group_tags()
+        self.tag_service.set_ec2_resource_tags(custom_security_group, tags)
+
+        # attach the custom security group to the nic
         custom_security_group_id = custom_security_group.group_id
         security_group_ids = [x['GroupId'] for x in security_group_descriptions]
         security_group_ids.append(custom_security_group_id)

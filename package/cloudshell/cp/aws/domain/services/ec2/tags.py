@@ -46,6 +46,17 @@ class TagService(object):
         tags.append(self._get_kvp(TagNames.Isolation, isolation))
         return tags
 
+    def get_custom_security_group_tags(self):
+        """
+        Returns the tags for custom security group
+        :return:
+        """
+        tags = [
+            self._get_kvp(TagNames.Isolation, IsolationTagValues.Exclusive),
+            self._get_kvp(TagNames.Type, TypeTagValues.Interface)
+        ]
+        return tags
+
     def find_isolation_tag_value(self, tags):
         for tag in tags:
             if tag['Key'] == TagNames.Isolation:
