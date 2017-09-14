@@ -3,7 +3,6 @@ from unittest import TestCase
 from mock import Mock
 
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
-from tests.test_common.test_mock_helper import Any
 
 
 class TestRouteTableService(TestCase):
