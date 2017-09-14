@@ -170,6 +170,21 @@ class DeployAMIOperation(object):
                             public_ip=instance.public_ip_address,
                             network_configuration_results=network_actions_results_dtos)
 
+    def _validate_public_subnet_exist_if_requested_public_or_elastic_ips(self, ami_deployment_model, logger):
+        """
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :param logging.Logger logger:
+        """
+        if ami_deployment_model.add_public_ip or ami_deployment_model.allocate_elastic_ip:
+            connect_subnet_actions = \
+                filter(lambda x: isinstance(x.connection_params, SubnetConnectionParams),
+                       ami_deployment_model.network_configurations)
+
+            if not any(x.connection_params.is_public_subnet() for x in connect_subnet_actions):
+                msg = "Cannot deploy app with elastic or public ip when connected only to private subnets"
+                logger.error(msg)
+                raise ValueError(msg)
+
     def _prepare_network_config_results_dto(self, network_config_results, ami_deployment_model):
         """
         :param list[DeployNetworkingResultModel] network_config_results:
@@ -335,10 +350,6 @@ class DeployAMIOperation(object):
                                                                           ami_deployment_model=ami_deployment_model,
                                                                           aws_ec2_resource_model=aws_ec2_resource_model)
         aws_model.aws_key = key_pair
-        aws_model.add_public_ip = ami_deployment_model.add_public_ip  # todo can we remvoe this?
-
-        subnet = self.subnet_service.get_first_subnet_from_vpc(vpc)  # todo can we remvoe this?
-        aws_model.subnet_id = subnet.id  # todo can we remvoe this?
 
         security_group_ids = self._get_security_group_param(reservation, security_group, vpc)
         aws_model.security_group_ids = security_group_ids
@@ -370,9 +381,7 @@ class DeployAMIOperation(object):
                     security_group_ids=security_group_ids,
                     vpc=vpc)]
 
-        if ami_deployment_model.add_public_ip and len(ami_deployment_model.network_configurations) > 1:
-            logger.error("Requested public ip with multiple subnets")
-            raise ValueError("Public IP option is not supported with multiple subnets")
+        self._validate_network_interfaces_request(ami_deployment_model, logger)
 
         net_interfaces = []
         public_ip_prop_value = \
@@ -389,7 +398,7 @@ class DeployAMIOperation(object):
             device_index = net_config.connection_params.device_index
 
             net_interfaces.append(
-                    # todo: add fallback to find subnet by cidr if subnet id doesnt exist?
+                    # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
                     self.network_interface_service.build_network_interface_dto(
                             subnet_id=net_config.connection_params.subnet_id,
                             device_index=device_index,
@@ -411,6 +420,15 @@ class DeployAMIOperation(object):
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
         return net_interfaces
+
+    def _validate_network_interfaces_request(self, ami_deployment_model, logger):
+        self._validate_public_ip_with_multiple_subnets(ami_deployment_model, logger)
+        self._validate_public_subnet_exist_if_requested_public_or_elastic_ips(ami_deployment_model, logger)
+
+    def _validate_public_ip_with_multiple_subnets(self, ami_deployment_model, logger):
+        if ami_deployment_model.add_public_ip and len(ami_deployment_model.network_configurations) > 1:
+            logger.error("Requested public ip with multiple subnets")
+            raise ValueError("Public IP option is not supported with multiple subnets")
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
         return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
@@ -508,8 +526,10 @@ class DeployAMIOperation(object):
             deployed_app_attr['User'] = ami_credentials.user_name
 
         if ami_deployment_model.add_public_ip or ami_deployment_model.allocate_elastic_ip:
-            deployed_app_attr['Public IP'] = first_or_default(network_config_results,
-                                                              lambda x: x.device_index == 0).public_ip
+            # get the first public ip after sorting the network_config_results by device index
+            deployed_app_attr['Public IP'] = \
+                first_or_default(sorted(network_config_results, key=lambda x: x.device_index),
+                                 lambda x: x.public_ip).public_ip
 
         return deployed_app_attr
 

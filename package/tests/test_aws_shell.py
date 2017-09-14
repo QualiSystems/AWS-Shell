@@ -1,7 +1,8 @@
 from unittest import TestCase
 
 import jsonpickle
-from mock import Mock, patch, MagicMock
+from mock import Mock, patch
+
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContextModel
@@ -9,7 +10,6 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-from tests.test_common.test_mock_helper import Any
 
 class TestAWSShell(TestCase):
     def setUp(self):
@@ -114,13 +114,16 @@ class TestAWSShell(TestCase):
         # prepare
         req = '{"driverRequest": {"actions": [{"type": "cleanupNetwork", "actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"}]}}'
         self.aws_shell.clean_up_operation.cleanup = Mock(return_value=True)
-
+        actions_mock = Mock()
         result = None
+
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
+            with patch('cloudshell.cp.aws.aws_shell.NetworkActionsParser') as net_parser:
+                net_parser.parse_network_actions_data = Mock(return_value=actions_mock)
 
-            # act
-            result = self.aws_shell.cleanup_connectivity(self.command_context, req)
+                # act
+                result = self.aws_shell.cleanup_connectivity(self.command_context, req)
 
         # assert
         self.aws_shell.clean_up_operation.cleanup.assert_called_with(
@@ -129,7 +132,7 @@ class TestAWSShell(TestCase):
                 s3_session=self.expected_shell_context.aws_api.s3_session,
                 aws_ec2_data_model=self.expected_shell_context.aws_ec2_resource_model,
                 reservation_id=self.command_context.reservation.reservation_id,
-                actions=Any(lambda x: len(x) == 1 and x[0].type == "cleanupNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
+                actions=actions_mock,
                 logger=self.expected_shell_context.logger)
         self.assertEquals(result, '{"driverResponse": {"actionResults": [true]}}')
 
@@ -139,12 +142,11 @@ class TestAWSShell(TestCase):
         req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareNetwork", "connectionParams": {"type": "prepareNetworkParams", "cidr": "10.0.0.0/24"}}]}}'
         self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
         res = None
+        actions_mock = Mock()
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
-            with patch('cloudshell.cp.aws.aws_shell.DeployDataHolder') as deploy_data_holder:
-                data_holder_mock = Mock()
-                data_holder_mock.driverRequest = Mock()
-                deploy_data_holder.return_value = data_holder_mock
+            with patch('cloudshell.cp.aws.aws_shell.NetworkActionsParser') as net_parser:
+                net_parser.parse_network_actions_data = Mock(return_value=actions_mock)
 
                 # Act
                 res = self.aws_shell.prepare_connectivity(self.command_context, req, cancellation_context)
@@ -156,7 +158,7 @@ class TestAWSShell(TestCase):
                     s3_session=self.expected_shell_context.aws_api.s3_session,
                     reservation=self.reservation_model,
                     aws_ec2_datamodel=self.expected_shell_context.aws_ec2_resource_model,
-                    actions=Any(lambda x: len(x) == 1 and x[0].type == "prepareNetwork" and x[0].id == "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356"),
+                    actions=actions_mock,
                     cancellation_context=cancellation_context,
                     logger=self.expected_shell_context.logger)
             self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')

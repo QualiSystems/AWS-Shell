@@ -130,7 +130,7 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Cleanup Connectivity')
 
-                connectivity_actions = self.request_str_to_actions_list(request)
+                connectivity_actions = self._request_str_to_actions_list(request)
 
                 result = self.clean_up_operation \
                     .cleanup(ec2_client=shell_context.aws_api.ec2_client,
@@ -157,7 +157,7 @@ class AWSShell(object):
                 shell_context.logger.info('Prepare Connectivity')
 
                 # parse request
-                connectivity_actions = self.request_str_to_actions_list(request)
+                connectivity_actions = self._request_str_to_actions_list(request)
 
                 results = self.prepare_connectivity_operation.prepare_connectivity(
                         ec2_client=shell_context.aws_api.ec2_client,
@@ -171,7 +171,7 @@ class AWSShell(object):
 
                 return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
-    def request_str_to_actions_list(self, request):
+    def _request_str_to_actions_list(self, request):
         decoded_request = jsonpickle.decode(request)
         if not decoded_request.get('driverRequest') or not decoded_request.get('driverRequest').get('actions'):
             raise ValueError('Invalid connectivity request')
