@@ -4,18 +4,18 @@ class DeployDataHolder(object):
             if isinstance(b, dict):
                 setattr(self, a, DeployDataHolder(b))
             elif isinstance(b, list):
-                items = [self._create_obj_by_type(item) for item in b]
+                items = [self.create_obj_by_type(item) for item in b]
                 setattr(self, a, items)
             else:
-                setattr(self, a, self._create_obj_by_type(b))
+                setattr(self, a, self.create_obj_by_type(b))
 
     @staticmethod
-    def _create_obj_by_type(obj):
+    def create_obj_by_type(obj):
         obj_type = type(obj)
         if obj_type == dict:
             return DeployDataHolder(obj)
         if obj_type == list:
-            return [DeployDataHolder._create_obj_by_type(item) for item in obj]
+            return [DeployDataHolder.create_obj_by_type(item) for item in obj]
         if DeployDataHolder._is_primitive(obj):
             return obj_type(obj)
         return obj

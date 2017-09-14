@@ -41,7 +41,7 @@ from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.shell.core.driver_context import CancellationContext
 
-from package.cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
+from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
 
 
@@ -59,7 +59,7 @@ class AWSShell(object):
         self.password_waiter = PasswordWaiter(self.cancellation_service)
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
-        self.security_group_service = SecurityGroupService()
+        self.security_group_service = SecurityGroupService(self.tag_service)
         self.subnet_waiter = SubnetWaiter()
         self.subnet_service = SubnetService(self.tag_service, self.subnet_waiter)
         self.s3_service = S3BucketService()
@@ -120,7 +120,9 @@ class AWSShell(object):
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
-        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation(instance_service=self.instance_service)
+        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation(instance_service=self.instance_service,
+                                                                               tag_service=self.tag_service,
+                                                                               security_group_service=self.security_group_service)
 
     def cleanup_connectivity(self, command_context, request):
         """
@@ -322,11 +324,11 @@ class AWSShell(object):
         :param request: The json request
         :return:
         """
-        with AwsShellContext(context=context) as shell_context:
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Set App Security Groups')
 
-                app_security_group_model = self.model_parser.convert_to_app_security_group_model(request)
+                app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                self.set_app_security_groups_operation.set_app_security_groups(app_security_group_model,
-                                                                               ec2_session=shell_context.aws_api.ec2_session)
+                self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models,
+                                                                                ec2_session=shell_context.aws_api.ec2_session)

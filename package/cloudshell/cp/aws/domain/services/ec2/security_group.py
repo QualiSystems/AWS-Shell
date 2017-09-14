@@ -1,3 +1,5 @@
+import uuid
+
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.ec2.tags import TypeTagValues
 from cloudshell.cp.aws.models.port_data import PortData
@@ -89,7 +91,7 @@ class SecurityGroupService(object):
             }
         ])
 
-    def set_security_group_rules(self, security_group, inbound_ports, outbound_ports):
+    def set_security_group_rules(self, security_group, inbound_ports, outbound_ports=None):
         """
         :param security_group: AWS SG object
         :param list[PortData] inbound_ports:
@@ -138,23 +140,41 @@ class SecurityGroupService(object):
                 }
             ]}
 
-    def get_or_create_custom_security_group(self, network_interface):
+    def get_or_create_custom_security_group(self, ec2_session, network_interface, vpc_id):
         """
         Returns or create (if doesn't exist) and then returns a custom security group for the nic
         Custom security group is defined by the following attributes and their values:
         "Isolation=Exclusive" and "Type=Interface"
+        :param ec2_session:
         :type network_interface: AWS::EC2::NetworkInterface
+        :param vpc_id:
         :rtype AppSecurityGroupModel:
         """
-        nic_security_groups = network_interface.groups
+        security_group_descriptions = network_interface.groups
 
-        for security_group in nic_security_groups:
-            isolation_tag = self.tag_service.find_isolation_tag_value(security_group.tags)
-            type_tag = self.tag_service.find_type_tag_value(security_group.tags)
-            if isolation_tag == IsolationTagValues.Exclusive and type_tag == TypeTagValues.Interface:
+        for security_group_description in security_group_descriptions:
+            security_group = ec2_session.SecurityGroup(security_group_description['GroupId'])
+            if SecurityGroupService._is_custom_security_group(self.tag_service, security_group):
                 return security_group
 
-        self.create_security_group()
+        security_group_name = SecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))
 
+        # create a new security group in vpc
+        custom_security_group = self.create_security_group(ec2_session, vpc_id, security_group_name)
+
+        custom_security_group_id = custom_security_group.group_id
+        security_group_ids = [x['GroupId'] for x in security_group_descriptions]
+        security_group_ids.append(custom_security_group_id)
+        network_interface.modify_attribute(Groups=security_group_ids)
+
+        return custom_security_group
+
+    @staticmethod
+    def _is_custom_security_group(tag_service, security_group):
+        if not isinstance(security_group.tags, list):
+            return False
+        isolation_tag = tag_service.find_isolation_tag_value(security_group.tags)
+        type_tag = tag_service.find_type_tag_value(security_group.tags)
+        return isolation_tag == IsolationTagValues.Exclusive and type_tag == TypeTagValues.Interface
 
 

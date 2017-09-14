@@ -6,11 +6,12 @@ from cloudshell.shell.core.driver_context import ReservationContextDetails
 from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
+from cloudshell.cp.aws.domain.services.parsers.security_group_parser import SecurityGroupParser
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
-from package.cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails, \
+from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails, \
     SecurityGroupConfiguration
 
 
@@ -25,26 +26,32 @@ class AWSModelsParser(object):
         return data_holder
 
     @staticmethod
-    def get_deployed_app_from_set_app_security_groups_request(request):
-        json_str = jsonpickle.decode(request.deployed_app)
-        data_holder = DeployDataHolder(json_str)
+    def get_app_security_groups_from_request(request):
+        json_str = jsonpickle.decode(request)
+        data_holder = DeployDataHolder.create_obj_by_type(json_str)
         return data_holder
 
     @staticmethod
-    def convert_to_app_security_group_model(request):
+    def convert_to_app_security_group_models(request):
         """
-        :rtype AppSecurityGroupModel:
+        :rtype list[AppSecurityGroupModel]:
         """
-        deployed_app = AWSModelsParser.get_deployed_app_from_set_app_security_groups_request(request)
-        app_security_group_model = AppSecurityGroupModel()
+        security_group_models = []
 
-        app_security_group_model.deployed_app = DeployedApp()
-        app_security_group_model.deployed_app.name = deployed_app.name
-        app_security_group_model.deployed_app.vm_details = VmDetails()
-        app_security_group_model.deployed_app.vm_details.uid = deployed_app.vmdetails.uid
-        app_security_group_model.security_group_configurations = SecurityGroupConfiguration()
+        security_groups = AWSModelsParser.get_app_security_groups_from_request(request)
 
-        return app_security_group_model
+        for security_group in security_groups:
+            security_group_model = AppSecurityGroupModel()
+            security_group_model.deployed_app = DeployedApp()
+            security_group_model.deployed_app.name = security_group.deployedApp.Name
+            security_group_model.deployed_app.vm_details = VmDetails()
+            security_group_model.deployed_app.vm_details.uid = security_group.deployedApp.Vmdetails.UID
+            security_group_model.security_group_configurations = SecurityGroupParser.parse_security_group_configurations(
+                security_group.securityGroupsConfigurations)
+
+            security_group_models.append(security_group_model)
+
+        return security_group_models
 
     @staticmethod
     def convert_to_aws_resource_model(resource):

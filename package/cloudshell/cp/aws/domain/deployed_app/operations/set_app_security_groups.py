@@ -18,10 +18,10 @@ class SetAppSecurityGroupsOperation(object):
         self.instance_service = instance_service
         self.security_group_service = security_group_service
 
-    def set_app_security_groups(self, app_security_group_model, ec2_session):
+    def set_apps_security_groups(self, app_security_group_models, ec2_session):
         """
         Set custom security groups to a deployed app
-        :param AppSecurityGroupModel app_security_group_model:
+        :param lis[AppSecurityGroupModel] app_security_group_models:
         :param boto3.resources.base.ServiceResource ec2_session:
         :return:
         """
@@ -41,14 +41,17 @@ class SetAppSecurityGroupsOperation(object):
         
         """
 
-        vm_id = app_security_group_model.deployed_app.vm_details.uid
-        instance = self.instance_service.get_active_instance_by_id(ec2_session, vm_id)
-        security_group_configurations = app_security_group_model.security_group_configurations
+        for app_security_group_model in app_security_group_models:
+            vm_id = app_security_group_model.deployed_app.vm_details.uid
+            instance = self.instance_service.get_active_instance_by_id(ec2_session, vm_id)
+            vpc_id = instance.vpc_id
+            security_group_configurations = app_security_group_model.security_group_configurations
 
-        for security_group_configuration in security_group_configurations:
-            subnet_id = security_group_configuration.subnet_id
-            network_interfaces = filter(lambda x: x["SubnetId "] == subnet_id,
-                                        instance.network_interfaces_attribute)
-            for network_interface in network_interfaces:
-                custom_security_group = self.security_group_service.get_or_create_custom_security_group(network_interface)
+            for security_group_configuration in security_group_configurations:
+                subnet_id = security_group_configuration.subnet_id
+                network_interfaces = filter(lambda x: x.subnet_id == subnet_id,
+                                            instance.network_interfaces)
+                for network_interface in network_interfaces:
+                    custom_security_group = self.security_group_service.get_or_create_custom_security_group(ec2_session, network_interface, vpc_id)
+                    self.security_group_service.set_security_group_rules(custom_security_group, security_group_configuration.rules)
 
