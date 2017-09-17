@@ -86,6 +86,7 @@ class DeployNetworkingResultModel(object):
         self.public_ip = ''  # type: str
         self.mac_address = ''  # type: str
 
+
 class ConnectivityActionResult(object):
     def __init__(self):
         self.actionId = ''
@@ -117,3 +118,10 @@ class ConnectToSubnetActionResult(ConnectivityActionResult):
         self.interface = interface_data
         self.infoMessage = info
         self.errorMessage = error
+
+
+class SetAppSecurityGroupActionResult(object):
+    def __init__(self):
+        self.appName = ''
+        self.success = True
+        self.errorMessage = ''

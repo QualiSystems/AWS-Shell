@@ -11,3 +11,16 @@ class CancellationException(Exception):
         super(CancellationException, self).__init__(message)
 
         self.data = data if data else {}
+
+
+class SetAppSecurityGroupException(Exception):
+    def __init__(self, data):
+        """
+        :param list[SetAppSecurityGroupActionResult] data:
+        """
+        self.jsonResult = self._to_json(data)
+        super(self).__init__(self.jsonResult)
+
+    @staticmethod
+    def _to_json(data):
+        return [{'appName': actionResult.appName, 'error': actionResult.errorMessage} for actionResult in data]

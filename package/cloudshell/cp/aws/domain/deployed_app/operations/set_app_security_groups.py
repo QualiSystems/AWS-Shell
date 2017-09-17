@@ -2,6 +2,7 @@ import boto3
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel
+from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 
 
 class SetAppSecurityGroupsOperation(object):
@@ -27,18 +28,30 @@ class SetAppSecurityGroupsOperation(object):
         :return:
         """
 
+        result = []
+
         for app_security_group_model in app_security_group_models:
-            vm_id = app_security_group_model.deployed_app.vm_details.uid
-            instance = self.instance_service.get_active_instance_by_id(ec2_session, vm_id)
-            vpc_id = instance.vpc_id
-            security_group_configurations = app_security_group_model.security_group_configurations
+            try:
+                vm_id = app_security_group_model.deployed_app.vm_details.uid
+                instance = self.instance_service.get_active_instance_by_id(ec2_session, vm_id)
+                vpc_id = instance.vpc_id
+                security_group_configurations = app_security_group_model.security_group_configurations
 
-            logger.info("Setting custom app security rules for {}.".format(app_security_group_model.deployed_app.name))
+                logger.info("Setting custom app security rules for {}.".format(app_security_group_model.deployed_app.name))
 
-            for security_group_configuration in security_group_configurations:
-                subnet_id = security_group_configuration.subnet_id
-                network_interfaces = filter(lambda x: x.subnet_id == subnet_id, instance.network_interfaces)
-                for network_interface in network_interfaces:
-                    custom_security_group = self.security_group_service.get_or_create_custom_security_group(ec2_session, logger, network_interface, vpc_id)
-                    self.security_group_service.set_security_group_rules(custom_security_group, security_group_configuration.rules)
+                for security_group_configuration in security_group_configurations:
+                    subnet_id = security_group_configuration.subnet_id
+                    network_interfaces = filter(lambda x: x.subnet_id == subnet_id, instance.network_interfaces)
+                    for network_interface in network_interfaces:
+                        custom_security_group = self.security_group_service.get_or_create_custom_security_group(ec2_session, logger, network_interface, vpc_id)
+                        self.security_group_service.set_security_group_rules(custom_security_group, security_group_configuration.rules)
+            except Exception as ex:
+                error = SetAppSecurityGroupActionResult()
+                error.appName = app_security_group_model.deployed_app.name
+                error.success = False
+                error.errorMessage = ex
+                result.append(error)
+                logger.error("Setting custom app security rules failed for '{0}' with error '{1}'.".format(error.appName, error.errorMessage))
+
+        return result
 

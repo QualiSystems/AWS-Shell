@@ -11,6 +11,7 @@ from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
+from cloudshell.cp.aws.domain.common.exceptions import SetAppSecurityGroupException
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
@@ -330,6 +331,9 @@ class AWSShell(object):
 
                 app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models,
-                                                                                ec2_session=shell_context.aws_api.ec2_session,
-                                                                                logger=shell_context.logger)
+                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models,
+                                                                                         ec2_session=shell_context.aws_api.ec2_session,
+                                                                                         logger=shell_context.logger)
+
+                if result:
+                    raise SetAppSecurityGroupException(result)
