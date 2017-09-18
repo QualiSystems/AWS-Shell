@@ -60,7 +60,7 @@ class SetAppSecurityGroupsOperation(object):
                 action_result = self._create_security_group_action_result(app_name=app_security_group_model.deployed_app.name,
                                                                           is_success=True,
                                                                           message='')
-            except Exception:
+            except Exception as exc:
                 action_result = self._create_security_group_action_result(app_name=app_security_group_model.deployed_app.name,
                                                                           is_success=False,
                                                                           message=traceback.format_exc())
@@ -78,4 +78,4 @@ class SetAppSecurityGroupsOperation(object):
         result.appName = app_name
         result.success = is_success
         result.errorMessage = message
-        return result
+        return result.to_json()

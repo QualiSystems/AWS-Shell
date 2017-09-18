@@ -1,3 +1,5 @@
+from jsonpickle import json
+
 VNIC_NAME_ATTRIBUTE = "Vnic Name"
 
 
@@ -125,3 +127,7 @@ class SetAppSecurityGroupActionResult(object):
         self.appName = ''
         self.success = True
         self.errorMessage = ''
+
+    def to_json(self):
+        result = {'appName': self.appName, 'error': self.errorMessage, 'success': self.success}
+        return json.dumps(result)
