@@ -59,7 +59,7 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
         with self.assertRaisesRegexp(ValueError, "Duplicate 'Requested vNic Name' attribute value found"):
             self.strategy.apply(actions)
 
-    def test_strategy_allocates_missing_values_raises_when_not_continues(self):
+    def test_strategy_allocates_missing_values_raises_when_not_continuous(self):
         # arrange
         action1 = Mock(spec=NetworkAction)
         action1.connection_params = Mock(spec=SubnetConnectionParams)
@@ -76,7 +76,7 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
         actions = [action1, action2, action3]
 
         # act & assert
-        with self.assertRaisesRegexp(ValueError, "'Requested vNic Name' attribute values are not a continues list"):
+        with self.assertRaisesRegexp(ValueError, "'Requested vNic Name' attribute values are not a continuous list"):
             self.strategy.apply(actions)
 
     def test_strategy_allocates_missing_values_no_changes_when_not_needed(self):

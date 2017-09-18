@@ -58,7 +58,7 @@ class AllocateMissingValuesDeviceIndexStrategy(AbstractDeviceIndexStrategy):
         # make sure device index values are continues
         if specific_device_index_actions_sorted[-1].connection_params.device_index != \
                 len(specific_device_index_actions_sorted) - 1:
-            raise ValueError("'Requested vNic Name' attribute values are not a continues list")
+            raise ValueError("'Requested vNic Name' attribute values are not a continuous list")
 
     def _is_device_index_valid(self, action):
         return action.connection_params.device_index is not None and int(action.connection_params.device_index) >= 0
