@@ -43,6 +43,7 @@ from cloudshell.shell.core.driver_context import CancellationContext
 
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
+from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 
 
 class AWSShell(object):
@@ -336,7 +337,7 @@ class AWSShell(object):
                                                                                          ec2_session=shell_context.aws_api.ec2_session,
                                                                                          logger=shell_context.logger)
 
-                return result
+                return SetAppSecurityGroupActionResult.to_json(result)
 
     @staticmethod
     def _get_reservation_id(context):

@@ -128,6 +128,19 @@ class SetAppSecurityGroupActionResult(object):
         self.success = True
         self.errorMessage = ''
 
-    def to_json(self):
+    def convert_to_json(self):
         result = {'appName': self.appName, 'error': self.errorMessage, 'success': self.success}
         return json.dumps(result)
+
+    @staticmethod
+    def to_json(results):
+        if not results:
+            return
+
+        json_result = []
+
+        for result in results:
+            json_result.append(result.convert_to_json())
+
+        return json_result
+
