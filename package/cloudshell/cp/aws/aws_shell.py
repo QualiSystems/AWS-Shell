@@ -11,7 +11,6 @@ from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
-from cloudshell.cp.aws.domain.common.exceptions import SetAppSecurityGroupException
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
@@ -313,7 +312,7 @@ class AWSShell(object):
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('GetAccessKey')
-                reservation_id = command_context.remote_reservation.reservation_id
+                reservation_id = self._get_reservation_id(command_context)
                 return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
                                                                 aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
                                                                 reservation_id=reservation_id)
@@ -329,11 +328,20 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Set App Security Groups')
 
+                reservation = self.model_parser.convert_to_reservation_model(context.reservation)
                 app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models,
+                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models=app_security_group_models,
+                                                                                         reservation=reservation,
                                                                                          ec2_session=shell_context.aws_api.ec2_session,
                                                                                          logger=shell_context.logger)
 
-                if result:
-                    raise SetAppSecurityGroupException(result)
+                return result
+
+    @staticmethod
+    def _get_reservation_id(context):
+        reservation_id = None
+        reservation = getattr(context, 'reservation', getattr(context, 'remote_reservation', None))
+        if reservation:
+            reservation_id = reservation.reservation_id
+        return reservation_id

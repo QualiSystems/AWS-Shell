@@ -1,8 +1,9 @@
 import uuid
 
-from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
+from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues, TagService
 from cloudshell.cp.aws.domain.services.ec2.tags import TypeTagValues
 from cloudshell.cp.aws.models.port_data import PortData
+from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
 
 class SecurityGroupService(object):
@@ -91,20 +92,25 @@ class SecurityGroupService(object):
             }
         ])
 
-    def set_security_group_rules(self, security_group, inbound_ports, outbound_ports=None):
+    def set_security_group_rules(self, security_group, inbound_ports=None, outbound_ports=None, logger=None):
         """
         :param security_group: AWS SG object
         :param list[PortData] inbound_ports:
         :param list[PortData] outbound_ports:
+        :param logging.Logger logger:
         :return:
         """
         # adding inbound port rules
         if inbound_ports:
             self._set_inbound_ports(inbound_ports, security_group)
+            if logger:
+                logger.info("Inbound ports attribute: {0} set to security group: {1}".format(inbound_ports, security_group.group_id))
 
         # adding outbound port rules
         if outbound_ports:
             self._set_outbound_ports(outbound_ports, security_group)
+            if logger:
+                logger.info("Outbound ports attribute: {0} set to security group: {1}".format(outbound_ports, security_group.group_id))
 
     def _set_outbound_ports(self, outbound_ports, security_group):
         if outbound_ports:
@@ -140,15 +146,16 @@ class SecurityGroupService(object):
                 }
             ]}
 
-    def get_or_create_custom_security_group(self, ec2_session, logger, network_interface, vpc_id):
+    def get_or_create_custom_security_group(self, ec2_session, logger, network_interface, reservation, vpc_id):
         """
         Returns or create (if doesn't exist) and then returns a custom security group for the nic
         Custom security group is defined by the following attributes and their values:
         "Isolation=Exclusive" and "Type=Interface"
         :param ec2_session:
         :param logging.Logger logger:
-        :type network_interface: AWS::EC2::NetworkInterface
-        :param vpc_id:
+        :param network_interface: AWS::EC2::NetworkInterface
+        :param ReservationModel reservation:
+        :param str vpc_id:
         :rtype AppSecurityGroupModel:
         """
         security_group_descriptions = network_interface.groups
@@ -169,8 +176,10 @@ class SecurityGroupService(object):
         logger.info("Custom security group '{}' created.".format(security_group_name))
 
         # add tags to the created security group that will define it as a custom security group
-        tags = self.tag_service.get_custom_security_group_tags()
-        self.tag_service.set_ec2_resource_tags(custom_security_group, tags)
+        default_tags = self.tag_service.get_default_tags(security_group_name, reservation)
+        custom_tags = self.tag_service.get_custom_security_group_tags()
+        all_tags = default_tags + custom_tags
+        self.tag_service.set_ec2_resource_tags(custom_security_group, all_tags)
 
         # attach the custom security group to the nic
         custom_security_group_id = custom_security_group.group_id
@@ -187,5 +196,3 @@ class SecurityGroupService(object):
         isolation_tag = tag_service.find_isolation_tag_value(security_group.tags)
         type_tag = tag_service.find_type_tag_value(security_group.tags)
         return isolation_tag == IsolationTagValues.Exclusive and type_tag == TypeTagValues.Interface
-
-
