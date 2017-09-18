@@ -1,3 +1,6 @@
+from jsonpickle import json
+
+
 class CancellationException(Exception):
     """Raised when command was cancelled from the CloudShell"""
 
@@ -19,8 +22,9 @@ class SetAppSecurityGroupException(Exception):
         :param list[SetAppSecurityGroupActionResult] data:
         """
         self.jsonResult = self._to_json(data)
-        super(self).__init__(self.jsonResult)
+        super(SetAppSecurityGroupException, self).__init__(self.jsonResult)
 
     @staticmethod
     def _to_json(data):
-        return [{'appName': actionResult.appName, 'error': actionResult.errorMessage} for actionResult in data]
+        result = [{'appName': actionResult.appName, 'error': actionResult.errorMessage.message} for actionResult in data]
+        return json.dumps(result)
