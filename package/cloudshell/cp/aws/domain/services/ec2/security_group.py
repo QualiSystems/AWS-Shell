@@ -104,13 +104,15 @@ class SecurityGroupService(object):
         if inbound_ports:
             self._set_inbound_ports(inbound_ports, security_group)
             if logger:
-                logger.info("Inbound ports attribute: {0} set to security group: {1}".format(inbound_ports, security_group.group_id))
+                logger.info("Inbound ports attribute: {0} set to security group: {1}".format(inbound_ports,
+                                                                                             security_group.group_id))
 
         # adding outbound port rules
         if outbound_ports:
             self._set_outbound_ports(outbound_ports, security_group)
             if logger:
-                logger.info("Outbound ports attribute: {0} set to security group: {1}".format(outbound_ports, security_group.group_id))
+                logger.info("Outbound ports attribute: {0} set to security group: {1}".format(outbound_ports,
+                                                                                              security_group.group_id))
 
     def _set_outbound_ports(self, outbound_ports, security_group):
         if outbound_ports:
@@ -121,6 +123,11 @@ class SecurityGroupService(object):
         if inbound_ports:
             ip_permissions = [self.get_ip_permission_object(port) for port in inbound_ports if port is not None]
             security_group.authorize_ingress(IpPermissions=ip_permissions)
+
+    def remove_all_inbound_rules(self, security_group):
+        rules = security_group.ip_permissions
+        if rules:
+            security_group.revoke_ingress(IpPermissions=rules)  # , GroupName=security_group.group_name)
 
     def remove_allow_all_outbound_rule(self, security_group):
         security_group.revoke_egress(IpPermissions=[{

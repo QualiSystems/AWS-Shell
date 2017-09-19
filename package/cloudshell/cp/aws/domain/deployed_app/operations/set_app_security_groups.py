@@ -54,6 +54,7 @@ class SetAppSecurityGroupsOperation(object):
                             network_interface=network_interface,
                             reservation=reservation,
                             vpc_id=vpc_id)
+                        self.security_group_service.remove_all_inbound_rules(security_group=custom_security_group)
                         self.security_group_service.set_security_group_rules(security_group=custom_security_group,
                                                                              inbound_ports=security_group_configuration.rules,
                                                                              logger=logger)
