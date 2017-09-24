@@ -128,8 +128,8 @@ class TestModelParser(TestCase):
                                 '}]' \
                             '},' \
                             '"customActionAttributes": [{' \
-                                '"Name": "Vnic Name",' \
-                                '"Value": "0"' \
+                                '"attributeName": "Vnic Name",' \
+                                '"attributeValue": "0"' \
                             '}]' \
                         '}' \
                     ']}' \
@@ -144,9 +144,9 @@ class TestModelParser(TestCase):
         self.assertEquals(len(model.network_configurations), 1)
         self.assertEquals(model.network_configurations[0].id, "some_id")
         self.assertEquals(model.network_configurations[0].type, "connectToSubnet")
-        self.assertEquals(len(model.network_configurations[0].custom_attributes), 1)
-        self.assertEquals(model.network_configurations[0].custom_attributes[0].name, "Vnic Name")
-        self.assertEquals(model.network_configurations[0].custom_attributes[0].value, "0")
+        self.assertEquals(len(model.network_configurations[0].connection_params.custom_attributes), 1)
+        self.assertEquals(model.network_configurations[0].connection_params.custom_attributes[0].name, "Vnic Name")
+        self.assertEquals(model.network_configurations[0].connection_params.custom_attributes[0].value, "0")
         self.assertTrue(isinstance(model.network_configurations[0].connection_params, SubnetConnectionParams))
 
     def test_subnet_connection_params_check_is_public_subnet_true(self):
