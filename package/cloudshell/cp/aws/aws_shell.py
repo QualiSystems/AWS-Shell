@@ -337,7 +337,9 @@ class AWSShell(object):
                                                                                          ec2_session=shell_context.aws_api.ec2_session,
                                                                                          logger=shell_context.logger)
 
-                return SetAppSecurityGroupActionResult.to_json(result)
+                json_result = SetAppSecurityGroupActionResult.to_json(result)
+
+                return json_result
 
     @staticmethod
     def _get_reservation_id(context):

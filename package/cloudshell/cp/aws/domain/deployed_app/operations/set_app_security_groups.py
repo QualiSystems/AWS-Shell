@@ -80,5 +80,5 @@ class SetAppSecurityGroupsOperation(object):
         result = SetAppSecurityGroupActionResult()
         result.appName = app_name
         result.success = is_success
-        result.errorMessage = message
+        result.error = message
         return result

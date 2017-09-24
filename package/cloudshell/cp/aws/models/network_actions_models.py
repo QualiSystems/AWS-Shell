@@ -127,10 +127,10 @@ class SetAppSecurityGroupActionResult(object):
     def __init__(self):
         self.appName = ''
         self.success = True
-        self.errorMessage = ''
+        self.error = ''
 
     def convert_to_json(self):
-        result = {'appName': self.appName, 'error': self.errorMessage, 'success': self.success}
+        result = {'appName': self.appName, 'error': self.error, 'success': self.success}
         return json.dumps(result)
 
     @staticmethod
@@ -138,10 +138,5 @@ class SetAppSecurityGroupActionResult(object):
         if not results:
             return
 
-        json_result = []
-
-        for result in results:
-            json_result.append(result.convert_to_json())
-
-        return json_result
+        return json.dumps([r.__dict__ for r in results])
 
