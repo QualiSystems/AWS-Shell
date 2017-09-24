@@ -376,7 +376,7 @@ class TestDeployOperation(TestCase):
         action1.id = 'action1'
         action1.connection_params = SubnetConnectionParams()
         action1.connection_params.subnet_id = 'sub1'
-        action1.connection_params.device_index = 0
+        action1.connection_params.device_index = "0"
 
         action2 = NetworkAction()
         action2.id = 'action2'
@@ -403,6 +403,7 @@ class TestDeployOperation(TestCase):
                                                                            logger=self.logger)
 
         # assert
+        print res_model_1.device_index
         self.assertEquals(res_model_1.device_index, 0)
         self.assertEquals(res_model_2.device_index, 1)
         self.assertEquals(len(net_interfaces), 2)

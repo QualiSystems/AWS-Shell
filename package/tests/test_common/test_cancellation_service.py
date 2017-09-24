@@ -6,7 +6,7 @@ from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancella
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
 
 
-class TestRetryHelper(TestCase):
+class TestCancellationService(TestCase):
     def setUp(self):
         pass
 

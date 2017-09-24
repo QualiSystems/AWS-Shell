@@ -3,9 +3,8 @@ from unittest import TestCase
 from mock import Mock
 
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
-from cloudshell.cp.aws.domain.services.ec2.tags import TagService
+from cloudshell.cp.aws.domain.services.ec2.tags import TagService, TagNames
 from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkParams, NetworkAction, PrepareSubnetParams
-from tests.test_common.test_mock_helper import Any
 
 
 class TestPrepareConnectivity(TestCase):
@@ -19,7 +18,7 @@ class TestPrepareConnectivity(TestCase):
         self.cancellation_service = Mock()
         self.vpc_service = Mock()
         self.subnet_service = Mock()
-        self.tag_service = TagService() #Mock()
+        self.tag_service = Mock()
         self.subnet_waiter = Mock()
 
         self.executor = PrepareSubnetExecutor(self.cancellation_service, self.vpc_service, self.subnet_service,
@@ -74,16 +73,24 @@ class TestPrepareConnectivity(TestCase):
 
     def test_execute_sets_tags(self):
         # Arrange
+        def return_public_tag_with_value(*args, **kwargs):
+            return {'Key': TagNames.IsPublic, 'Value': args[0]}
+
         actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams(cidr="1.2.3.4/24", alias="MySubnet"))]
         self.reservation.reservation_id = "123"
         subnet = Mock()
         self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=subnet)
+        is_public_tag = Mock()
+        self.tag_service.get_is_public_tag = Mock(return_value=is_public_tag)
+        default_tags = [Mock()]
+        self.tag_service.get_default_tags = Mock(return_value=default_tags)
+
         # Act
         self.executor.execute(actions)
+
         # Assert
-        subnet.create_tags.assert_called_once_with(Tags=Any(lambda tags:
-            any(x["Key"]=="Name" and x["Value"]=="MySubnet Reservation: 123" for x in tags) and
-            any(x["Key"]=="IsPublic" and x["Value"]=="True" for x in tags)))
+        default_tags.append(is_public_tag)
+        self.tag_service.set_ec2_resource_tags.assert_called_once_with(subnet, default_tags)
 
     def test_execute_sets_private_subnet_to_private_routing_table(self):
         # Arrange
