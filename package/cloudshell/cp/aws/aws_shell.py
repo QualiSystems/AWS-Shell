@@ -41,6 +41,10 @@ from cloudshell.cp.aws.domain.services.waiters.vpc import VPCWaiter
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.shell.core.driver_context import CancellationContext
 
+from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
+    SetAppSecurityGroupsOperation
+from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
+
 
 class AWSShell(object):
     def __init__(self):
@@ -56,7 +60,7 @@ class AWSShell(object):
         self.password_waiter = PasswordWaiter(self.cancellation_service)
         self.vm_custom_params_extractor = VmCustomParamsExtractor()
         self.ami_credentials_service = InstanceCredentialsService(self.password_waiter)
-        self.security_group_service = SecurityGroupService()
+        self.security_group_service = SecurityGroupService(self.tag_service)
         self.subnet_waiter = SubnetWaiter()
         self.subnet_service = SubnetService(self.tag_service, self.subnet_waiter)
         self.s3_service = S3BucketService()
@@ -117,6 +121,10 @@ class AWSShell(object):
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
+        self.set_app_security_groups_operation = SetAppSecurityGroupsOperation(instance_service=self.instance_service,
+                                                                               tag_service=self.tag_service,
+                                                                               security_group_service=self.security_group_service)
+
     def cleanup_connectivity(self, command_context, request):
         """
         Will delete the reservation vpc and all related resources including all remaining instances
@@ -138,10 +146,10 @@ class AWSShell(object):
                              s3_session=shell_context.aws_api.s3_session,
                              aws_ec2_data_model=shell_context.aws_ec2_resource_model,
                              reservation_id=command_context.reservation.reservation_id,
-                             actions = connectivity_actions,
+                             actions=connectivity_actions,
                              logger=shell_context.logger)
                 return self.command_result_parser.set_command_result(
-                        {'driverResponse': {'actionResults': [result]}})
+                    {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request, cancellation_context):
         """
@@ -160,14 +168,14 @@ class AWSShell(object):
                 connectivity_actions = self._request_str_to_actions_list(request)
 
                 results = self.prepare_connectivity_operation.prepare_connectivity(
-                        ec2_client=shell_context.aws_api.ec2_client,
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        s3_session=shell_context.aws_api.s3_session,
-                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
-                        aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
-                        actions=connectivity_actions,
-                        cancellation_context=cancellation_context,
-                        logger=shell_context.logger)
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    s3_session=shell_context.aws_api.s3_session,
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                    aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                    actions=connectivity_actions,
+                    cancellation_context=cancellation_context,
+                    logger=shell_context.logger)
 
                 return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
@@ -241,7 +249,7 @@ class AWSShell(object):
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
                 return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                        data_holder.vmdetails.vmCustomParams)
+                    data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
@@ -305,7 +313,38 @@ class AWSShell(object):
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('GetAccessKey')
-                reservation_id = command_context.remote_reservation.reservation_id
+                reservation_id = self._get_reservation_id(command_context)
                 return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
                                                                 aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
                                                                 reservation_id=reservation_id)
+
+    def set_app_security_groups(self, context, request):
+        """
+        Set security groups (inbound rules only)
+        :param context: todo - set the type of the parameter
+        :param request: The json request
+        :return:
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Set App Security Groups')
+
+                reservation = self.model_parser.convert_to_reservation_model(context.reservation)
+                app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
+
+                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models=app_security_group_models,
+                                                                                         reservation=reservation,
+                                                                                         ec2_session=shell_context.aws_api.ec2_session,
+                                                                                         logger=shell_context.logger)
+
+                json_result = SetAppSecurityGroupActionResult.to_json(result)
+
+                return json_result
+
+    @staticmethod
+    def _get_reservation_id(context):
+        reservation_id = None
+        reservation = getattr(context, 'reservation', getattr(context, 'remote_reservation', None))
+        if reservation:
+            reservation_id = reservation.reservation_id
+        return reservation_id

@@ -1,3 +1,5 @@
+from jsonpickle import json
+
 VNIC_NAME_ATTRIBUTE = "Vnic Name"
 
 
@@ -87,6 +89,7 @@ class DeployNetworkingResultModel(object):
         self.public_ip = ''  # type: str
         self.mac_address = ''  # type: str
 
+
 class ConnectivityActionResult(object):
     def __init__(self):
         self.actionId = ''
@@ -118,3 +121,22 @@ class ConnectToSubnetActionResult(ConnectivityActionResult):
         self.interface = interface_data
         self.infoMessage = info
         self.errorMessage = error
+
+
+class SetAppSecurityGroupActionResult(object):
+    def __init__(self):
+        self.appName = ''
+        self.success = True
+        self.error = ''
+
+    def convert_to_json(self):
+        result = {'appName': self.appName, 'error': self.error, 'success': self.success}
+        return json.dumps(result)
+
+    @staticmethod
+    def to_json(results):
+        if not results:
+            return
+
+        return json.dumps([r.__dict__ for r in results])
+

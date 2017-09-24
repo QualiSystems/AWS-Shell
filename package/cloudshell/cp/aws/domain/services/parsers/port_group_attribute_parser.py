@@ -6,6 +6,24 @@ from cloudshell.cp.aws.models.port_data import PortData
 class PortGroupAttributeParser(object):
 
     @staticmethod
+    def parse_security_group_rules_to_port_data(rules):
+        """
+        :param [list] rules:
+        :return:
+        :rtype: list[PortData]
+        """
+        if not isinstance(rules, list):
+            return None
+
+        parsed_data = []
+
+        for rule in rules:
+            port_data = PortData(rule.fromPort, rule.toPort, rule.protocol, rule.source)
+            parsed_data.append(port_data)
+
+        return parsed_data if (len(parsed_data) > 0) else None
+
+    @staticmethod
     def parse_port_group_attribute(ports_attribute):
         """
         :param ports_attribute:

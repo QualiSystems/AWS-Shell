@@ -60,3 +60,6 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def GetAccessKey(self, context, ports):
         return self.aws_shell.get_access_key(context)
+
+    def SetAppSecurityGroups(self, context, request):
+        return self.aws_shell.set_app_security_groups(context, request)

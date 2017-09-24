@@ -6,9 +6,13 @@ from cloudshell.shell.core.driver_context import ReservationContextDetails
 from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
+from cloudshell.cp.aws.domain.services.parsers.security_group_parser import SecurityGroupParser
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
+
+from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails, \
+    SecurityGroupConfiguration
 
 
 class AWSModelsParser(object):
@@ -20,6 +24,34 @@ class AWSModelsParser(object):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
         data_holder = DeployDataHolder(json_str)
         return data_holder
+
+    @staticmethod
+    def get_app_security_groups_from_request(request):
+        json_str = jsonpickle.decode(request)
+        data_holder = DeployDataHolder.create_obj_by_type(json_str)
+        return data_holder
+
+    @staticmethod
+    def convert_to_app_security_group_models(request):
+        """
+        :rtype list[AppSecurityGroupModel]:
+        """
+        security_group_models = []
+
+        security_groups = AWSModelsParser.get_app_security_groups_from_request(request)
+
+        for security_group in security_groups:
+            security_group_model = AppSecurityGroupModel()
+            security_group_model.deployed_app = DeployedApp()
+            security_group_model.deployed_app.name = security_group.deployedApp.name
+            security_group_model.deployed_app.vm_details = VmDetails()
+            security_group_model.deployed_app.vm_details.uid = security_group.deployedApp.vmdetails.uid
+            security_group_model.security_group_configurations = SecurityGroupParser.parse_security_group_configurations(
+                security_group.securityGroupsConfigurations)
+
+            security_group_models.append(security_group_model)
+
+        return security_group_models
 
     @staticmethod
     def convert_to_aws_resource_model(resource):
@@ -61,7 +93,7 @@ class AWSModelsParser(object):
         deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
         deployment_resource_model.wait_for_ip = convert_to_bool(data["Attributes"]['Wait for IP'])
         deployment_resource_model.wait_for_status_check = convert_to_bool(
-                data["Attributes"]['Wait for Status Check'])
+            data["Attributes"]['Wait for Status Check'])
         deployment_resource_model.autoload = convert_to_bool(data["Attributes"]['Autoload'])
         deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
         deployment_resource_model.wait_for_credentials = \
@@ -72,7 +104,7 @@ class AWSModelsParser(object):
 
         deployment_resource_model.user = \
             AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
-                    data["LogicalResourceRequestAttributes"], "User")
+                data["LogicalResourceRequestAttributes"], "User")
 
         deployment_resource_model.network_configurations = \
             AWSModelsParser.parse_deploy_networking_configurations(data)
@@ -117,7 +149,7 @@ class AWSModelsParser(object):
         public_ip = 'Public IP'
         if resource_context.remote_endpoints is not None:
             public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
-                    resource_context.remote_endpoints[0].attributes, public_ip)
+                resource_context.remote_endpoints[0].attributes, public_ip)
         return public_ip_on_resource
 
     @staticmethod
@@ -131,8 +163,8 @@ class AWSModelsParser(object):
     def try_get_deployed_connected_resource_instance_id(resource_context):
         try:
             deployed_instance_id = str(
-                    jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
-                        'uid'])
+                jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
+                    'uid'])
         except Exception as e:
             raise ValueError('Could not find an ID of the AWS Deployed instance' + e.message)
         return deployed_instance_id
@@ -162,6 +194,6 @@ class AWSModelsParser(object):
             return None
 
         actions = deployment_request["NetworkConfigurationsRequest"]["actions"]
-        #actions = deployment_request["NetworkConfigurationsRequest"]
+        # actions = deployment_request["NetworkConfigurationsRequest"]
 
         return NetworkActionsParser.parse_network_actions_data(actions)
