@@ -153,6 +153,24 @@ class SecurityGroupService(object):
                 }
             ]}
 
+    def get_custom_security_group(self, ec2_session,  network_interface):
+        """
+        Returns a custom security group for the nic
+        Custom security group is defined by the following attributes and their values:
+        "Isolation=Exclusive" and "Type=Interface"
+        :param ec2_session:
+        :param network_interface: AWS::EC2::NetworkInterface
+        :rtype AppSecurityGroupModel:
+        """
+        security_group_descriptions = network_interface.groups
+
+        for security_group_description in security_group_descriptions:
+            security_group = ec2_session.SecurityGroup(security_group_description['GroupId'])
+            if SecurityGroupService._is_custom_security_group(self.tag_service, security_group):
+                return security_group
+
+        return None
+
     def get_or_create_custom_security_group(self, ec2_session, logger, network_interface, reservation, vpc_id):
         """
         Returns or create (if doesn't exist) and then returns a custom security group for the nic
@@ -165,14 +183,15 @@ class SecurityGroupService(object):
         :param str vpc_id:
         :rtype AppSecurityGroupModel:
         """
+
         security_group_descriptions = network_interface.groups
 
-        # return a custom security group if already exists
-        for security_group_description in security_group_descriptions:
-            security_group = ec2_session.SecurityGroup(security_group_description['GroupId'])
-            if SecurityGroupService._is_custom_security_group(self.tag_service, security_group):
-                logger.info("Custom security group exists for nic '{}'.".format(network_interface.network_interface_id))
-                return security_group
+        custom_security_group = self.get_custom_security_group(ec2_session=ec2_session,
+                                                               network_interface=network_interface)
+
+        if custom_security_group:
+            logger.info("Custom security group exists for nic '{}'.".format(network_interface.network_interface_id))
+            return custom_security_group
 
         # name for a new (non existed yet) custom security group
         security_group_name = SecurityGroupService.CLOUDSHELL_CUSTOM_SECURITY_GROUP.format(str(uuid.uuid4()))

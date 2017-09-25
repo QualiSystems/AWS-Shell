@@ -117,7 +117,9 @@ class AWSShell(object):
                                                                key_pair_service=self.key_pair_service,
                                                                route_table_service=self.route_tables_service)
 
-        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
+        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor,
+                                                                      security_group_service=self.security_group_service,
+                                                                      instance_service=self.instance_service)
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
@@ -242,14 +244,23 @@ class AWSShell(object):
         :param ResourceRemoteCommandContext command_context:
         :rtype: str
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                logger.info('Get Application Ports')
-                resource = command_context.remote_endpoints[0]
-                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with LoggingSessionContext(command_context) as logger:
+                with ErrorHandlingContext(logger):
+                    logger.info('Get Application Ports')
+                    resource = command_context.remote_endpoints[0]
+                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                    data_holder.vmdetails.vmCustomParams)
+                    # Get instance id
+                    deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                        command_context)
+
+                    tester = self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
+                        ec2_session=shell_context.aws_api.ec2_session,
+                        instance_id=deployed_instance_id)
+
+                    return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
+                        data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """

@@ -4,12 +4,16 @@ from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmC
 
 
 class DeployedAppPortsOperation(object):
-    def __init__(self, vm_custom_params_extractor):
+    def __init__(self, vm_custom_params_extractor, security_group_service, instance_service):
         """
         :param VmCustomParamsExtractor vm_custom_params_extractor:
+        :param security_group_service:
+        :type security_group_service: cloudshell.cp.aws.domain.services.ec2.security_group.SecurityGroupService
         :return:
         """
         self.vm_custom_params_extractor = vm_custom_params_extractor
+        self.security_group_service = security_group_service
+        self.instance_service = instance_service
 
     def get_formated_deployed_app_ports(self, custom_params):
         """
@@ -40,6 +44,23 @@ class DeployedAppPortsOperation(object):
                     result_str_list.append(self._port_rule_to_string(rule))
 
         return '\n'.join(result_str_list).strip()
+
+    def get_app_ports_from_cloud_provider(self, ec2_session, instance_id):
+        instance = self.instance_service.get_active_instance_by_id(ec2_session, instance_id)
+        network_interfaces = instance.network_interfaces
+
+        result = []
+
+        for network_interface in network_interfaces:
+            # subnet_id = network_interface.subnet_id
+            # security_group_descriptions = network_interface.groups
+            custom_security_group = self.security_group_service.get_custom_security_group(ec2_session=ec2_session,
+                                                                                          network_interface=network_interface)
+            if custom_security_group:
+                custom_rules = custom_security_group.ip_permissions
+                result.append(custom_rules)
+
+        return result
 
     def _port_rule_to_string(self, port_rule):
         """
