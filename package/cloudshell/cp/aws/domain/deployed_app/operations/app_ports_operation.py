@@ -1,3 +1,6 @@
+from cloudshell.shell.core.driver_context import ResourceContextDetails
+from jsonpickle import json
+
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
@@ -45,22 +48,49 @@ class DeployedAppPortsOperation(object):
 
         return '\n'.join(result_str_list).strip()
 
-    def get_app_ports_from_cloud_provider(self, ec2_session, instance_id):
+    def get_app_ports_from_cloud_provider(self, ec2_session, instance_id, resource):
+        """
+        :param ec2_session: EC2 session
+        :param string instance_id:
+        :param ResourceContextDetails resource:
+        """
         instance = self.instance_service.get_active_instance_by_id(ec2_session, instance_id)
         network_interfaces = instance.network_interfaces
 
-        result = []
+        result_str_list = ['App Name: ' + resource.fullname]
 
         for network_interface in network_interfaces:
-            # subnet_id = network_interface.subnet_id
-            # security_group_descriptions = network_interface.groups
+            subnet_id = network_interface.subnet_id
+            result_str_list.append('Subnet Name: ' + subnet_id)
             custom_security_group = self.security_group_service.get_custom_security_group(ec2_session=ec2_session,
                                                                                           network_interface=network_interface)
             if custom_security_group:
-                custom_rules = custom_security_group.ip_permissions
-                result.append(custom_rules)
+                ip_permissions = custom_security_group.ip_permissions
+                ip_permissions_string = self._ip_permissions_to_string(ip_permissions)
+                if ip_permissions_string:
+                    result_str_list.append(ip_permissions_string)
 
-        return result
+        return '\n'.join(result_str_list).strip()
+
+    @staticmethod
+    def _ip_permissions_to_string(ip_permissions):
+        if not isinstance(ip_permissions, list):
+            return None
+
+        result = []
+
+        for ip_permission in ip_permissions:
+            if ip_permission['FromPort'] == ip_permission['ToPort']:
+                port_str = ip_permission['FromPort']
+                port_postfix = ""
+            else:
+                port_str = "{0}-{1}".format(ip_permission['FromPort'], ip_permission['ToPort'])
+                port_postfix = "s"
+            # ip_ranges = ', '.join(item['CidrIp'] for item in ip_permission['IpRanges'])
+            result.append("Port{0}: {1}, Protocol: {2}, \nSource: {3}".format(port_postfix, port_str,
+                                                                              ip_permission['IpProtocol'],
+                                                                              json.dumps(ip_permission['IpRanges'])))
+        return '\n'.join(result).strip()
 
     def _port_rule_to_string(self, port_rule):
         """

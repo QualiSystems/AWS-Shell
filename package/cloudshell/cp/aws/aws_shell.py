@@ -255,12 +255,13 @@ class AWSShell(object):
                     deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
                         command_context)
 
-                    tester = self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
+                    return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
                         ec2_session=shell_context.aws_api.ec2_session,
-                        instance_id=deployed_instance_id)
+                        instance_id=deployed_instance_id,
+                        resource=resource)
 
-                    return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                        data_holder.vmdetails.vmCustomParams)
+                    # return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
+                    #    data_holder.vmdetails.vmCustomParams)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
@@ -343,10 +344,11 @@ class AWSShell(object):
                 reservation = self.model_parser.convert_to_reservation_model(context.reservation)
                 app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models=app_security_group_models,
-                                                                                         reservation=reservation,
-                                                                                         ec2_session=shell_context.aws_api.ec2_session,
-                                                                                         logger=shell_context.logger)
+                result = self.set_app_security_groups_operation.set_apps_security_groups(
+                    app_security_group_models=app_security_group_models,
+                    reservation=reservation,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    logger=shell_context.logger)
 
                 json_result = SetAppSecurityGroupActionResult.to_json(result)
 
