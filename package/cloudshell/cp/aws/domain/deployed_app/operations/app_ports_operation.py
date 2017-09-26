@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from cloudshell.shell.core.driver_context import ResourceContextDetails
 from jsonpickle import json
 
@@ -61,29 +63,35 @@ class DeployedAppPortsOperation(object):
 
         # todo "Allow Sandbox traffic" attribute is [True/False] - when define app as isolated will be finished
 
+        # group network interfaces by subnet into dictionary
+        network_interfaces_dict = defaultdict(list)
         for network_interface in network_interfaces:
-            subnet_id = network_interface.subnet_id
-            result_str_list.append('Subnet Name: ' + subnet_id)
+            network_interfaces_dict[network_interface.subnet_id].append(network_interface)
 
-            custom_security_group = self.security_group_service.get_custom_security_group(
-                ec2_session=ec2_session,
-                network_interface=network_interface)
+        for key, value in network_interfaces_dict.iteritems():
+            for network_interface in value:
+                result_str_list.append('Subnet Name: ' + key)
 
-            inbound_ports_security_group = self.security_group_service.get_inbound_ports_security_group(
-                ec2_session=ec2_session,
-                network_interface=network_interface)
+                # get security groups for network interface
+                custom_security_group = self.security_group_service.get_custom_security_group(
+                    ec2_session=ec2_session,
+                    network_interface=network_interface)
 
-            security_groups = []
-            if custom_security_group:
-                security_groups.append(custom_security_group)
-            if inbound_ports_security_group:
-                security_groups.append(inbound_ports_security_group)
+                inbound_ports_security_group = self.security_group_service.get_inbound_ports_security_group(
+                    ec2_session=ec2_session,
+                    network_interface=network_interface)
 
-            for security_group in security_groups:
-                ip_permissions = security_group.ip_permissions
-                ip_permissions_string = self._ip_permissions_to_string(ip_permissions)
-                if ip_permissions_string:
-                    result_str_list.append(ip_permissions_string)
+                security_groups = []
+                if custom_security_group:
+                    security_groups.append(custom_security_group)
+                if inbound_ports_security_group:
+                    security_groups.append(inbound_ports_security_group)
+
+                # convert ip permissions of security groups to string
+                for security_group in security_groups:
+                    ip_permissions_string = self._ip_permissions_to_string(security_group.ip_permissions)
+                    if ip_permissions_string:
+                        result_str_list.append(ip_permissions_string)
 
         return '\n'.join(result_str_list).strip()
 
