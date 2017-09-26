@@ -245,23 +245,18 @@ class AWSShell(object):
         :rtype: str
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
-            with LoggingSessionContext(command_context) as logger:
-                with ErrorHandlingContext(logger):
-                    logger.info('Get Application Ports')
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get Application Ports')
+                resource = command_context.remote_endpoints[0]
 
-                    # Get instance id
-                    deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
-                        command_context)
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                    command_context)
 
-                    return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        instance_id=deployed_instance_id,
-                        resource=resource)
-
-                    # return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                    #    data_holder.vmdetails.vmCustomParams)
+                return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    instance_id=deployed_instance_id,
+                    resource=resource)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """

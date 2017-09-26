@@ -153,6 +153,24 @@ class SecurityGroupService(object):
                 }
             ]}
 
+    def get_inbound_ports_security_group(self, ec2_session,  network_interface):
+        """
+        Returns an inbound ports security group for the nic
+        Inbound ports security group is defined by the following attributes and their values:
+        "Isolation=Exclusive" and "Type=InboundPorts"
+        :param ec2_session:
+        :param network_interface: AWS::EC2::NetworkInterface
+        :rtype AppSecurityGroupModel:
+        """
+        security_group_descriptions = network_interface.groups
+
+        for security_group_description in security_group_descriptions:
+            security_group = ec2_session.SecurityGroup(security_group_description['GroupId'])
+            if SecurityGroupService._is_inbound_ports_security_group(self.tag_service, security_group):
+                return security_group
+
+        return None
+
     def get_custom_security_group(self, ec2_session,  network_interface):
         """
         Returns a custom security group for the nic
@@ -214,6 +232,15 @@ class SecurityGroupService(object):
         network_interface.modify_attribute(Groups=security_group_ids)
 
         return custom_security_group
+
+    @staticmethod
+    def _is_inbound_ports_security_group(tag_service, security_group):
+        if not isinstance(security_group.tags, list):
+            return False
+        isolation_tag = tag_service.find_isolation_tag_value(security_group.tags)
+        type_tag = tag_service.find_type_tag_value(security_group.tags)
+        return isolation_tag == IsolationTagValues.Exclusive and type_tag != TypeTagValues.Interface
+        # todo after fix in deploy process (to add InboundPorts tag to sg) type_tag == TypeTagValues.InboundPorts
 
     @staticmethod
     def _is_custom_security_group(tag_service, security_group):

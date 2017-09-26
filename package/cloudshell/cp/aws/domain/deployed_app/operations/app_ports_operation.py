@@ -59,21 +59,35 @@ class DeployedAppPortsOperation(object):
 
         result_str_list = ['App Name: ' + resource.fullname]
 
+        # todo "Allow Sandbox traffic" attribute is [True/False] - when define app as isolated will be finished
+
         for network_interface in network_interfaces:
             subnet_id = network_interface.subnet_id
             result_str_list.append('Subnet Name: ' + subnet_id)
-            custom_security_group = self.security_group_service.get_custom_security_group(ec2_session=ec2_session,
-                                                                                          network_interface=network_interface)
+
+            custom_security_group = self.security_group_service.get_custom_security_group(
+                ec2_session=ec2_session,
+                network_interface=network_interface)
+
+            inbound_ports_security_group = self.security_group_service.get_inbound_ports_security_group(
+                ec2_session=ec2_session,
+                network_interface=network_interface)
+
+            security_groups = []
             if custom_security_group:
-                ip_permissions = custom_security_group.ip_permissions
+                security_groups.append(custom_security_group)
+            if inbound_ports_security_group:
+                security_groups.append(inbound_ports_security_group)
+
+            for security_group in security_groups:
+                ip_permissions = security_group.ip_permissions
                 ip_permissions_string = self._ip_permissions_to_string(ip_permissions)
                 if ip_permissions_string:
                     result_str_list.append(ip_permissions_string)
 
         return '\n'.join(result_str_list).strip()
 
-    @staticmethod
-    def _ip_permissions_to_string(ip_permissions):
+    def _ip_permissions_to_string(self, ip_permissions):
         if not isinstance(ip_permissions, list):
             return None
 
@@ -86,11 +100,26 @@ class DeployedAppPortsOperation(object):
             else:
                 port_str = "{0}-{1}".format(ip_permission['FromPort'], ip_permission['ToPort'])
                 port_postfix = "s"
-            # ip_ranges = ', '.join(item['CidrIp'] for item in ip_permission['IpRanges'])
+
             result.append("Port{0}: {1}, Protocol: {2}, \nSource: {3}".format(port_postfix, port_str,
                                                                               ip_permission['IpProtocol'],
-                                                                              json.dumps(ip_permission['IpRanges'])))
+                                                                              self._convert_ip_ranges_to_string(ip_permission['IpRanges'])))
         return '\n'.join(result).strip()
+
+    def _convert_ip_ranges_to_string(self, ip_ranges):
+        if not isinstance(ip_ranges, list):
+            return None
+
+        result = ''
+
+        for ip_range in ip_ranges:
+            if not isinstance(ip_range, dict):
+                continue
+            cidr = ip_range.get('CidrIp')
+            if cidr:
+                result = result.join('{}'.format(cidr))
+
+        return result
 
     def _port_rule_to_string(self, port_rule):
         """

@@ -235,16 +235,21 @@ class TestAWSShell(TestCase):
         deployed_model.vmdetails.vmCustomParams = Mock()
         self.aws_shell.model_parser.convert_app_resource_to_deployed_app = Mock(return_value=deployed_model)
 
-        self.aws_shell.deployed_app_ports_operation.get_formated_deployed_app_ports = Mock(return_value='bla')
+        self.aws_shell.model_parser.try_get_deployed_connected_resource_instance_id = Mock(return_value='instance_id')
+        self.aws_shell.deployed_app_ports_operation.get_app_ports_from_cloud_provider = Mock(return_value='bla')
 
-        with patch('cloudshell.cp.aws.aws_shell.LoggingSessionContext'):
-            with patch('cloudshell.cp.aws.aws_shell.ErrorHandlingContext'):
-                # act
-                res = self.aws_shell.get_application_ports(self.command_context)
+        with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
+            shell_context.return_value = self.mock_context
+
+            # act
+            res = self.aws_shell.get_application_ports(self.command_context)
 
         assert res == 'bla'
-        self.aws_shell.deployed_app_ports_operation.get_formated_deployed_app_ports.assert_called_with(
-                deployed_model.vmdetails.vmCustomParams)
+        self.aws_shell.deployed_app_ports_operation.get_app_ports_from_cloud_provider.assert_called_with(
+            ec2_session=self.expected_shell_context.aws_api.ec2_session,
+            instance_id='instance_id',
+            resource=remote_resource
+        )
 
     def test_get_access_key(self):
         self.command_context.remote_reservation = Mock()
