@@ -190,12 +190,12 @@ class TestPrepareConnectivity(TestCase):
                                                     self.crypto_service, self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
-        res = prepare_conn._get_or_create_security_group(self.ec2_session, self.reservation, vpc, management_sg_id)
+        res = prepare_conn._get_or_create_default_security_groups(self.ec2_session, self.reservation, vpc, management_sg_id)
 
         self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
         self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
         self.assertTrue(security_group_service.create_security_group.called_with(self.ec2_session, vpc.id, sg_name))
-        self.assertEqual(sg, res)
+        self.assertEqual([sg, sg], res)  # create two security groups, default and isolated
 
     def test_get_or_create_vpc(self):
         cidr = Mock()

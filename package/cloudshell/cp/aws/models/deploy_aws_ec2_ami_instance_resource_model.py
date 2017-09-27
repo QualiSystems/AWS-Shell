@@ -29,4 +29,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.user = ''  # type: str
         self.app_name = ''  # type: str
         self.network_configurations = None  # type: list[NetworkAction]
-        self.allow_all_storage_traffic = True  # type: bool
+        self.allow_all_sandbox_traffic = True  # type: bool

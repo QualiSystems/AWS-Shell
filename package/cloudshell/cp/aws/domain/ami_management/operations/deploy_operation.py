@@ -351,7 +351,8 @@ class DeployAMIOperation(object):
                                                                           aws_ec2_resource_model=aws_ec2_resource_model)
         aws_model.aws_key = key_pair
 
-        security_group_ids = self._get_security_group_param(reservation, security_group, vpc)
+        security_group_ids = self._get_security_group_param(reservation, security_group, vpc,
+                                                            ami_deployment_model.allow_all_sandbox_traffic)
         aws_model.security_group_ids = security_group_ids
 
         aws_model.network_interfaces = \
@@ -433,11 +434,16 @@ class DeployAMIOperation(object):
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
         return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
 
-    def _get_security_group_param(self, reservation, security_group, vpc):
-        default_sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
-        default_sg = self.security_group_service.get_security_group_by_name(vpc, default_sg_name)
+    def _get_security_group_param(self, reservation, security_group, vpc, allow_sandbox_traffic):
+        security_group_ids = []
 
-        security_group_ids = [default_sg.id]
+        if allow_sandbox_traffic:
+            default_sg_name = self.security_group_service.sandbox_default_sg_name(reservation.reservation_id)
+        else:
+            default_sg_name = self.security_group_service.sandbox_isolated_sg_name(reservation.reservation_id)
+
+        sg = self.security_group_service.get_security_group_by_name(vpc, default_sg_name)
+        security_group_ids.append(sg.id)
 
         if security_group:
             security_group_ids.append(security_group.group_id)

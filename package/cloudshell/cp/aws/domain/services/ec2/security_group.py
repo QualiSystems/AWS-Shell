@@ -14,7 +14,8 @@ class SecurityGroupService(object):
         """
         self.tag_service = tag_service
 
-    CLOUDSHELL_SANDBOX_SG = "Cloudshell Sandbox SG {0}"
+    CLOUDSHELL_SANDBOX_DEFAULT_SG = "Cloudshell Sandbox SG {0}"
+    CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG = "Isolated SG {0}"
     CLOUDSHELL_CUSTOM_SECURITY_GROUP = "Cloudshell Custom SG {0}"
     CLOUDSHELL_SECURITY_GROUP_DESCRIPTION = "Cloudshell Security Group"
 
@@ -41,8 +42,17 @@ class SecurityGroupService(object):
                                                  VpcId=vpc_id)
 
     @staticmethod
-    def get_sandbox_security_group_name(reservation_id):
-        return SecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id)
+    def get_sandbox_security_group_names(reservation_id):
+        return [SecurityGroupService.CLOUDSHELL_SANDBOX_DEFAULT_SG.format(reservation_id),
+                SecurityGroupService.CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG.format(reservation_id)]
+
+    @staticmethod
+    def sandbox_default_sg_name(reservation_id):
+        return SecurityGroupService.CLOUDSHELL_SANDBOX_DEFAULT_SG.format(reservation_id)
+
+    @staticmethod
+    def sandbox_isolated_sg_name(reservation_id):
+        return SecurityGroupService.CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG.format(reservation_id)
 
     @staticmethod
     def get_security_group_by_name(vpc, name):
@@ -87,6 +97,29 @@ class SecurityGroupService(object):
                 'UserIdGroupPairs': [
                     {
                         'GroupId': security_group.id
+                    }
+                ]
+            }
+        ])
+
+    def set_isolated_security_group_rules(self, security_group, management_sg_id):
+        """
+        Set inbound rules for the reservation isolated security group.
+        The default rules are:
+         1) Allow all inbound traffic from the management vpc for specific security group id
+        :param security_group: security group object
+        :param str management_sg_id: Id of the management security group id
+        :return:
+        """
+        security_group.authorize_ingress(IpPermissions=
+        [
+            {
+                'IpProtocol': '-1',
+                'FromPort': -1,
+                'ToPort': -1,
+                'UserIdGroupPairs': [
+                    {
+                        'GroupId': management_sg_id
                     }
                 ]
             }

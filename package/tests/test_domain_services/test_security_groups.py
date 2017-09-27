@@ -68,9 +68,10 @@ class TestSecurityGroups(TestCase):
 
     def test_get_sg_name(self):
         reservation_id = 'res'
-        res = self.sg_service.get_sandbox_security_group_name(reservation_id=reservation_id)
-
-        self.assertEqual(res, SecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id))
+        res = self.sg_service.get_sandbox_security_group_names(reservation_id=reservation_id)
+        security_group_names = [SecurityGroupService.CLOUDSHELL_SANDBOX_DEFAULT_SG.format(reservation_id),
+                                SecurityGroupService.CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG.format(reservation_id)]
+        self.assertEqual(res, security_group_names)
 
     def test_get_security_group_by_name(self):
         vpc = Mock()
