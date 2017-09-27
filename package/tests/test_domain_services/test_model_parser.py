@@ -59,7 +59,8 @@ class TestModelParser(TestCase):
                           '"Autoload":"False",' \
                           '"Inbound Ports":"80",' \
                           '"Wait for Credentials":"False",' \
-                          '"Public IP Options":"Elastic IP"' \
+                          '"Public IP Options":"Elastic IP",' \
+                          '"Allow all Sandbox Traffic": "True"' \
                         '},' \
                     '"LogicalResourceRequestAttributes": {"User": "some_user"},' \
                     '"AppName": "my_app"' \
@@ -103,7 +104,8 @@ class TestModelParser(TestCase):
                           '"Autoload":"False",' \
                           '"Inbound Ports":"80",' \
                           '"Wait for Credentials":"False",' \
-                          '"Public IP Options":"Elastic IP"' \
+                          '"Public IP Options":"Elastic IP",' \
+                          '"Allow all Sandbox Traffic": "True"' \
                         '},' \
                     '"LogicalResourceRequestAttributes": {"User": "some_user"},' \
                     '"AppName": "my_app",' \
