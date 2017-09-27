@@ -132,6 +132,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="true"  Name="Allow all Sandbox Traffic" Description="Whether an app should allow inbound traffic from all other apps in the sandbox. If set to false, access from specific apps or subnets can be defined by an API ca" IsReadOnly="false" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDRs. For example: 10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -255,6 +261,9 @@
         <ResourceModel Description="" Name="AWS EC2 Instance" ImagePath="DeploymentTypes-AWS-EC2.png" SupportsConcurrentCommands="false">
           <AttachedAttributes>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allow all Sandbox Traffic" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Instance Type" UserInput="true">

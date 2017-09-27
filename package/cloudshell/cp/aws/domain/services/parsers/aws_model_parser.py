@@ -86,6 +86,7 @@ class AWSModelsParser(object):
         deployment_resource_model.app_name = data["AppName"]
 
         deployment_resource_model.aws_ami_id = data["Attributes"]['AWS AMI Id']
+        deployment_resource_model.allow_all_storage_traffic = data["Attributes"]['Allow all Sandbox Traffic']
         deployment_resource_model.storage_size = data["Attributes"]['Storage Size']
         deployment_resource_model.storage_iops = data["Attributes"]['Storage IOPS']
         deployment_resource_model.storage_type = data["Attributes"]['Storage Type']
