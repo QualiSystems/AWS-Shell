@@ -70,7 +70,7 @@ class DeployedAppPortsOperation(object):
 
         for key, value in network_interfaces_dict.iteritems():
             for network_interface in value:
-                result_str_list.append('Subnet Name: ' + key)
+                result_str_list.append('Subnet: ' + key)
 
                 # get security groups for network interface
                 custom_security_group = self.security_group_service.get_custom_security_group(
