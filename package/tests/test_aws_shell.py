@@ -238,6 +238,8 @@ class TestAWSShell(TestCase):
         self.aws_shell.model_parser.try_get_deployed_connected_resource_instance_id = Mock(return_value='instance_id')
         self.aws_shell.deployed_app_ports_operation.get_app_ports_from_cloud_provider = Mock(return_value='bla')
 
+        self.aws_shell.model_parser.get_allow_all_storage_traffic_from_connected_resource_details = Mock(return_value='True')
+
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
 
@@ -248,7 +250,8 @@ class TestAWSShell(TestCase):
         self.aws_shell.deployed_app_ports_operation.get_app_ports_from_cloud_provider.assert_called_with(
             ec2_session=self.expected_shell_context.aws_api.ec2_session,
             instance_id='instance_id',
-            resource=remote_resource
+            resource=remote_resource,
+            allow_all_storage_traffic='True'
         )
 
     def test_get_access_key(self):
