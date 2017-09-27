@@ -50,18 +50,18 @@ class DeployedAppPortsOperation(object):
 
         return '\n'.join(result_str_list).strip()
 
-    def get_app_ports_from_cloud_provider(self, ec2_session, instance_id, resource):
+    def get_app_ports_from_cloud_provider(self, ec2_session, instance_id, resource, allow_all_storage_traffic):
         """
         :param ec2_session: EC2 session
         :param string instance_id:
         :param ResourceContextDetails resource:
+        :param string allow_all_storage_traffic:
         """
         instance = self.instance_service.get_active_instance_by_id(ec2_session, instance_id)
         network_interfaces = instance.network_interfaces
 
-        result_str_list = ['App Name: ' + resource.fullname]
-
-        # todo "Allow Sandbox traffic" attribute is [True/False] - when define app as isolated will be finished
+        result_str_list = ['App Name: ' + resource.fullname,
+                           'Allow Sandbox Traffic: ' + str(allow_all_storage_traffic)]
 
         # group network interfaces by subnet into dictionary
         network_interfaces_dict = defaultdict(list)

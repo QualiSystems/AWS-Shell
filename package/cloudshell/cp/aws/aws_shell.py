@@ -253,10 +253,14 @@ class AWSShell(object):
                 deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
                     command_context)
 
+                # Get Allow all Storage Traffic on deployed resource
+                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(command_context)
+
                 return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
                     ec2_session=shell_context.aws_api.ec2_session,
                     instance_id=deployed_instance_id,
-                    resource=resource)
+                    resource=resource,
+                    allow_all_storage_traffic=allow_all_storage_traffic)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
