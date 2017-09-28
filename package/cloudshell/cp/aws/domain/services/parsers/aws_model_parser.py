@@ -146,6 +146,15 @@ class AWSModelsParser(object):
         return None
 
     @staticmethod
+    def get_allow_all_storage_traffic_from_connected_resource_details(resource_context):
+        allow_traffic_on_resource = ""
+        allow_all_storage_traffic = 'Allow all Sandbox Traffic'
+        if resource_context.remote_endpoints is not None:
+            allow_traffic_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                resource_context.remote_endpoints[0].attributes, allow_all_storage_traffic)
+        return allow_traffic_on_resource
+
+    @staticmethod
     def get_public_ip_from_connected_resource_details(resource_context):
         public_ip_on_resource = ""
         public_ip = 'Public IP'
