@@ -309,12 +309,12 @@ class PrepareConnectivityOperation(object):
 
     def _get_or_create_default_security_groups(self, ec2_session, reservation, vpc, management_sg_id):
         security_groups = [
-            self.get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc),
-            self.get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation, vpc)]
+            self._get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc),
+            self._get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation, vpc)]
 
         return security_groups
 
-    def get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+    def _get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc):
         sg_name = self.security_group_service.sandbox_default_sg_name(reservation.reservation_id)
 
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
@@ -334,7 +334,7 @@ class PrepareConnectivityOperation(object):
 
         return security_group
 
-    def get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+    def _get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc):
         sg_name = self.security_group_service.sandbox_isolated_sg_name(reservation.reservation_id)
 
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
