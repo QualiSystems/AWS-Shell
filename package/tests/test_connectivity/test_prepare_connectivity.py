@@ -175,7 +175,7 @@ class TestPrepareConnectivity(TestCase):
                                                                      'res_id'))
         self.assertEquals(access_key, key_pair.key_material)
 
-    def test_get_or_create_security_group(self):
+    def test_get_or_create_security_groups(self):
         sg_name = Mock()
         sg = Mock()
         vpc = Mock()
@@ -190,11 +190,61 @@ class TestPrepareConnectivity(TestCase):
                                                     self.crypto_service, self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
-        res = prepare_conn._get_or_create_security_group(self.ec2_session, self.reservation, vpc, management_sg_id)
+        res = prepare_conn._get_or_create_default_security_groups(self.ec2_session, self.reservation, vpc, management_sg_id)
 
         self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
         self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
         self.assertTrue(security_group_service.create_security_group.called_with(self.ec2_session, vpc.id, sg_name))
+        self.assertEqual([sg, sg], res)  # create two security groups, default and isolated
+
+    def test_get_or_create_default_sandbox_security_group(self):
+        sg_name = Mock()
+        sg = Mock()
+        vpc = Mock()
+        management_sg_id = Mock()
+        security_group_service = Mock()
+        security_group_service.get_security_group_name = Mock(return_value=sg_name)
+        security_group_service.get_security_group_by_name = Mock(return_value=None)
+        security_group_service.create_security_group = Mock(return_value=sg)
+
+        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+                                                    self.tag_service, self.route_table_service,
+                                                    self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
+
+        res = prepare_conn._get_or_create_sandbox_default_security_group(self.ec2_session, self.reservation, vpc,
+                                                                         management_sg_id)
+
+        self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
+        self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
+        self.assertTrue(security_group_service.create_security_group.called_with(self.ec2_session, vpc.id, sg_name))
+        self.assertTrue(self.tag_service.get_sandbox_default_security_group_tags.called_with(sg_name, self.reservation))
+        self.assertTrue(security_group_service.sandbox_default_sg_name.called_with(self.reservation.reservation_id))
+        self.assertEqual(sg, res)
+
+    def test_get_or_create_isolated_security_group(self):
+        sg_name = Mock()
+        sg = Mock()
+        vpc = Mock()
+        management_sg_id = Mock()
+        security_group_service = Mock()
+        security_group_service.get_security_group_name = Mock(return_value=sg_name)
+        security_group_service.get_security_group_by_name = Mock(return_value=None)
+        security_group_service.create_security_group = Mock(return_value=sg)
+
+        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+                                                    self.tag_service, self.route_table_service,
+                                                    self.crypto_service, self.cancellation_service,
+                                                    self.subnet_service, self.subnet_waiter)
+
+        res = prepare_conn._get_or_create_sandbox_isolated_security_group(self.ec2_session, self.reservation, vpc,
+                                                                          management_sg_id)
+
+        self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
+        self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))
+        self.assertTrue(security_group_service.create_security_group.called_with(self.ec2_session, vpc.id, sg_name))
+        self.assertTrue(self.tag_service.get_sandbox_isolated_security_group_tags.called_with(sg_name, self.reservation))
+        self.assertTrue(security_group_service.sandbox_isolated_sg_name.called_with(self.reservation.reservation_id))
         self.assertEqual(sg, res)
 
     def test_get_or_create_vpc(self):

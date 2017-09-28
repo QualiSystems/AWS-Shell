@@ -66,11 +66,24 @@ class TestSecurityGroups(TestCase):
             SecurityGroupService.CLOUDSHELL_SECURITY_GROUP_DESCRIPTION,
             'vpc'))
 
-    def test_get_sg_name(self):
+    def test_get_sg_names(self):
         reservation_id = 'res'
-        res = self.sg_service.get_sandbox_security_group_name(reservation_id=reservation_id)
+        res = self.sg_service.get_sandbox_security_group_names(reservation_id=reservation_id)
+        security_group_names = [SecurityGroupService.CLOUDSHELL_SANDBOX_DEFAULT_SG.format(reservation_id),
+                                SecurityGroupService.CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG.format(reservation_id)]
+        self.assertEqual(res, security_group_names)
 
-        self.assertEqual(res, SecurityGroupService.CLOUDSHELL_SANDBOX_SG.format(reservation_id))
+    def test_get_default_sg_name(self):
+        reservation_id = 'res'
+        sg_name = self.sg_service.sandbox_default_sg_name(reservation_id=reservation_id)
+        security_group_name = SecurityGroupService.CLOUDSHELL_SANDBOX_DEFAULT_SG.format(reservation_id)
+        self.assertEqual(sg_name, security_group_name)
+
+    def test_get_isolated_sg_name(self):
+        reservation_id = 'res'
+        sg_name = self.sg_service.sandbox_isolated_sg_name(reservation_id=reservation_id)
+        security_group_name = SecurityGroupService.CLOUDSHELL_SANDBOX_ISOLATED_FROM_SANDBOX_SG.format(reservation_id)
+        self.assertEqual(sg_name, security_group_name)
 
     def test_get_security_group_by_name(self):
         vpc = Mock()
@@ -91,8 +104,9 @@ class TestSecurityGroups(TestCase):
         self.assertRaises(ValueError, self.sg_service.get_security_group_by_name, vpc, 'name')
 
     def test_set_shared_reservation_security_group_rules(self):
-        sg = Mock()
+        sg = Fake()
         sg.id = 'id'
+        sg.authorize_ingress = Mock()
         self.sg_service.set_shared_reservation_security_group_rules(sg, 'man')
 
         self.assertTrue(sg.authorize_ingress.called_with(IpPermissions=[
@@ -115,6 +129,26 @@ class TestSecurityGroups(TestCase):
                 }
             ]
         }
+        ]))
+
+    def test_set_isolated_reservation_security_group_rules(self):
+        sg = Fake()
+        sg.id = 'id'
+        sg.authorize_ingress = Mock()
+        self.sg_service.set_isolated_security_group_rules(sg, 'man')
+
+        self.assertTrue(sg.authorize_ingress.called_with(IpPermissions=
+        [
+            {
+                'IpProtocol': '-1',
+                'FromPort': -1,
+                'ToPort': -1,
+                'UserIdGroupPairs': [
+                    {
+                        'GroupId': 'man'
+                    }
+                ]
+            }
         ]))
 
     def test_set_sg_security_group_rules(self):
@@ -148,3 +182,7 @@ class TestSecurityGroups(TestCase):
                 }
             ]
         }])
+
+
+class Fake (object):
+    pass

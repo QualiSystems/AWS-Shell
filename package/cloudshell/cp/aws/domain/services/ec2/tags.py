@@ -31,7 +31,7 @@ class TagService(object):
     def __init__(self):
         pass
 
-    def get_security_group_tags(self, name, isolation, reservation):
+    def get_security_group_tags(self, name, isolation, reservation, type=None):
         """
         returns the default tags with the isolation tag
         :param name: the name of the resource
@@ -40,11 +40,21 @@ class TagService(object):
         :type isolation: str
         :param reservation: reservation model
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
+        :param type: the type of security group
+        :type type: str
         :return: list[dict]
         """
         tags = self.get_default_tags(name, reservation)
         tags.append(self._get_kvp(TagNames.Isolation, isolation))
+        if type:
+            tags.append(self._get_kvp(TagNames.Type, type))
         return tags
+
+    def get_sandbox_default_security_group_tags(self, name, reservation):
+        return self.get_security_group_tags(name, IsolationTagValues.Shared, reservation, TypeTagValues.Default)
+
+    def get_sandbox_isolated_security_group_tags(self, name, reservation):
+        return self.get_security_group_tags(name, IsolationTagValues.Shared, reservation, TypeTagValues.Isolated)
 
     def get_custom_security_group_tags(self):
         """

@@ -161,12 +161,11 @@ class PrepareConnectivityOperation(object):
         # will get or create default Security Group
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Get or create default Security Group")
-        security_group = self._get_or_create_security_group(ec2_session=ec2_session,
-                                                            reservation=reservation,
-                                                            vpc=vpc,
-                                                            management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
-        return self._create_prepare_network_result(action, security_group, vpc, access_key)
-
+        security_groups = self._get_or_create_default_security_groups(ec2_session=ec2_session,
+                                                                      reservation=reservation,
+                                                                      vpc=vpc,
+                                                                      management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
+        return self._create_prepare_network_result(action, security_groups, vpc, access_key)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -308,8 +307,16 @@ class PrepareConnectivityOperation(object):
                                                              target_peering_id=peer_connection_id,
                                                              target_vpc_cidr=target_vpc_cidr)
 
-    def _get_or_create_security_group(self, ec2_session, reservation, vpc, management_sg_id):
-        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
+    def _get_or_create_default_security_groups(self, ec2_session, reservation, vpc, management_sg_id):
+        security_groups = [
+            self._get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc),
+            self._get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation, vpc)]
+
+        return security_groups
+
+    def _get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+        sg_name = self.security_group_service.sandbox_default_sg_name(reservation.reservation_id)
+
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
 
         if not security_group:
@@ -318,13 +325,32 @@ class PrepareConnectivityOperation(object):
                                                                   vpc_id=vpc.id,
                                                                   security_group_name=sg_name)
 
-            tags = self.tag_service.get_security_group_tags(name=sg_name,
-                                                            isolation=IsolationTagValues.Shared,
-                                                            reservation=reservation)
+            tags = self.tag_service.get_sandbox_default_security_group_tags(name=sg_name, reservation=reservation)
+
             self.tag_service.set_ec2_resource_tags(security_group, tags)
 
             self.security_group_service.set_shared_reservation_security_group_rules(security_group=security_group,
                                                                                     management_sg_id=management_sg_id)
+
+        return security_group
+
+    def _get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+        sg_name = self.security_group_service.sandbox_isolated_sg_name(reservation.reservation_id)
+
+        security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
+
+        if not security_group:
+            security_group = \
+                self.security_group_service.create_security_group(ec2_session=ec2_session,
+                                                                  vpc_id=vpc.id,
+                                                                  security_group_name=sg_name)
+
+            tags = self.tag_service.get_sandbox_isolated_security_group_tags(name=sg_name, reservation=reservation)
+
+            self.tag_service.set_ec2_resource_tags(security_group, tags)
+
+            self.security_group_service.set_isolated_security_group_rules(security_group=security_group,
+                                                                          management_sg_id=management_sg_id)
 
         return security_group
 
@@ -337,13 +363,13 @@ class PrepareConnectivityOperation(object):
                                                               cidr=cidr)
         return vpc
 
-    def _create_prepare_network_result(self, action, security_group, vpc, access_key):
+    def _create_prepare_network_result(self, action, security_groups, vpc, access_key):
         action_result = PrepareNetworkActionResult()
         action_result.actionId = action.id
         action_result.success = True
         action_result.infoMessage = 'PrepareNetwork finished successfully'
         action_result.vpcId = vpc.id
-        action_result.securityGroupId = security_group.id
+        action_result.securityGroupId = [sg.id for sg in security_groups]
 
         # encrypt the private key
         cryptography_dto = self.cryptography_service.encrypt(access_key)
