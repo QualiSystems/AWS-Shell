@@ -105,6 +105,7 @@ class TestDeployOperation(TestCase):
         ami_datamodel.allocate_elastic_ip = True
         ami_datamodel.network_configurations = None
         instance = Mock()
+        instance.network_interfaces = []
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
         self.instance_service.create_instance = Mock(return_value=instance)
         sg = Mock()
@@ -558,3 +559,106 @@ class TestDeployOperation(TestCase):
         self.assertEquals(network_config_results[1].private_ip, "pri_ip_2")
         self.assertEquals(network_config_results[1].mac_address, "mac2")
         self.assertEquals(network_config_results[1].public_ip, "")
+
+    def test_prepare_vm_details(self):
+        instance = Mock()
+        instance.image_id = 'image_id'
+        instance.instance_type = 'instance_type'
+        instance.platform = 'instance_platform'
+
+        vm_instance_data = self.deploy_operation._prepare_vm_details(instance)['vm_instance_data']
+
+        self.assertTrue(vm_instance_data['ami_id'] == instance.image_id)
+        self.assertTrue(vm_instance_data['instance_type'] == instance.instance_type)
+        self.assertTrue(vm_instance_data['platform'] == instance.platform)
+
+    def test_prepare_network_interface_objects_with_elastic_ip(self):
+        # elastic_ip
+        network_interface = Mock()
+        network_interface.association_attribute = {'AllocationId': 'some_elastic_ip_id',
+                                                   'PublicIp': 'public_ip'}
+
+        network_interface.network_interface_id = 'interface_id'
+        network_interface.mac_address = 'mac_address'
+        network_interface.subnet_id = 'subnet_id'
+        network_interface.attachment = {'DeviceIndex': 0}
+        network_interface.private_ip_address = 'private_ip'
+
+        instance = Mock()
+        instance.network_interfaces = [
+            network_interface
+        ]
+
+        network_interface_objects = self.deploy_operation._prepare_network_interface_objects(instance)
+
+        nio = network_interface_objects[0]
+
+        self.assertTrue(nio['interface_id'] == 'interface_id')
+        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['is_primary'] == True)
+        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device_index'] == 0)
+        self.assertTrue(nio['network_data']['is_elastic_ip'] == True)
+        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
+        self.assertTrue(nio['network_data']['public_ip'] == 'public_ip')
+
+    def test_prepare_network_interface_objects_with_public_ip(self):
+        network_interface = Mock()
+        network_interface.association_attribute = dict()
+
+        network_interface.network_interface_id = 'interface_id'
+        network_interface.mac_address = 'mac_address'
+        network_interface.subnet_id = 'subnet_id'
+        network_interface.attachment = {'DeviceIndex': 0}
+        network_interface.private_ip_address = 'private_ip'
+
+        instance = Mock()
+        instance.public_ip_address = 'public_ip'
+        instance.network_interfaces = [
+            network_interface
+        ]
+
+        network_interface_objects = self.deploy_operation._prepare_network_interface_objects(instance)
+
+        nio = network_interface_objects[0]
+
+        self.assertTrue(nio['interface_id'] == 'interface_id')
+        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['is_primary'] == True)
+        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device_index'] == 0)
+        self.assertTrue(nio['network_data']['is_elastic_ip'] == False)
+        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
+        self.assertTrue(nio['network_data']['public_ip'] == 'public_ip')
+
+
+    def test_prepare_network_interface_objects_without_public_ip(self):
+        network_interface = Mock()
+        network_interface.association_attribute = dict()
+
+        network_interface.network_interface_id = 'interface_id'
+        network_interface.mac_address = 'mac_address'
+        network_interface.subnet_id = 'subnet_id'
+        network_interface.attachment = {'DeviceIndex': 1}
+        network_interface.private_ip_address = 'private_ip'
+
+        instance = Mock()
+        instance.network_interfaces = [
+            network_interface
+        ]
+
+        network_interface_objects = self.deploy_operation._prepare_network_interface_objects(instance)
+
+        nio = network_interface_objects[0]
+
+        self.assertTrue(nio['interface_id'] == 'interface_id')
+        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['is_primary'] == False)
+        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device_index'] == 1)
+        self.assertTrue(nio['network_data']['is_elastic_ip'] == False)
+        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
+        self.assertTrue(nio['network_data']['public_ip'] == None)
+
+
+
