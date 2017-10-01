@@ -627,7 +627,7 @@ class TestDeployOperation(TestCase):
         self.assertTrue(nio['is_primary'] == True)
         self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device_index'] == 0)
-        self.assertTrue(nio['network_data']['is_elastic_ip'] == False)
+        self.assertTrue('is_elastic_ip' not in nio['network_data'])
         self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
         self.assertTrue(nio['network_data']['public_ip'] == 'public_ip')
 
@@ -653,12 +653,12 @@ class TestDeployOperation(TestCase):
 
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['subnet_id'] == 'subnet_id')
-        self.assertTrue(nio['is_primary'] == False)
+        self.assertTrue('is_primary' not in nio)
         self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device_index'] == 1)
-        self.assertTrue(nio['network_data']['is_elastic_ip'] == False)
+        self.assertTrue('is_elastic_ip' not in nio['network_data'])
         self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public_ip'] == None)
+        self.assertTrue('public_ip' not in nio['network_data'])
 
 
 

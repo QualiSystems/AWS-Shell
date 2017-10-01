@@ -619,7 +619,6 @@ class DeployAMIOperation(object):
                         "mac_address": network_interface.mac_address,
                         "device_index": network_interface.attachment.get("DeviceIndex"),
                         "private_ip": network_interface.private_ip_address,
-                        "public_ip": calculate_public_ip(network_interface, instance)
                     }
                 }
 
