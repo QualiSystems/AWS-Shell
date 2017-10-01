@@ -160,8 +160,6 @@ class DeployAMIOperation(object):
             self._prepare_network_config_results_dto(network_config_results=network_config_results,
                                                      ami_deployment_model=ami_deployment_model)
 
-        network_interface_objects = self._prepare_network_interface_objects(instance)
-
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
                             cloud_provider_resource_name=ami_deployment_model.cloud_provider,
@@ -174,8 +172,7 @@ class DeployAMIOperation(object):
                             deployed_app_address=instance.private_ip_address,
                             public_ip=instance.public_ip_address,
                             network_configuration_results=network_actions_results_dtos,
-                            vm_details_data=vm_details_data,
-                            network_interface_objects=network_interface_objects)
+                            vm_details_data=vm_details_data)
 
     def _validate_public_subnet_exist_if_requested_public_or_elastic_ips(self, ami_deployment_model, logger):
         """
@@ -605,6 +602,10 @@ class DeployAMIOperation(object):
         }
         if platform:
             vm_details['vm_instance_data']['platform'] = platform
+
+        vm_network_data = self._prepare_network_interface_objects(instance)
+        vm_details["vm_network_data"] = vm_network_data
+
         return vm_details
 
     def _prepare_network_interface_objects(self, instance):

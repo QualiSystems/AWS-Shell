@@ -565,6 +565,7 @@ class TestDeployOperation(TestCase):
         instance.image_id = 'image_id'
         instance.instance_type = 'instance_type'
         instance.platform = 'instance_platform'
+        instance.network_interfaces = []
 
         vm_instance_data = self.deploy_operation._prepare_vm_details(instance)['vm_instance_data']
 
