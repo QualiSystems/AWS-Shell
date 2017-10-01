@@ -79,8 +79,7 @@ class TestAWSShell(TestCase):
                               deployed_app_address='',
                               public_ip='',
                               network_configuration_results=[],
-                              vm_details_data=dict(),
-                              network_interface_objects=[])
+                              vm_details_data=dict())
 
         self.aws_shell.model_parser.convert_to_deployment_resource_model = Mock(return_value=deploymock)
         self.aws_shell.deploy_ami_operation.deploy = Mock(return_value=result)
