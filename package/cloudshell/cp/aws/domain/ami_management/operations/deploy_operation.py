@@ -153,9 +153,14 @@ class DeployAMIOperation(object):
         deployed_app_attributes = self._prepare_deployed_app_attributes(ami_credentials=ami_credentials,
                                                                         ami_deployment_model=ami_deployment_model,
                                                                         network_config_results=network_config_results)
+
+        vm_details_data = self._prepare_vm_details(instance)
+
         network_actions_results_dtos = \
             self._prepare_network_config_results_dto(network_config_results=network_config_results,
                                                      ami_deployment_model=ami_deployment_model)
+
+        network_interface_objects = self._prepare_network_interface_objects(instance)
 
         return DeployResult(vm_name=self._get_name_from_tags(instance),
                             vm_uuid=instance.instance_id,
@@ -168,7 +173,9 @@ class DeployAMIOperation(object):
                             deployed_app_attributes=deployed_app_attributes,
                             deployed_app_address=instance.private_ip_address,
                             public_ip=instance.public_ip_address,
-                            network_configuration_results=network_actions_results_dtos)
+                            network_configuration_results=network_actions_results_dtos,
+                            vm_details_data=vm_details_data,
+                            network_interface_objects=network_interface_objects)
 
     def _validate_public_subnet_exist_if_requested_public_or_elastic_ips(self, ami_deployment_model, logger):
         """
@@ -587,3 +594,55 @@ class DeployAMIOperation(object):
             if "Association" in interface and "PublicIp" in interface["Association"] \
                     and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]
+
+    def _prepare_vm_details(self, instance):
+        return {
+            'vm_instance_data': {
+                'ami_id': instance.image_id,
+                'instance_type': instance.instance_type,
+                'platform': instance.platform
+            }
+        }
+
+    def _prepare_network_interface_objects(self, instance):
+        network_interface_objects = []
+
+        if instance.network_interfaces:
+            for network_interface in instance.network_interfaces:
+                network_interface_object = {
+                    "interface_id": network_interface.network_interface_id,
+                    "subnet_id": network_interface.subnet_id,
+                    "is_primary": is_primary_interface(network_interface),
+                    "network_data": {
+                        "mac_address": network_interface.mac_address,
+                        "device_index": network_interface.attachment.get("DeviceIndex"),
+                        "is_elastic_ip": has_elastic_ip(network_interface),
+                        "private_ip": network_interface.private_ip_address,
+                        "public_ip": calculate_public_ip(network_interface, instance)
+                    }
+                }
+                network_interface_objects.append(network_interface_object)
+
+        return network_interface_objects
+
+
+def calculate_public_ip(interface, instance):
+    # interface has public ip if:
+    # a. is elastic ip
+    # b. not elastic, but primary and instance has public ip
+
+    if has_elastic_ip(interface):
+        return interface.association_attribute.get("PublicIp")
+    if is_primary_interface(interface):
+        return instance.public_ip_address
+    return None
+
+
+def has_elastic_ip(interface):
+    # allocationid is used to associate elastic ip with ec2 instance
+    return 'AllocationId' in interface.association_attribute
+
+
+def is_primary_interface(interface):
+    return interface.attachment.get("DeviceIndex") == 0
+
