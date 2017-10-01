@@ -596,13 +596,16 @@ class DeployAMIOperation(object):
                 result.public_ip = interface["Association"]["PublicIp"]
 
     def _prepare_vm_details(self, instance):
-        return {
+        platform = instance.platform
+        vm_details = {
             'vm_instance_data': {
                 'ami_id': instance.image_id,
                 'instance_type': instance.instance_type,
-                'platform': instance.platform
             }
         }
+        if platform:
+            vm_details['vm_instance_data']['platform'] = platform
+        return vm_details
 
     def _prepare_network_interface_objects(self, instance):
         network_interface_objects = []
@@ -612,15 +615,24 @@ class DeployAMIOperation(object):
                 network_interface_object = {
                     "interface_id": network_interface.network_interface_id,
                     "subnet_id": network_interface.subnet_id,
-                    "is_primary": is_primary_interface(network_interface),
                     "network_data": {
                         "mac_address": network_interface.mac_address,
                         "device_index": network_interface.attachment.get("DeviceIndex"),
-                        "is_elastic_ip": has_elastic_ip(network_interface),
                         "private_ip": network_interface.private_ip_address,
-                        "public_ip": calculate_public_ip(network_interface, instance)
                     }
                 }
+
+                is_attached_to_elastic_ip = has_elastic_ip(network_interface)
+                is_primary = is_primary_interface(network_interface)
+                public_ip = calculate_public_ip(network_interface, instance)
+
+                if is_attached_to_elastic_ip:
+                    network_interface_object["network_data"]["is_elastic_ip"] = is_attached_to_elastic_ip
+                if is_primary:
+                    network_interface_object["is_primary"] = is_primary
+                if public_ip:
+                    network_interface_object["network_data"]["public_ip"] = public_ip
+
                 network_interface_objects.append(network_interface_object)
 
         return network_interface_objects
@@ -640,7 +652,7 @@ def calculate_public_ip(interface, instance):
 
 def has_elastic_ip(interface):
     # allocationid is used to associate elastic ip with ec2 instance
-    return 'AllocationId' in interface.association_attribute
+    return interface.association_attribute and 'AllocationId' in interface.association_attribute
 
 
 def is_primary_interface(interface):
