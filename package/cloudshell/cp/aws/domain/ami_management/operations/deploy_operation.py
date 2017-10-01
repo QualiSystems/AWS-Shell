@@ -615,7 +615,7 @@ class DeployAMIOperation(object):
             for network_interface in instance.network_interfaces:
                 network_interface_object = {
                     "interface_id": network_interface.network_interface_id,
-                    "subnet_id": network_interface.subnet_id,
+                    "network_id": network_interface.subnet_id,
                     "network_data": {
                         "mac_address": network_interface.mac_address,
                         "device_index": network_interface.attachment.get("DeviceIndex"),

@@ -595,7 +595,7 @@ class TestDeployOperation(TestCase):
         nio = network_interface_objects[0]
 
         self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
         self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device_index'] == 0)
@@ -624,7 +624,7 @@ class TestDeployOperation(TestCase):
         nio = network_interface_objects[0]
 
         self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
         self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device_index'] == 0)
@@ -653,7 +653,7 @@ class TestDeployOperation(TestCase):
         nio = network_interface_objects[0]
 
         self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['subnet_id'] == 'subnet_id')
+        self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue('is_primary' not in nio)
         self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device_index'] == 1)
