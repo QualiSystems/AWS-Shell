@@ -117,7 +117,9 @@ class AWSShell(object):
                                                                key_pair_service=self.key_pair_service,
                                                                route_table_service=self.route_tables_service)
 
-        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor)
+        self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor,
+                                                                      security_group_service=self.security_group_service,
+                                                                      instance_service=self.instance_service)
 
         self.access_key_operation = GetAccessKeyOperation(key_pair_service=self.key_pair_service)
 
@@ -242,14 +244,23 @@ class AWSShell(object):
         :param ResourceRemoteCommandContext command_context:
         :rtype: str
         """
-        with LoggingSessionContext(command_context) as logger:
-            with ErrorHandlingContext(logger):
-                logger.info('Get Application Ports')
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get Application Ports')
                 resource = command_context.remote_endpoints[0]
-                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                return self.deployed_app_ports_operation.get_formated_deployed_app_ports(
-                    data_holder.vmdetails.vmCustomParams)
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                    command_context)
+
+                # Get Allow all Storage Traffic on deployed resource
+                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(command_context)
+
+                return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    instance_id=deployed_instance_id,
+                    resource=resource,
+                    allow_all_storage_traffic=allow_all_storage_traffic)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
@@ -332,10 +343,11 @@ class AWSShell(object):
                 reservation = self.model_parser.convert_to_reservation_model(context.reservation)
                 app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                result = self.set_app_security_groups_operation.set_apps_security_groups(app_security_group_models=app_security_group_models,
-                                                                                         reservation=reservation,
-                                                                                         ec2_session=shell_context.aws_api.ec2_session,
-                                                                                         logger=shell_context.logger)
+                result = self.set_app_security_groups_operation.set_apps_security_groups(
+                    app_security_group_models=app_security_group_models,
+                    reservation=reservation,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    logger=shell_context.logger)
 
                 json_result = SetAppSecurityGroupActionResult.to_json(result)
 
