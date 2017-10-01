@@ -596,13 +596,16 @@ class DeployAMIOperation(object):
                 result.public_ip = interface["Association"]["PublicIp"]
 
     def _prepare_vm_details(self, instance):
-        return {
+        platform = instance.platform
+        vm_details = {
             'vm_instance_data': {
                 'ami_id': instance.image_id,
                 'instance_type': instance.instance_type,
-                'platform': instance.platform
             }
         }
+        if platform:
+            vm_details['vm_instance_data']['platform'] = platform
+        return vm_details
 
     def _prepare_network_interface_objects(self, instance):
         network_interface_objects = []
