@@ -653,7 +653,7 @@ def calculate_public_ip(interface, instance):
 
 def has_elastic_ip(interface):
     # allocationid is used to associate elastic ip with ec2 instance
-    return 'AllocationId' in interface.association_attribute
+    return interface.association_attribute and 'AllocationId' in interface.association_attribute
 
 
 def is_primary_interface(interface):
