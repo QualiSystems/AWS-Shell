@@ -6,10 +6,15 @@ from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 
+from mock import Mock
+
 
 class TestDeployedAppPortsOperation(TestCase):
     def setUp(self):
-        self.operation = DeployedAppPortsOperation(VmCustomParamsExtractor())
+        self.security_group_service = Mock()
+        self.instance_service = Mock()
+        self.operation = DeployedAppPortsOperation(VmCustomParamsExtractor(), self.security_group_service,
+                                                   self.instance_service)
 
     def test_format_single_inbound(self):
         json_str = '{"vmCustomParams":[{"name": "inbound_ports", "value": "80"}]}'
