@@ -74,5 +74,21 @@ class TestDeployedAppPortsOperation(TestCase):
 
         self.assertEquals(result, "No ports are open for inbound and outbound traffic outside of the Sandbox")
 
+    def test_get_app_ports_from_cloud_provider(self):
+        instance = Mock()
+        instance.network_interfaces = []
+        self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
+
+        remote_resource = Mock()
+        remote_resource.fullname = 'my ami name'
+
+        es2_session = Mock()
+
+        result = self.operation.get_app_ports_from_cloud_provider(ec2_session=es2_session, instance_id='',
+                                                                  resource=remote_resource,
+                                                                  allow_all_storage_traffic=True)
+
+        self.assertEquals(result, 'App Name: my ami name\nAllow Sandbox Traffic: True')
+
 
 

@@ -226,7 +226,7 @@ class TestAWSShell(TestCase):
                 ec2_session=self.expected_shell_context.aws_api.ec2_session,
                 ami_id=deployed_model.vmdetails.uid)
 
-    def test_get_application_portd(self):
+    def test_get_application_ports(self):
         remote_resource = Mock()
         remote_resource.fullname = 'my ami name'
         self.command_context.remote_endpoints = [remote_resource]
