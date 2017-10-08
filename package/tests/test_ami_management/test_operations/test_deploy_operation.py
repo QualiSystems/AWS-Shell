@@ -478,7 +478,8 @@ class TestDeployOperation(TestCase):
                                               self.elastic_ip_service,
                                               self.network_interface_service,
                                               self.cancellation_service,
-                                              self.device_index_strategy)
+                                              self.device_index_strategy,
+                                              self.vm_details_provider)
 
         # act & assert
         with self.assertRaisesRegexp(ValueError, 'VPC is not set for this reservation'):
