@@ -150,8 +150,10 @@ class AWSModelsParser(object):
         allow_traffic_on_resource = ""
         allow_all_storage_traffic = 'Allow all Sandbox Traffic'
         if resource_context.remote_endpoints is not None:
+            data = jsonpickle.decode(resource_context.remote_endpoints[0].app_context.app_request_json)
+            attributes = {d["name"]: d["value"] for d in data["deploymentService"]["attributes"]}
             allow_traffic_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
-                resource_context.remote_endpoints[0].attributes, allow_all_storage_traffic)
+                attributes, allow_all_storage_traffic)
         return allow_traffic_on_resource
 
     @staticmethod
