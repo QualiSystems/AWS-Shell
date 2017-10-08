@@ -4,6 +4,7 @@ from multiprocessing import TimeoutError
 
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
+from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
@@ -28,7 +29,7 @@ class DeployAMIOperation(object):
 
     def __init__(self, instance_service, ami_credential_service, security_group_service, tag_service,
                  vpc_service, key_pair_service, subnet_service, elastic_ip_service, network_interface_service,
-                 cancellation_service, device_index_strategy):
+                 cancellation_service, device_index_strategy, vm_details_provider):
         """
         :param InstanceService instance_service: Instance Service
         :param InstanceCredentialsService ami_credential_service: AMI Credential Service
@@ -41,6 +42,7 @@ class DeployAMIOperation(object):
         :param NetworkInterfaceService network_interface_service:
         :param CommandCancellationService cancellation_service:
         :param AbstractDeviceIndexStrategy device_index_strategy:
+        :param VmDetailsProvider vm_details_provider:
         """
         self.tag_service = tag_service
         self.instance_service = instance_service
@@ -53,6 +55,7 @@ class DeployAMIOperation(object):
         self.elastic_ip_service = elastic_ip_service
         self.network_interface_service = network_interface_service
         self.device_index_strategy = device_index_strategy
+        self.vm_details_provider = vm_details_provider
 
     def deploy(self, ec2_session, s3_session, name, reservation, aws_ec2_cp_resource_model,
                ami_deployment_model, ec2_client, cancellation_context, logger):
@@ -154,7 +157,7 @@ class DeployAMIOperation(object):
                                                                         ami_deployment_model=ami_deployment_model,
                                                                         network_config_results=network_config_results)
 
-        vm_details_data = self._prepare_vm_details(instance)
+        vm_details_data = self.vm_details_provider.create(instance)
 
         network_actions_results_dtos = \
             self._prepare_network_config_results_dto(network_config_results=network_config_results,
@@ -591,71 +594,3 @@ class DeployAMIOperation(object):
             if "Association" in interface and "PublicIp" in interface["Association"] \
                     and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]
-
-    def _prepare_vm_details(self, instance):
-        platform = instance.platform
-        vm_details = {
-            'vm_instance_data': {
-                'ami_id': instance.image_id,
-                'instance_type': instance.instance_type,
-            }
-        }
-        if platform:
-            vm_details['vm_instance_data']['platform'] = platform
-
-        vm_network_data = self._prepare_network_interface_objects(instance)
-        vm_details["vm_network_data"] = vm_network_data
-
-        return vm_details
-
-    def _prepare_network_interface_objects(self, instance):
-        network_interface_objects = []
-
-        if instance.network_interfaces:
-            for network_interface in instance.network_interfaces:
-                network_interface_object = {
-                    "interface_id": network_interface.network_interface_id,
-                    "network_id": network_interface.subnet_id,
-                    "network_data": {
-                        "mac_address": network_interface.mac_address,
-                        "device_index": network_interface.attachment.get("DeviceIndex"),
-                        "private_ip": network_interface.private_ip_address,
-                    }
-                }
-
-                is_attached_to_elastic_ip = has_elastic_ip(network_interface)
-                is_primary = is_primary_interface(network_interface)
-                public_ip = calculate_public_ip(network_interface, instance)
-
-                if is_attached_to_elastic_ip:
-                    network_interface_object["network_data"]["is_elastic_ip"] = is_attached_to_elastic_ip
-                if is_primary:
-                    network_interface_object["is_primary"] = is_primary
-                if public_ip:
-                    network_interface_object["network_data"]["public_ip"] = public_ip
-
-                network_interface_objects.append(network_interface_object)
-
-        return network_interface_objects
-
-
-def calculate_public_ip(interface, instance):
-    # interface has public ip if:
-    # a. is elastic ip
-    # b. not elastic, but primary and instance has public ip
-
-    if has_elastic_ip(interface):
-        return interface.association_attribute.get("PublicIp")
-    if is_primary_interface(interface):
-        return instance.public_ip_address
-    return None
-
-
-def has_elastic_ip(interface):
-    # allocationid is used to associate elastic ip with ec2 instance
-    return interface.association_attribute and 'AllocationId' in interface.association_attribute
-
-
-def is_primary_interface(interface):
-    return interface.attachment.get("DeviceIndex") == 0
-
