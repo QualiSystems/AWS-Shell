@@ -15,6 +15,7 @@
             <Command Description="" DisplayName="GetAccessKey" Name="GetAccessKey" Tags="remote_app_management" />
             <Command Description="" DisplayName="Deploy" Name="Deploy" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Set App Security Groups" Name="SetAppSecurityGroups" Tags="allow_unreserved" />
+            <Command Description="" DisplayName="Get VmDetails" Name="GetVmDetails" Tags="allow_unreserved,remote_app_management" />
         </Category>
 
         <Category Name="Power">
