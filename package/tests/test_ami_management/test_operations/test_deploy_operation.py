@@ -27,6 +27,7 @@ class TestDeployOperation(TestCase):
         self.elastic_ip_service = Mock()
         self.network_interface_service = Mock()
         self.device_index_strategy = Mock()
+        self.vm_details_provider = Mock()
         self.deploy_operation = DeployAMIOperation(instance_service=self.instance_service,
                                                    ami_credential_service=self.credentials_manager,
                                                    security_group_service=self.security_group_service,
@@ -37,7 +38,8 @@ class TestDeployOperation(TestCase):
                                                    elastic_ip_service=self.elastic_ip_service,
                                                    network_interface_service=self.network_interface_service,
                                                    cancellation_service=self.cancellation_service,
-                                                   device_index_strategy=self.device_index_strategy)
+                                                   device_index_strategy=self.device_index_strategy,
+                                                   vm_details_provider=self.vm_details_provider)
 
     def test_deploy_rollback_called(self):
         # arrange
