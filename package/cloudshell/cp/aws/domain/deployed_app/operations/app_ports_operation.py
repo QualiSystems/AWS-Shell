@@ -1,8 +1,10 @@
 from collections import defaultdict
 
+import re
 from cloudshell.shell.core.driver_context import ResourceContextDetails
 from jsonpickle import json
 
+from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.models.port_data import PortData
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
@@ -58,6 +60,13 @@ class DeployedAppPortsOperation(object):
         :param string allow_all_storage_traffic:
         """
         instance = self.instance_service.get_active_instance_by_id(ec2_session, instance_id)
+        subnet_tags = {d["Key"]: d["Value"] for d in instance.subnet.tags}
+
+        subnet_full_name = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'Name')
+        reservation_id = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'ReservationId')
+        remove_from_subnet_name = "Reservation: {}".format(reservation_id)
+        subnet_name = re.sub(remove_from_subnet_name, '', subnet_full_name).strip()
+
         network_interfaces = instance.network_interfaces
 
         result_str_list = ['App Name: ' + resource.fullname,
@@ -70,7 +79,8 @@ class DeployedAppPortsOperation(object):
 
         for key, value in network_interfaces_dict.iteritems():
             for network_interface in value:
-                result_str_list.append('Subnet: ' + key)
+                result_str_list.append('Subnet Id: ' + key)
+                result_str_list.append('Subnet Name: ' + subnet_name)
 
                 # get security groups for network interface
                 custom_security_group = self.security_group_service.get_custom_security_group(
@@ -87,11 +97,15 @@ class DeployedAppPortsOperation(object):
                 if inbound_ports_security_group:
                     security_groups.append(inbound_ports_security_group)
 
-                # convert ip permissions of security groups to string
-                for security_group in security_groups:
-                    ip_permissions_string = self._ip_permissions_to_string(security_group.ip_permissions)
-                    if ip_permissions_string:
-                        result_str_list.append(ip_permissions_string)
+                if not security_groups:
+                    source = instance.subnet.cidr_block
+                    result_str_list.append('Source: ' + source)
+                else:
+                    # convert ip permissions of security groups to string
+                    for security_group in security_groups:
+                        ip_permissions_string = self._ip_permissions_to_string(security_group.ip_permissions)
+                        if ip_permissions_string:
+                            result_str_list.append(ip_permissions_string)
 
         return '\n'.join(result_str_list).strip()
 
@@ -111,7 +125,8 @@ class DeployedAppPortsOperation(object):
 
             result.append("Port{0}: {1}, Protocol: {2}, \nSource: {3}".format(port_postfix, port_str,
                                                                               ip_permission['IpProtocol'],
-                                                                              self._convert_ip_ranges_to_string(ip_permission['IpRanges'])))
+                                                                              self._convert_ip_ranges_to_string(
+                                                                                  ip_permission['IpRanges'])))
         return '\n'.join(result).strip()
 
     def _convert_ip_ranges_to_string(self, ip_ranges):
