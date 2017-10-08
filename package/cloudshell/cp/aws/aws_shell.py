@@ -11,10 +11,12 @@ from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
+from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
+from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
@@ -71,6 +73,7 @@ class AWSShell(object):
         self.cryptography_service = CryptographyService()
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
+        self.vm_details_provider = VmDetailsProvider()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -100,7 +103,8 @@ class AWSShell(object):
                                                        elastic_ip_service=self.elastic_ip_service,
                                                        network_interface_service=self.network_interface_service,
                                                        cancellation_service=self.cancellation_service,
-                                                       device_index_strategy=AllocateMissingValuesDeviceIndexStrategy())
+                                                       device_index_strategy=AllocateMissingValuesDeviceIndexStrategy(),
+                                                       vm_details_provider=self.vm_details_provider)
 
         self.refresh_ip_operation = RefreshIpOperation(instance_service=self.instance_service)
 
@@ -126,6 +130,9 @@ class AWSShell(object):
         self.set_app_security_groups_operation = SetAppSecurityGroupsOperation(instance_service=self.instance_service,
                                                                                tag_service=self.tag_service,
                                                                                security_group_service=self.security_group_service)
+
+        self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
+                                                       vm_details_provider=self.vm_details_provider)
 
     def cleanup_connectivity(self, command_context, request):
         """
@@ -352,6 +359,19 @@ class AWSShell(object):
                 json_result = SetAppSecurityGroupActionResult.to_json(result)
 
                 return json_result
+
+    def get_vm_details(self, context):
+        """
+        Get vm details for specific deployed app
+        :type context: ResourceRemoteCommandContext
+        :rtype str
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get VmDetails')
+                instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(context)
+                vm_details = self.vm_details_operation.get_vm_details(instance_id, shell_context.aws_api.ec2_session)
+                return self.command_result_parser.set_command_result(vm_details)
 
     @staticmethod
     def _get_reservation_id(context):
