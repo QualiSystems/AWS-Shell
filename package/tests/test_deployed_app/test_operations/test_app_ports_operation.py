@@ -77,6 +77,12 @@ class TestDeployedAppPortsOperation(TestCase):
     def test_get_app_ports_from_cloud_provider(self):
         instance = Mock()
         instance.network_interfaces = []
+        instance.subnet = Mock()
+
+        name_dict = {"Key": "Name", "Value": "Just a name"}
+        reservation_id_dict = {"Key": "ReservationId", "Value": "Reservation Id"}
+        instance.subnet.tags = [name_dict, reservation_id_dict]
+        
         self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
 
         remote_resource = Mock()
@@ -89,6 +95,3 @@ class TestDeployedAppPortsOperation(TestCase):
                                                                   allow_all_storage_traffic=True)
 
         self.assertEquals(result, 'App Name: my ami name\nAllow Sandbox Traffic: True')
-
-
-
