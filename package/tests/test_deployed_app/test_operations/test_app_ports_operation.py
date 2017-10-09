@@ -82,7 +82,7 @@ class TestDeployedAppPortsOperation(TestCase):
         name_dict = {"Key": "Name", "Value": "Just a name"}
         reservation_id_dict = {"Key": "ReservationId", "Value": "Reservation Id"}
         instance.subnet.tags = [name_dict, reservation_id_dict]
-        
+
         self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
 
         remote_resource = Mock()
