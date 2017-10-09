@@ -60,13 +60,6 @@ class DeployedAppPortsOperation(object):
         :param string allow_all_storage_traffic:
         """
         instance = self.instance_service.get_active_instance_by_id(ec2_session, instance_id)
-        subnet_tags = {d["Key"]: d["Value"] for d in instance.subnet.tags}
-
-        subnet_full_name = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'Name')
-        reservation_id = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'ReservationId')
-        remove_from_subnet_name = "Reservation: {}".format(reservation_id)
-        subnet_name = re.sub(remove_from_subnet_name, '', subnet_full_name).strip()
-
         network_interfaces = instance.network_interfaces
 
         result_str_list = ['App Name: ' + resource.fullname,
@@ -79,6 +72,7 @@ class DeployedAppPortsOperation(object):
 
         for key, value in network_interfaces_dict.iteritems():
             for network_interface in value:
+                subnet_name = self._get_network_interface_subnet_name(network_interface)
                 result_str_list.append('Subnet Id: ' + key)
                 result_str_list.append('Subnet Name: ' + subnet_name)
 
@@ -108,6 +102,15 @@ class DeployedAppPortsOperation(object):
                             result_str_list.append(ip_permissions_string)
 
         return '\n'.join(result_str_list).strip()
+
+    def _get_network_interface_subnet_name(self, network_interface):
+        if network_interface.subnet.tags:
+            subnet_tags = {d["Key"]: d["Value"] for d in network_interface.subnet.tags}
+            subnet_full_name = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'Name')
+            reservation_id = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'ReservationId')
+            remove_from_subnet_name = "Reservation: {}".format(reservation_id)
+            return re.sub(remove_from_subnet_name, '', subnet_full_name).strip()
+        return ""
 
     def _ip_permissions_to_string(self, ip_permissions):
         if not isinstance(ip_permissions, list):
