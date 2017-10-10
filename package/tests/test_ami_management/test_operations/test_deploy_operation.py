@@ -460,7 +460,7 @@ class TestDeployOperation(TestCase):
         self.assertEquals(dto2.type, "connectToSubnet")
         self.assertTrue('"interface_id": "interface1"' in dto1.interface)
         self.assertTrue('"Device Index": 0' in dto1.interface)
-        self.assertTrue('"Private IP": "priv1"' in dto1.interface)
+        self.assertTrue('"IP": "priv1"' in dto1.interface)
         self.assertTrue('"Public IP": "pub1"' in dto1.interface)
         self.assertTrue('"MAC Address": "mac1"' in dto1.interface)
 

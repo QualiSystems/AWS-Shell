@@ -24,6 +24,7 @@ class ElasticIpService(object):
         if self._is_single_subnet_mode(ami_deployment_model):
             elastic_ip = self.allocate_elastic_address(ec2_client=ec2_client)
             network_config_results[0].public_ip = elastic_ip  # set elastic ip data in deploy result
+            network_config_results[0].is_elastic_ip = True
             self.associate_elastic_ip_to_instance(ec2_session=ec2_session,
                                                   instance=instance,
                                                   elastic_ip=elastic_ip)
@@ -45,6 +46,7 @@ class ElasticIpService(object):
             # allocate and assign elastic ip
             elastic_ip = self.allocate_elastic_address(ec2_client=ec2_client)
             action_result.public_ip = elastic_ip  # set elastic ip data in deploy result
+            action_result.is_elastic_ip = True
             interface_id = interface["NetworkInterfaceId"]
             self.associate_elastic_ip_to_network_interface(ec2_session=ec2_session,
                                                            interface_id=interface_id,

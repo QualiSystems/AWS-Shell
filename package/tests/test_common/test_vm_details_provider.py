@@ -18,8 +18,8 @@ class TestVmDetailsProvider(TestCase):
 
         vm_instance_data = self.vm_details_provider.create(instance).vm_instance_data
 
-        self.assertTrue(vm_instance_data['ami_id'] == instance.image_id)
-        self.assertTrue(vm_instance_data['instance_type'] == instance.instance_type)
+        self.assertTrue(vm_instance_data['ami id'] == instance.image_id)
+        self.assertTrue(vm_instance_data['instance type'] == instance.instance_type)
         self.assertTrue(vm_instance_data['platform'] == instance.platform)
 
     def test_prepare_network_interface_objects_with_elastic_ip(self):
@@ -46,11 +46,11 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
-        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device_index'] == 0)
-        self.assertTrue(nio['network_data']['is_elastic_ip'] == True)
-        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public_ip'] == 'public_ip')
+        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device index'] == 0)
+        self.assertTrue(nio['network_data']['elastic ip'] == True)
+        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
+        self.assertTrue(nio['network_data']['public ip'] == 'public_ip')
 
     def test_prepare_network_interface_objects_with_public_ip(self):
         network_interface = Mock()
@@ -75,11 +75,11 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
-        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device_index'] == 0)
+        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device index'] == 0)
         self.assertTrue('is_elastic_ip' not in nio['network_data'])
-        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public_ip'] == 'public_ip')
+        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
+        self.assertTrue(nio['network_data']['public ip'] == 'public_ip')
 
     def test_prepare_network_interface_objects_without_public_ip(self):
         network_interface = Mock()
@@ -103,8 +103,8 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue('is_primary' not in nio)
-        self.assertTrue(nio['network_data']['mac_address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device_index'] == 1)
-        self.assertTrue('is_elastic_ip' not in nio['network_data'])
-        self.assertTrue(nio['network_data']['private_ip'] == 'private_ip')
-        self.assertTrue('public_ip' not in nio['network_data'])
+        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
+        self.assertTrue(nio['network_data']['device index'] == 1)
+        self.assertTrue('elastic ip' not in nio['network_data'])
+        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
+        self.assertTrue('public ip' not in nio['network_data'])
