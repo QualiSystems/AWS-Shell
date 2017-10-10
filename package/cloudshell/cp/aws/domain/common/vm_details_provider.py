@@ -1,3 +1,5 @@
+import time
+
 
 class VmDetailsProvider(object):
     def __init__(self):
@@ -5,22 +7,28 @@ class VmDetailsProvider(object):
 
     def create(self, instance):
         vm_details = VmDetails()
+
         vm_details.vm_instance_data = self._get_vm_instance_data(instance)
         vm_details.vm_network_data = self._get_vm_network_data(instance)
         return vm_details
 
     def _get_vm_instance_data(self, instance):
         data = {
-            'ami_id': instance.image_id,
-            'instance_type': instance.instance_type
+            'AMI ID': instance.image_id,
+            'Instance Type': instance.instance_type
         }
         platform = instance.platform
         if platform:
-            data['platform'] = platform
+            data['Platform'] = platform
         return data
 
     def _get_vm_network_data(self, instance):
         network_interface_objects = []
+
+
+        #  REMOVE, is only here to allow testing and until we solve this better
+        time.sleep(5)
+        instance.reload()
 
         if instance.network_interfaces:
             for network_interface in instance.network_interfaces:
@@ -28,9 +36,7 @@ class VmDetailsProvider(object):
                     "interface_id": network_interface.network_interface_id,
                     "network_id": network_interface.subnet_id,
                     "network_data": {
-                        "mac_address": network_interface.mac_address,
-                        "device_index": network_interface.attachment.get("DeviceIndex"),
-                        "private_ip": network_interface.private_ip_address,
+                        "IP": network_interface.private_ip_address
                     }
                 }
 
@@ -39,11 +45,15 @@ class VmDetailsProvider(object):
                 public_ip = self._calculate_public_ip(network_interface, instance)
 
                 if is_attached_to_elastic_ip:
-                    network_interface_object["network_data"]["is_elastic_ip"] = is_attached_to_elastic_ip
+                    network_interface_object["network_data"]["Elastic IP"] = is_attached_to_elastic_ip
                 if is_primary:
                     network_interface_object["is_primary"] = is_primary
                 if public_ip:
-                    network_interface_object["network_data"]["public_ip"] = public_ip
+                    network_interface_object["network_data"]["Public IP"] = public_ip
+
+                network_interface_object["network_data"]["MAC Address"] = network_interface.mac_address
+                network_interface_object["network_data"]["Device Index"] = \
+                    network_interface.attachment.get("DeviceIndex")
 
                 network_interface_objects.append(network_interface_object)
 

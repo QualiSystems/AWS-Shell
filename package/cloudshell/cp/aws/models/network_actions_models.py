@@ -88,6 +88,7 @@ class DeployNetworkingResultModel(object):
         self.private_ip = ''  # type: str
         self.public_ip = ''  # type: str
         self.mac_address = ''  # type: str
+        self.is_elastic_ip = False  # type: bool
 
 
 class ConnectivityActionResult(object):

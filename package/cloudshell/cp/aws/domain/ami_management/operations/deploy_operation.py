@@ -211,10 +211,11 @@ class DeployAMIOperation(object):
         import json
         interface_data_json_str = json.dumps({
             'interface_id': network_config_result.interface_id,
-            'Device Index': network_config_result.device_index,
-            'Private IP': network_config_result.private_ip,
+            'IP': network_config_result.private_ip,
             'Public IP': network_config_result.public_ip,
-            'MAC Address': network_config_result.mac_address
+            'Elastic IP': network_config_result.is_elastic_ip,
+            'MAC Address': network_config_result.mac_address,
+            'Device Index': network_config_result.device_index,
         })
         return ConnectToSubnetActionResult(action_id=network_config_result.action_id,
                                            success=True,
