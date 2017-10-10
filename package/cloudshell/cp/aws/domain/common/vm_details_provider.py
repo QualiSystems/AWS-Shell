@@ -36,7 +36,7 @@ class VmDetailsProvider(object):
                     "interface_id": network_interface.network_interface_id,
                     "network_id": network_interface.subnet_id,
                     "network_data": {
-                        "IP": network_interface.private_ip_address
+                        "ip": network_interface.private_ip_address
                     }
                 }
 
