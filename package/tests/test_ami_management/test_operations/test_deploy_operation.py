@@ -459,10 +459,10 @@ class TestDeployOperation(TestCase):
         self.assertEquals(dto1.type, "connectToSubnet")
         self.assertEquals(dto2.type, "connectToSubnet")
         self.assertTrue('"interface_id": "interface1"' in dto1.interface)
-        self.assertTrue('"device_index": 0' in dto1.interface)
-        self.assertTrue('"private_ip": "priv1"' in dto1.interface)
-        self.assertTrue('"public_ip": "pub1"' in dto1.interface)
-        self.assertTrue('"mac_address": "mac1"' in dto1.interface)
+        self.assertTrue('"Device Index": 0' in dto1.interface)
+        self.assertTrue('"Private IP": "priv1"' in dto1.interface)
+        self.assertTrue('"Public IP": "pub1"' in dto1.interface)
+        self.assertTrue('"MAC Address": "mac1"' in dto1.interface)
 
     def test_deploy_raised_no_vpc(self):
         # arrange
