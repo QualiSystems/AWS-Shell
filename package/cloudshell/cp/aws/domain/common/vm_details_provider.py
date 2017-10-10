@@ -14,12 +14,12 @@ class VmDetailsProvider(object):
 
     def _get_vm_instance_data(self, instance):
         data = {
-            'AMI ID': instance.image_id,
-            'Instance Type': instance.instance_type
+            'ami id': instance.image_id,
+            'instance type': instance.instance_type
         }
         platform = instance.platform
         if platform:
-            data['Platform'] = platform
+            data['platform'] = platform
         return data
 
     def _get_vm_network_data(self, instance):
@@ -45,14 +45,14 @@ class VmDetailsProvider(object):
                 public_ip = self._calculate_public_ip(network_interface, instance)
 
                 if is_attached_to_elastic_ip:
-                    network_interface_object["network_data"]["Elastic IP"] = is_attached_to_elastic_ip
+                    network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
                 if is_primary:
                     network_interface_object["is_primary"] = is_primary
                 if public_ip:
-                    network_interface_object["network_data"]["Public IP"] = public_ip
+                    network_interface_object["network_data"]["public ip"] = public_ip
 
-                network_interface_object["network_data"]["MAC Address"] = network_interface.mac_address
-                network_interface_object["network_data"]["Device Index"] = \
+                network_interface_object["network_data"]["mac address"] = network_interface.mac_address
+                network_interface_object["network_data"]["device index"] = \
                     network_interface.attachment.get("DeviceIndex")
 
                 network_interface_objects.append(network_interface_object)
