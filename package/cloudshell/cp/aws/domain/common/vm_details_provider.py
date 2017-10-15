@@ -14,9 +14,7 @@ class VmDetailsProvider(object):
             'ami id': instance.image_id,
             'instance type': instance.instance_type
         }
-        platform = instance.platform
-        if platform:
-            data['platform'] = platform
+        data['platform'] = instance.platform
         return data
 
     def _get_vm_network_data(self, instance):
