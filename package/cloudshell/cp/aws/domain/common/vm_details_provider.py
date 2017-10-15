@@ -1,6 +1,3 @@
-import time
-
-
 class VmDetailsProvider(object):
     def __init__(self):
         pass
@@ -25,11 +22,7 @@ class VmDetailsProvider(object):
     def _get_vm_network_data(self, instance):
         network_interface_objects = []
 
-
-        #  REMOVE, is only here to allow testing and until we solve this better
-        time.sleep(5)
         instance.reload()
-
         if instance.network_interfaces:
             for network_interface in instance.network_interfaces:
                 network_interface_object = {
@@ -42,7 +35,7 @@ class VmDetailsProvider(object):
 
                 is_attached_to_elastic_ip = self._has_elastic_ip(network_interface)
                 is_primary = self._is_primary_interface(network_interface)
-                public_ip = self._calculate_public_ip(network_interface, instance)
+                public_ip = self._calculate_public_ip(network_interface)
 
                 if is_attached_to_elastic_ip:
                     network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
@@ -59,20 +52,19 @@ class VmDetailsProvider(object):
 
         return network_interface_objects
 
-    def _calculate_public_ip(self, interface, instance):
+    def _calculate_public_ip(self, interface):
         # interface has public ip if:
         # a. is elastic ip
         # b. not elastic, but primary and instance has public ip
 
-        if self._has_elastic_ip(interface):
+        if interface.association_attribute and "PublicIp" in interface.association_attribute:
             return interface.association_attribute.get("PublicIp")
-        if self._is_primary_interface(interface):
-            return instance.public_ip_address
         return None
 
     def _has_elastic_ip(self, interface):
         # allocationid is used to associate elastic ip with ec2 instance
-        return interface.association_attribute and 'AllocationId' in interface.association_attribute
+        return interface.association_attribute and 'IpOwnerId' in interface.association_attribute \
+               and interface.association_attribute.get('IpOwnerId') != 'amazon'
 
     def _is_primary_interface(self, interface):
         return interface.attachment.get("DeviceIndex") == 0
