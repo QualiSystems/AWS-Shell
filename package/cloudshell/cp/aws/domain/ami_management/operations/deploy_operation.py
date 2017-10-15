@@ -6,7 +6,7 @@ from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancella
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
-from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues
+from cloudshell.cp.aws.domain.services.ec2.tags import IsolationTagValues, TypeTagValues
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.parsers.port_group_attribute_parser import PortGroupAttributeParser
 from cloudshell.cp.aws.domain.services.strategy.device_index import *
@@ -308,7 +308,8 @@ class DeployAMIOperation(object):
 
         tags = self.tag_service.get_security_group_tags(name=security_group_name,
                                                         isolation=IsolationTagValues.Exclusive,
-                                                        reservation=reservation)
+                                                        reservation=reservation,
+                                                        type=TypeTagValues.InboundPorts)
 
         self.tag_service.set_ec2_resource_tags(security_group, tags)
 
