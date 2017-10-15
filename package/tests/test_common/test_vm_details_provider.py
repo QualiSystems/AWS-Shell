@@ -25,7 +25,7 @@ class TestVmDetailsProvider(TestCase):
     def test_prepare_network_interface_objects_with_elastic_ip(self):
         # elastic_ip
         network_interface = Mock()
-        network_interface.association_attribute = {'AllocationId': 'some_elastic_ip_id',
+        network_interface.association_attribute = {'IpOwnerId': '9929230',
                                                    'PublicIp': 'public_ip'}
 
         network_interface.network_interface_id = 'interface_id'
@@ -79,7 +79,7 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['network_data']['device index'] == 0)
         self.assertTrue('is_elastic_ip' not in nio['network_data'])
         self.assertTrue(nio['network_data']['ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public ip'] == 'public_ip')
+        self.assertTrue('public_ip' not in nio['network_data'])
 
     def test_prepare_network_interface_objects_without_public_ip(self):
         network_interface = Mock()
