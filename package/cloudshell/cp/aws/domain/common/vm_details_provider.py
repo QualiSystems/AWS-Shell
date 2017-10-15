@@ -37,11 +37,10 @@ class VmDetailsProvider(object):
                 is_primary = self._is_primary_interface(network_interface)
                 public_ip = self._calculate_public_ip(network_interface)
 
-                if is_attached_to_elastic_ip:
-                    network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
                 if is_primary:
                     network_interface_object["is_primary"] = is_primary
                 if public_ip:
+                    network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
                     network_interface_object["network_data"]["public ip"] = public_ip
 
                 network_interface_object["network_data"]["mac address"] = network_interface.mac_address
