@@ -39,9 +39,9 @@ class VmDetailsProvider(object):
 
                 if is_primary:
                     network_interface_object["is_primary"] = is_primary
-                if public_ip:
-                    network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
-                    network_interface_object["network_data"]["public ip"] = public_ip
+
+                network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
+                network_interface_object["network_data"]["public ip"] = public_ip
 
                 network_interface_object["network_data"]["mac address"] = network_interface.mac_address
                 network_interface_object["network_data"]["device index"] = \
@@ -56,13 +56,14 @@ class VmDetailsProvider(object):
         # a. is elastic ip
         # b. not elastic, but primary and instance has public ip
 
-        if interface.association_attribute and "PublicIp" in interface.association_attribute:
+        if interface.association_attribute!=None and "PublicIp" in interface.association_attribute:
             return interface.association_attribute.get("PublicIp")
-        return None
+        return ""
 
     def _has_elastic_ip(self, interface):
-        # allocationid is used to associate elastic ip with ec2 instance
-        return interface.association_attribute and 'IpOwnerId' in interface.association_attribute \
+        # IpOwnerId: amazon - temporary public ip
+        # IpOwnerId: some guid - elastic ip
+        return interface.association_attribute!=None and 'IpOwnerId' in interface.association_attribute \
                and interface.association_attribute.get('IpOwnerId') != 'amazon'
 
     def _is_primary_interface(self, interface):
