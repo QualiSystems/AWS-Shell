@@ -105,6 +105,6 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue('is_primary' not in nio)
         self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
         self.assertTrue(nio['network_data']['device index'] == 1)
-        self.assertTrue('elastic ip' not in nio['network_data'])
+        self.assertTrue( nio['network_data']['elastic ip'] == False)
         self.assertTrue(nio['network_data']['ip'] == 'private_ip')
-        self.assertTrue('public ip' not in nio['network_data'])
+        self.assertTrue(nio['network_data']['public ip'] == "")
