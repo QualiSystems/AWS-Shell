@@ -272,8 +272,7 @@ class SecurityGroupService(object):
             return False
         isolation_tag = tag_service.find_isolation_tag_value(security_group.tags)
         type_tag = tag_service.find_type_tag_value(security_group.tags)
-        return isolation_tag == IsolationTagValues.Exclusive and type_tag != TypeTagValues.Interface
-        # todo after fix in deploy process (to add InboundPorts tag to sg) type_tag == TypeTagValues.InboundPorts
+        return isolation_tag == IsolationTagValues.Exclusive and type_tag == TypeTagValues.InboundPorts
 
     @staticmethod
     def _is_custom_security_group(tag_service, security_group):
