@@ -91,15 +91,11 @@ class DeployedAppPortsOperation(object):
                 if inbound_ports_security_group:
                     security_groups.append(inbound_ports_security_group)
 
-                if not security_groups:
-                    source = instance.subnet.cidr_block
-                    result_str_list.append('Source: ' + source)
-                else:
-                    # convert ip permissions of security groups to string
-                    for security_group in security_groups:
-                        ip_permissions_string = self._ip_permissions_to_string(security_group.ip_permissions)
-                        if ip_permissions_string:
-                            result_str_list.append(ip_permissions_string)
+                # convert ip permissions of security groups to string
+                for security_group in security_groups:
+                    ip_permissions_string = self._ip_permissions_to_string(security_group.ip_permissions)
+                    if ip_permissions_string:
+                        result_str_list.append(ip_permissions_string)
 
         return '\n'.join(result_str_list).strip()
 
