@@ -10,11 +10,9 @@ class VmDetailsProvider(object):
         return vm_details
 
     def _get_vm_instance_data(self, instance):
-        data = {
-            'ami id': instance.image_id,
-            'instance type': instance.instance_type
-        }
-        data['platform'] = instance.platform
+        # if not windows, instance platform is empty; therefore we default to linux
+        platform = instance.platform or 'linux'
+        data = {'ami id': instance.image_id, 'instance type': instance.instance_type, 'platform': platform}
         return data
 
     def _get_vm_network_data(self, instance):
