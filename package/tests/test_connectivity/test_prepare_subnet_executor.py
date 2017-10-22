@@ -39,12 +39,14 @@ class TestPrepareConnectivity(TestCase):
         # Arrange
         actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams())]
         self.vpc_service.find_vpc_for_reservation = Mock(return_value=None)
+        self.vpc_service.get_active_vpcs_count = Mock(return_value=None)
+
         self.reservation.reservation_id = "123"
         # Act
         with self.assertRaises(Exception) as error:
             self.executor.execute(actions)
         # Assert
-        self.assertEqual(error.exception.message, "Vpc for reservation 123 not found.")
+        self.assertEqual(error.exception.message, "VPC for reservation 123 not found.")
 
     def test_execute_gets_existing_subnet_and_no_wait(self):
         # Arrange

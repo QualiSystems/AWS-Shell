@@ -137,6 +137,55 @@ class TestPrepareConnectivity(TestCase):
                           cancellation_context,
                           Mock())
 
+    def test_prepare_conn_error_no_vpc_with_vpc_count(self):
+        self.vpc_serv.find_vpc_for_reservation = Mock(return_value=None)
+
+        vpc_count = 50
+        self.vpc_serv.get_active_vpcs_count = Mock(return_value=vpc_count)
+
+        # Arrage
+        actions = []
+        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
+        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
+        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+
+        # Assert
+        self.assertRaisesRegexp(  ValueError,
+                                  '(/{0}/)|(limit.$)'.format(vpc_count),
+                                  self.prepare_conn.prepare_connectivity,
+                                  ec2_client=self.ec2_client,
+                                  ec2_session=self.ec2_session,
+                                  s3_session=self.s3_session,
+                                  reservation=self.reservation,
+                                  aws_ec2_datamodel=self.aws_dm,
+                                  actions=actions,
+                                  cancellation_context=self.cancellation_context,
+                                  logger=Mock())
+
+
+    def test_prepare_conn_error_no_vpc(self):
+        self.vpc_serv.find_vpc_for_reservation = Mock(return_value=None)
+        self.vpc_serv.get_active_vpcs_count = Mock(return_value=None)
+
+        # Arrage
+        actions = []
+        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
+        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
+        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+
+        # Assert
+        self.assertRaisesRegexp(  ValueError,
+                                  '^((?!limit).)*$',
+                                  self.prepare_conn.prepare_connectivity,
+                                  ec2_client=self.ec2_client,
+                                  ec2_session=self.ec2_session,
+                                  s3_session=self.s3_session,
+                                  reservation=self.reservation,
+                                  aws_ec2_datamodel=self.aws_dm,
+                                  actions=actions,
+                                  cancellation_context=self.cancellation_context,
+                                  logger=Mock())
+
     def test_prepare_conn_command_fault_res(self):
         action = NetworkAction()
         action.id = "1234"

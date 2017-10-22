@@ -59,8 +59,12 @@ class PrepareSubnetExecutor(object):
 
         # get vpc and availability_zone
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session, reservation_id=self.reservation.reservation_id)
+
         if not vpc:
-            raise ValueError('Vpc for reservation {0} not found.'.format(self.reservation.reservation_id))
+            vpcs_count = self.vpc_service.get_active_vpcs_count(self.ec2_client, self.logger)
+            additional_msg = "\nThere are {0} active VPCs in region \"{1}\".\nPlease make sure you haven't exceeded your region's VPC limit.".format(vpcs_count, self.aws_ec2_datamodel.region) if vpcs_count else ""
+            raise ValueError('VPC for reservation {0} not found.{1}'.format(self.reservation.reservation_id, additional_msg))
+
         availability_zone = self.vpc_service.get_or_pick_availability_zone(self.ec2_client, vpc, self.aws_ec2_datamodel)
 
         # get existing subnet bt their cidr
