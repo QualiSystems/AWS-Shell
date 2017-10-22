@@ -18,17 +18,6 @@ class CleanupConnectivityOperation(object):
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
 
-    def _get_current_active_vpcs_count(self, ec2_client, logger):
-        result = None
-
-        try:
-            result = len(ec2_client.describe_vpcs()['Vpcs'])
-
-        except Exception as exc:
-            logger.error("Error querying vpc's count. Error: {0}".format(traceback.format_exc()))
-
-        return result
-
     def cleanup(self, ec2_client, ec2_session, s3_session, aws_ec2_data_model, reservation_id, actions, logger):
         """
         :param ec2_client:
@@ -54,8 +43,6 @@ class CleanupConnectivityOperation(object):
             vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
 
             if not vpc:
-                vpcs_count = self._get_current_active_vpcs_count(ec2_client, logger)
-                additional_msg = "\nThere are {} active Vpc's in region.\nYou might want to check whether AWS Max Vpc's limitation was exceeded.".format(vpcs_count) if vpcs_count else ""
                 raise ValueError('No VPC was created for this reservation' + additional_msg)
 
             logger.info("Deleting all instances")
