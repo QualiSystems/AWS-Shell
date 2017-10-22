@@ -52,17 +52,6 @@ class PrepareSubnetExecutor(object):
         self.tag_service = tag_service
         self.subnet_waiter = subnet_waiter
 
-    def _get_current_active_vpcs_count(self):
-        result = None
-
-        try:
-            result = len(self.ec2_client.describe_vpcs()['Vpcs'])
-
-        except Exception as exc:
-            self.logger.error("Error querying vpc's count. Error: {0}".format(traceback.format_exc()))
-
-        return result
-
     def execute(self, subnet_actions):
         if any(not isinstance(a.connection_params, PrepareSubnetParams) for a in subnet_actions):
             raise ValueError("Not all actions are PrepareSubnetActions")
@@ -70,11 +59,12 @@ class PrepareSubnetExecutor(object):
 
         # get vpc and availability_zone
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session, reservation_id=self.reservation.reservation_id)
+
         if not vpc:
-            vpcs_count = self._get_current_active_vpcs_count()
-            additional_msg = "\nThere are {} active Vpc's in region.\nYou might want to check whether AWS Max Vpc's limitation was exceeded.".format(
-                vpcs_count) if vpcs_count else ""
-            raise ValueError('Vpc for reservation {0} not found.{1}'.format(self.reservation.reservation_id, additional_msg))
+            vpcs_count = self.vpc_service.get_active_vpcs_count(self.ec2_client, self.logger)
+            additional_msg = "\nThere are {0} active VPCs in region \"{1}\".\nPlease make sure you haven't exceeded your region's VPC limit.".format(vpcs_count, self.aws_ec2_datamodel.region) if vpcs_count else ""
+            raise ValueError('VPC for reservation {0} not found.{1}'.format(self.reservation.reservation_id, additional_msg))
+
         availability_zone = self.vpc_service.get_or_pick_availability_zone(self.ec2_client, vpc, self.aws_ec2_datamodel)
 
         # get existing subnet bt their cidr

@@ -1,5 +1,5 @@
+import traceback
 from retrying import retry
-
 from cloudshell.cp.aws.common import retry_helper
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 
@@ -322,3 +322,14 @@ class VPCService(object):
         table_name = self.MAIN_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
         tags = self.tag_service.get_default_tags(table_name , reservation)
         self.tag_service.set_ec2_resource_tags(main_route_table, tags)
+
+    def get_active_vpcs_count(self, ec2_client, logger):
+        result = None
+
+        try:
+            result = len(ec2_client.describe_vpcs()['Vpcs'])
+
+        except Exception as exc:
+            logger.error("Error querying VPCs count. Error: {0}".format(traceback.format_exc()))
+
+        return result
