@@ -39,11 +39,10 @@ class CleanupConnectivityOperation(object):
         try:
             # need to remove the keypair before we try to find the VPC
             self._remove_keypair(aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session)
-
             vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
 
             if not vpc:
-                raise ValueError('No VPC was created for this reservation' + additional_msg)
+                raise ValueError('No VPC was created for this reservation')
 
             logger.info("Deleting all instances")
             self.vpc_service.delete_all_instances(vpc)
