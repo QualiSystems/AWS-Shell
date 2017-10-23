@@ -103,7 +103,8 @@ class DeployedAppPortsOperation(object):
         if network_interface.subnet.tags:
             subnet_tags = {d["Key"]: d["Value"] for d in network_interface.subnet.tags}
             subnet_full_name = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'Name')
-            reservation_id = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags, 'ReservationId')
+            reservation_id = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(subnet_tags,
+                                                                                            'ReservationId')
             remove_from_subnet_name = "Reservation: {}".format(reservation_id)
             return re.sub(remove_from_subnet_name, '', subnet_full_name).strip()
         return ""
@@ -122,10 +123,10 @@ class DeployedAppPortsOperation(object):
                 port_str = "{0}-{1}".format(ip_permission['FromPort'], ip_permission['ToPort'])
                 port_postfix = "s"
 
-            result.append("Port{0}: {1}, Protocol: {2}, \nSource: {3}".format(port_postfix, port_str,
-                                                                              ip_permission['IpProtocol'],
-                                                                              self._convert_ip_ranges_to_string(
-                                                                                  ip_permission['IpRanges'])))
+            result.append("Port{0}: {1}, Protocol: {2}, Source: {3}".format(port_postfix, port_str,
+                                                                            ip_permission['IpProtocol'],
+                                                                            self._convert_ip_ranges_to_string(
+                                                                                ip_permission['IpRanges'])))
         return '\n'.join(result).strip()
 
     def _convert_ip_ranges_to_string(self, ip_ranges):
