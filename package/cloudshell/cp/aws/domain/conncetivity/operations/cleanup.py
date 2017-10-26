@@ -1,6 +1,7 @@
 import traceback
 
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
+from cloudshell.cp.aws.models.network_actions_models import ConnectivityActionResult
 
 
 class CleanupConnectivityOperation(object):
@@ -17,23 +18,29 @@ class CleanupConnectivityOperation(object):
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
 
-    def cleanup(self, ec2_client, ec2_session, s3_session, aws_ec2_data_model, reservation_id, logger):
+    def cleanup(self, ec2_client, ec2_session, s3_session, aws_ec2_data_model, reservation_id, actions, logger):
         """
         :param ec2_client:
         :param ec2_session:
         :param s3_session:
         :param AWSEc2CloudProviderResourceModel aws_ec2_data_model: The AWS EC2 data model
         :param str reservation_id:
+        :param list[NetworkAction] actions:
         :param logging.Logger logger:
         :return:
         """
-        result = {'success': True}
+        if not actions:
+            raise ValueError("No cleanup action was found")
+
+        result = ConnectivityActionResult()
+        result.actionId = actions[0].id
+        result.success = True
 
         try:
             # need to remove the keypair before we try to find the VPC
             self._remove_keypair(aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session)
-
             vpc = self.vpc_service.find_vpc_for_reservation(ec2_session, reservation_id)
+
             if not vpc:
                 raise ValueError('No VPC was created for this reservation')
 
@@ -46,13 +53,14 @@ class CleanupConnectivityOperation(object):
             self.vpc_service.remove_all_subnets(vpc)
             self.vpc_service.remove_all_peering(vpc)
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
+            self.vpc_service.remove_custom_route_tables(ec2_session, vpc)
 
             self.vpc_service.delete_vpc(vpc)
             
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
-            result['success'] = False
-            result['errorMessage'] = 'CleanupConnectivity ended with the error: {0}'.format(exc)
+            result.success = False
+            result.errorMessage = 'CleanupConnectivity ended with the error: {0}'.format(exc)
         return result
 
     def _remove_keypair(self, aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session):

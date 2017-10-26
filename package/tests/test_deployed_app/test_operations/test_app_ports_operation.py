@@ -6,10 +6,15 @@ from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
 
+from mock import Mock
+
 
 class TestDeployedAppPortsOperation(TestCase):
     def setUp(self):
-        self.operation = DeployedAppPortsOperation(VmCustomParamsExtractor())
+        self.security_group_service = Mock()
+        self.instance_service = Mock()
+        self.operation = DeployedAppPortsOperation(VmCustomParamsExtractor(), self.security_group_service,
+                                                   self.instance_service)
 
     def test_format_single_inbound(self):
         json_str = '{"vmCustomParams":[{"name": "inbound_ports", "value": "80"}]}'
@@ -69,5 +74,24 @@ class TestDeployedAppPortsOperation(TestCase):
 
         self.assertEquals(result, "No ports are open for inbound and outbound traffic outside of the Sandbox")
 
+    def test_get_app_ports_from_cloud_provider(self):
+        instance = Mock()
+        instance.network_interfaces = []
+        instance.subnet = Mock()
 
+        name_dict = {"Key": "Name", "Value": "Just a name"}
+        reservation_id_dict = {"Key": "ReservationId", "Value": "Reservation Id"}
+        instance.subnet.tags = [name_dict, reservation_id_dict]
 
+        self.instance_service.get_active_instance_by_id = Mock(return_value=instance)
+
+        remote_resource = Mock()
+        remote_resource.fullname = 'my ami name'
+
+        es2_session = Mock()
+
+        result = self.operation.get_app_ports_from_cloud_provider(ec2_session=es2_session, instance_id='',
+                                                                  resource=remote_resource,
+                                                                  allow_all_storage_traffic=True)
+
+        self.assertEquals(result, 'App Name: my ami name\nAllow Sandbox Traffic: True')

@@ -1,6 +1,9 @@
 class RouteTablesService(object):
-    def __init__(self):
-        pass
+    def __init__(self, tag_service):
+        """
+        :param tag_service: Tag Service
+        """
+        self.tag_service = tag_service
 
     def get_all_route_tables(self, ec2_session, vpc_id):
         """
@@ -83,3 +86,45 @@ class RouteTablesService(object):
                                      VpcPeeringConnectionId=peer_connection_id)
         else:
             route.replace(VpcPeeringConnectionId=peer_connection_id)
+
+
+    def get_custom_route_tables(self, ec2_session, vpc_id):
+        """
+        :param ec2_session: Ec2 Session
+        :param vpc: EC2 VPC instance
+        :return:
+        """
+        main_table = self.get_main_route_table(ec2_session, vpc_id)
+        all_tables = self.get_all_route_tables(ec2_session, vpc_id)
+        custom_tables = [t for t in all_tables if t.id != main_table.id]
+        return custom_tables
+
+    def delete_table(self, table):
+        table.delete()
+        return True
+
+    def create_route_table(self, ec2_session, reservation, vpc_id, table_name):
+        """
+        :param ec2_session: Ec2 Session
+        :param vpc_id:
+        :return:
+        """
+        vpc = ec2_session.Vpc(vpc_id)
+        route_table = vpc.create_route_table()
+        tags = self.tag_service.get_default_tags(table_name, reservation)
+        self.tag_service.set_ec2_resource_tags(route_table, tags)
+        return route_table
+
+    def get_route_table(self, ec2_session, vpc_id, table_name):
+        """
+        :param ec2_session: Ec2 Session
+        :param str vpc_id:
+        :param str table_name:
+        :return:
+        """
+        tables = self.get_all_route_tables(ec2_session, vpc_id)
+        for table in tables:
+            for tag in table.tags:
+                if tag["Key"] == "Name" and tag["Value"] == table_name:
+                    return table
+        return None

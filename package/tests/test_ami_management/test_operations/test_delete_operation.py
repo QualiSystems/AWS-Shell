@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 from botocore.exceptions import ClientError
-from mock import Mock, MagicMock
+from mock import Mock, MagicMock, call
 
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 
@@ -11,7 +11,9 @@ class TestDeleteOperation(TestCase):
         self.ec2_session = Mock()
         self.tag_service = Mock()
         self.security_group_service = Mock()
-        self.delete_operation = DeleteAMIOperation(Mock(), Mock(), self.security_group_service, self.tag_service)
+        self.elastic_ip_service = Mock()
+        self.delete_operation = DeleteAMIOperation(Mock(), Mock(), self.security_group_service, self.tag_service,
+                                                   self.elastic_ip_service)
         self.instance = Mock()
         self.instance.vpc_addresses.all = Mock(return_value=list())
         self.logger = Mock()
@@ -20,15 +22,19 @@ class TestDeleteOperation(TestCase):
     def test_delete_operation(self):
         self.instance.security_groups = MagicMock()
 
-        test_address = self.instance.VpcAddress()
-        self.instance.vpc_addresses.all = Mock(return_value=[test_address])
-        self.delete_operation.instance_service.release_elastic_address = Mock()
+        test_address_1 = self.instance.VpcAddress()
+        test_address_2 = self.instance.VpcAddress()
+        self.instance.vpc_addresses.all = Mock(return_value=[test_address_1, test_address_2])
+        self.delete_operation.elastic_ip_service.release_elastic_address = Mock()
 
         self.delete_operation.delete_instance(self.logger, self.ec2_session, 'id')
 
         self.delete_operation.instance_service.get_instance_by_id.called_with(self.ec2_session, 'id')
-        self.delete_operation.instance_service.terminate_instance.assert_called_with(self.instance)
-        self.delete_operation.instance_service.release_elastic_address.called
+        self.delete_operation.instance_service.terminate_instance.assert_called_once_with(self.instance)
+        self.delete_operation.elastic_ip_service.release_elastic_address.assert_called()
+        self.delete_operation.elastic_ip_service.release_elastic_address.assert_has_calls([
+            call(test_address_1), call(test_address_2)
+        ])
 
     def test_delete_operation_with_exclusive_security_group(self):
         # arrange

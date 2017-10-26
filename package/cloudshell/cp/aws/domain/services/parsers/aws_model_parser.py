@@ -1,18 +1,57 @@
-import jsonpickle
+import re
 
+import jsonpickle
+from cloudshell.shell.core.driver_context import ReservationContextDetails
+
+from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
+from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
+from cloudshell.cp.aws.domain.services.parsers.security_group_parser import SecurityGroupParser
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-from cloudshell.shell.core.driver_context import ReservationContextDetails
+
+from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails, \
+    SecurityGroupConfiguration
 
 
 class AWSModelsParser(object):
+    def __init__(self):
+        pass
+
     @staticmethod
     def convert_app_resource_to_deployed_app(resource):
         json_str = jsonpickle.decode(resource.app_context.deployed_app_json)
         data_holder = DeployDataHolder(json_str)
         return data_holder
+
+    @staticmethod
+    def get_app_security_groups_from_request(request):
+        json_str = jsonpickle.decode(request)
+        data_holder = DeployDataHolder.create_obj_by_type(json_str)
+        return data_holder
+
+    @staticmethod
+    def convert_to_app_security_group_models(request):
+        """
+        :rtype list[AppSecurityGroupModel]:
+        """
+        security_group_models = []
+
+        security_groups = AWSModelsParser.get_app_security_groups_from_request(request)
+
+        for security_group in security_groups:
+            security_group_model = AppSecurityGroupModel()
+            security_group_model.deployed_app = DeployedApp()
+            security_group_model.deployed_app.name = security_group.deployedApp.name
+            security_group_model.deployed_app.vm_details = VmDetails()
+            security_group_model.deployed_app.vm_details.uid = security_group.deployedApp.vmdetails.uid
+            security_group_model.security_group_configurations = SecurityGroupParser.parse_security_group_configurations(
+                security_group.securityGroupsConfigurations)
+
+            security_group_models.append(security_group_model)
+
+        return security_group_models
 
     @staticmethod
     def convert_to_aws_resource_model(resource):
@@ -30,41 +69,66 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.aws_management_vpc_id = resource_context['AWS Mgmt VPC ID']
         aws_ec2_resource_model.aws_management_sg_id = resource_context['AWS Mgmt SG ID']
         aws_ec2_resource_model.instance_type = resource_context['Instance Type']
+        # aws_ec2_resource_model.reserved_ips_in_subnet = resource_context['Reserved IPs in Subnet']
 
         return aws_ec2_resource_model
 
     @staticmethod
-    def convert_to_deployment_resource_model(deployment_request, resource_context_details):
-        '''
-        :type resource_context_details: ResourceContextDetails
-        '''
+    def convert_to_deployment_resource_model(deployment_request, resource):
+        """
+        :param str deployment_request: JSON string representing the deployment request
+        :param ResourceContextDetails resource: The details of the resource using the driver
+        """
         data = jsonpickle.decode(deployment_request)
-        data_holder = DeployDataHolder(data)
         deployment_resource_model = DeployAWSEc2AMIInstanceResourceModel()
-        deployment_resource_model.cloud_provider = resource_context_details.name
+
+        deployment_resource_model.cloud_provider = resource.name
+        deployment_resource_model.app_name = data["AppName"]
+
         deployment_resource_model.aws_ami_id = data["Attributes"]['AWS AMI Id']
+        deployment_resource_model.allow_all_sandbox_traffic = convert_to_bool(
+            data["Attributes"]['Allow all Sandbox Traffic'])
         deployment_resource_model.storage_size = data["Attributes"]['Storage Size']
         deployment_resource_model.storage_iops = data["Attributes"]['Storage IOPS']
         deployment_resource_model.storage_type = data["Attributes"]['Storage Type']
         deployment_resource_model.instance_type = data["Attributes"]['Instance Type']
         deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
-        deployment_resource_model.wait_for_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for IP'])
-        deployment_resource_model.wait_for_status_check = AWSModelsParser.convert_to_bool(
-                data["Attributes"]['Wait for Status Check'])
-        deployment_resource_model.autoload = AWSModelsParser.convert_to_bool(data["Attributes"]['Autoload'])
+        deployment_resource_model.wait_for_ip = convert_to_bool(data["Attributes"]['Wait for IP'])
+        deployment_resource_model.wait_for_status_check = convert_to_bool(
+            data["Attributes"]['Wait for Status Check'])
+        deployment_resource_model.autoload = convert_to_bool(data["Attributes"]['Autoload'])
         deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
-        deployment_resource_model.outbound_ports = data["Attributes"]['Outbound Ports']
         deployment_resource_model.wait_for_credentials = \
-            AWSModelsParser.convert_to_bool(data["Attributes"]['Wait for Credentials'])
-        deployment_resource_model.add_public_ip = AWSModelsParser.convert_to_bool(data["Attributes"]['Add Public IP'])
-        deployment_resource_model.allocate_elastic_ip = \
-            AWSModelsParser.convert_to_bool(data["Attributes"]['Allocate Elastic IP'])
+            convert_to_bool(data["Attributes"]['Wait for Credentials'])
+
+        (deployment_resource_model.add_public_ip, deployment_resource_model.allocate_elastic_ip) = \
+            AWSModelsParser.parse_public_ip_options_attribute(data["Attributes"]['Public IP Options'])
+
         deployment_resource_model.user = \
-            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(data["LogicalResourceRequestAttributes"],
-                                                                           "User")
-        deployment_resource_model.app_name = data_holder.AppName
+            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                data["LogicalResourceRequestAttributes"], "User")
+
+        deployment_resource_model.network_configurations = \
+            AWSModelsParser.parse_deploy_networking_configurations(data)
 
         return deployment_resource_model
+
+    @staticmethod
+    def parse_public_ip_options_attribute(attr_value):
+        """
+        Parses the value of the "Public IP Options" attribute into a boolean tuple:
+          (Add Public IP, Allocate Elastic IP)
+        :param str attr_value: "Public IP Options" attribute value
+        :return: Tuple of (Add Public IP, Allocate Elastic IP)
+        :rtype: (boolean, boolean)
+        """
+        if re.match("^elastic", attr_value, flags=re.IGNORECASE):
+            return False, True
+
+        if re.match("^public ", attr_value, flags=re.IGNORECASE):
+            return True, False
+
+        return False, False
 
     @staticmethod
     def get_attribute_value_by_name_ignoring_namespace(attributes, name):
@@ -82,16 +146,15 @@ class AWSModelsParser(object):
         return None
 
     @staticmethod
-    def convert_to_bool(string):
-        """
-        Converts string to bool
-        :param string: String
-        :str string: str
-        :return: True or False
-        """
-        if isinstance(string, bool):
-            return string
-        return string in ['true', 'True', '1']
+    def get_allow_all_storage_traffic_from_connected_resource_details(resource_context):
+        allow_traffic_on_resource = ""
+        allow_all_storage_traffic = 'Allow all Sandbox Traffic'
+        if resource_context.remote_endpoints is not None:
+            data = jsonpickle.decode(resource_context.remote_endpoints[0].app_context.app_request_json)
+            attributes = {d["name"]: d["value"] for d in data["deploymentService"]["attributes"]}
+            allow_traffic_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                attributes, allow_all_storage_traffic)
+        return allow_traffic_on_resource
 
     @staticmethod
     def get_public_ip_from_connected_resource_details(resource_context):
@@ -99,7 +162,7 @@ class AWSModelsParser(object):
         public_ip = 'Public IP'
         if resource_context.remote_endpoints is not None:
             public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
-                    resource_context.remote_endpoints[0].attributes, public_ip)
+                resource_context.remote_endpoints[0].attributes, public_ip)
         return public_ip_on_resource
 
     @staticmethod
@@ -113,8 +176,8 @@ class AWSModelsParser(object):
     def try_get_deployed_connected_resource_instance_id(resource_context):
         try:
             deployed_instance_id = str(
-                    jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
-                        'uid'])
+                jsonpickle.decode(resource_context.remote_endpoints[0].app_context.deployed_app_json)['vmdetails'][
+                    'uid'])
         except Exception as e:
             raise ValueError('Could not find an ID of the AWS Deployed instance' + e.message)
         return deployed_instance_id
@@ -133,3 +196,17 @@ class AWSModelsParser(object):
         :rtype: ReservationModel
         """
         return ReservationModel(reservation_context)
+
+    @staticmethod
+    def parse_deploy_networking_configurations(deployment_request):
+        """
+        :param deployment_request: request object to parse
+        :return:
+        """
+        if "NetworkConfigurationsRequest" not in deployment_request:
+            return None
+
+        actions = deployment_request["NetworkConfigurationsRequest"]["actions"]
+        # actions = deployment_request["NetworkConfigurationsRequest"]
+
+        return NetworkActionsParser.parse_network_actions_data(actions)

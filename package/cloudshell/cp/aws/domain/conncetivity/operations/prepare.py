@@ -1,17 +1,21 @@
 import traceback
 
+import jsonpickle
+from cloudshell.shell.core.driver_context import CancellationContext
+
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
+from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.connectivity_models import PrepareConnectivityActionResult
-from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
-from cloudshell.shell.core.driver_context import CancellationContext
+from cloudshell.cp.aws.models.network_actions_models import *
+from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkActionResult, PrepareSubnetActionResult
 
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
 class PrepareConnectivityOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
-                 cryptography_service, cancellation_service):
+                 cryptography_service, cancellation_service, subnet_service, subnet_waiter):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -27,6 +31,10 @@ class PrepareConnectivityOperation(object):
         :type cryptography_service: CryptographyService
         :param cancellation_service:
         :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
+        :param subnet_service: Subnet Service
+        :type subnet_service: cloudshell.cp.aws.domain.services.ec2.subnet.SubnetService
+        :param subnet_waiter: Subnet Waiter
+        :type subnet_waiter: cloudshell.cp.aws.domain.services.waiters.subnet.SubnetWaiter
         """
         self.vpc_service = vpc_service
         self.security_group_service = security_group_service
@@ -35,8 +43,10 @@ class PrepareConnectivityOperation(object):
         self.route_table_service = route_table_service
         self.cryptography_service = cryptography_service
         self.cancellation_service = cancellation_service
+        self.subnet_service = subnet_service
+        self.subnet_waiter = subnet_waiter
 
-    def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, request,
+    def prepare_connectivity(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, actions,
                              cancellation_context, logger):
         """
         Will create a vpc for the reservation and will peer it to the management vpc
@@ -48,72 +58,114 @@ class PrepareConnectivityOperation(object):
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param aws_ec2_datamodel: The AWS EC2 data model
         :type aws_ec2_datamodel: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
-        :param request: Parsed prepare connectivity request
+        :param list[NetworkAction] actions: Parsed prepare connectivity actions
         :param CancellationContext cancellation_context:
         :param logging.Logger logger:
-        :return:
+        :rtype list[ConnectivityActionResult]
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
-        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
+        results = []
 
-        logger.info("Creating or getting existing key pair")
+        # Execute prepareNetwork action first
+        network_action = next((a for a in actions if isinstance(a.connection_params, PrepareNetworkParams)), None)
+        if not network_action:
+            raise ValueError("Actions list must contain a PrepareNetworkAction.")
+
+        try:
+            result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
+                                           network_action, cancellation_context, logger)
+            results.append(result)
+        except Exception as e:
+            logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
+            results.append(self._create_fault_action_result(network_action, e))
+
+        # Execute prepareSubnet actions
+        subnet_actions = [a for a in actions if isinstance(a.connection_params, PrepareSubnetParams)]
+        subnet_results = PrepareSubnetExecutor(
+            cancellation_service=self.cancellation_service,
+            vpc_service=self.vpc_service,
+            subnet_service=self.subnet_service,
+            tag_service=self.tag_service,
+            subnet_waiter=self.subnet_waiter,
+            reservation=reservation,
+            aws_ec2_datamodel=aws_ec2_datamodel,
+            cancellation_context=cancellation_context,
+            logger=logger,
+            ec2_session=ec2_session,
+            ec2_client=ec2_client).execute(subnet_actions)
+
+        for subnet_result in subnet_results:
+            results.append(subnet_result)
+
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Prepare Connectivity completed")
+
+        return results
+
+    def _prepare_network(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
+        """
+        :type ec2_client:
+        :type ec2_session:
+        :type s3_session:
+        :type reservation:
+        :type aws_ec2_datamodel:
+        :type action: NetworkAction
+        :type cancellation_context:
+        :type logger:
+        :return:
+        """
+        logger.info("PrepareNetwork");
+
+        # will get cidr form action params
+        cidr = action.connection_params.cidr
+        logger.info("Received CIDR {0} from server".format(cidr))
+
+        # will get or create a vpc for the reservation
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Get or create existing VPC (no subnets yet)")
+        vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
+
+        # will get or create a key pair
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Get or create existing key pair")
         access_key = self._get_or_create_key_pair(ec2_session=ec2_session,
                                                   s3_session=s3_session,
                                                   bucket=aws_ec2_datamodel.key_pairs_location,
                                                   reservation_id=reservation.reservation_id)
 
+        # will enable dns for the vpc
         self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Enable dns for the vpc")
+        self._enable_dns_hostnames(ec2_client=ec2_client, vpc_id=vpc.id)
 
-        results = []
-        for action in request.actions:
-            try:
-                cidr = self._extract_cidr(action)
-                logger.info("Received CIDR {0} from server".format(cidr))
-
-                # will get or create a vpc for the reservation
-                logger.info("Get or create existing VPC")
-                vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
-
-                self._enable_dns_hostnames(ec2_client=ec2_client, vpc_id=vpc.id)
-
-                self.cancellation_service.check_if_cancelled(cancellation_context)
-
-                # will create an IG if not exist
-                logger.info("Get or create and attach existing internet gateway")
-                internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
-
-                self.cancellation_service.check_if_cancelled(cancellation_context)
-
-                # will try to peer sandbox VPC to mgmt VPC if not exist
-                logger.info("Create VPC Peering with management vpc")
-                self._peer_vpcs(ec2_client=ec2_client,
-                                ec2_session=ec2_session,
-                                management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
-                                vpc_id=vpc.id,
-                                sandbox_vpc_cidr=cidr,
-                                internet_gateway_id=internet_gateway_id,
-                                reservation_model=reservation,
-                                logger=logger)
-
-                self.cancellation_service.check_if_cancelled(cancellation_context)
-
-                logger.info("Get or create default Security Group")
-                security_group = self._get_or_create_security_group(ec2_session=ec2_session,
-                                                                    reservation=reservation,
-                                                                    vpc=vpc,
-                                                                    management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
-
-                results.append(self._create_action_result(action, security_group, vpc, access_key))
-
-            except Exception as e:
-                logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
-                results.append(self._create_fault_action_result(action, e))
-
+        # will get or create an Internet-Gateway (IG) for the vpc
         self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Get or create and attach existing internet gateway")
+        internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
-        return results
+        # will try to peer sandbox VPC to mgmt VPC if not exist
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Create VPC Peering with management vpc")
+        self._peer_vpcs(ec2_client=ec2_client,
+                        ec2_session=ec2_session,
+                        management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
+                        vpc_id=vpc.id,
+                        sandbox_vpc_cidr=cidr,
+                        internet_gateway_id=internet_gateway_id,
+                        reservation_model=reservation,
+                        logger=logger)
+
+        # will get or create default Security Group
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+        logger.info("Get or create default Security Group")
+        security_groups = self._get_or_create_default_security_groups(ec2_session=ec2_session,
+                                                                      reservation=reservation,
+                                                                      vpc=vpc,
+                                                                      management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
+        return self._create_prepare_network_result(action, security_groups, vpc, access_key)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -189,20 +241,33 @@ class PrepareConnectivityOperation(object):
                                              ec2_client=ec2_client)
 
         # add route in sandbox route table to the management vpc
-        sandbox_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
+        sandbox_main_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
                                                                             vpc_id=vpc_id)
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
-                                         route_table=sandbox_route_table,
+                                         route_table=sandbox_main_route_table,
+                                         target_vpc_cidr=mgmt_cidr,
+                                         logger=logger,
+                                         ec2_session=ec2_session,
+                                         ec2_client=ec2_client)
+
+        # add route in sandbox *private* route table to the management vpc
+        sandbox_private_route_table = self.vpc_service.get_or_create_private_route_table(ec2_session, reservation_model, vpc_id)
+
+        self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
+                                         route_table=sandbox_private_route_table,
                                          target_vpc_cidr=mgmt_cidr,
                                          logger=logger,
                                          ec2_session=ec2_session,
                                          ec2_client=ec2_client)
 
         # add route in sandbox route table to the internet gateway
-        route_igw = self.route_table_service.find_first_route(sandbox_route_table, {'gateway_id': internet_gateway_id})
+        # ***DO NOT ADD IT TO sandbox_private_route_table!***
+        route_igw = self.route_table_service.find_first_route(sandbox_main_route_table, {'gateway_id': internet_gateway_id})
         if not route_igw:
-            self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_route_table,
+            self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_main_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
+        # add default tags to main routing table
+        self.vpc_service.set_main_route_table_tags(sandbox_main_route_table, reservation_model)
 
     @retry(stop_max_attempt_number=2, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
@@ -216,7 +281,7 @@ class PrepareConnectivityOperation(object):
         :param logging.Logger logger:
         :return:
         """
-        logger.info("_update_route_to_peered_vpc :: route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
+        logger.info("route table id {0}, peer_connection_id: {1}, target_vpc_cidr: {2}"
                     .format(route_table.id, peer_connection_id, target_vpc_cidr))
 
         # need to check for both possibilities since the amazon api for Route is unpredictable
@@ -226,19 +291,32 @@ class PrepareConnectivityOperation(object):
                                                               {'DestinationCidrBlock': str(target_vpc_cidr)})
 
         if route:
-            logger.info("_update_route_to_peered_vpc :: found route to {0}, replacing it")
+            if hasattr(route, "vpc_peering_connection_id") and route.vpc_peering_connection_id == peer_connection_id:
+                logger.info("found existing and valid route to peering gateway, no need to update it")
+                return  # the existing route is correct, we dont need to do anything
+
+            logger.info("found existing route to {0}, replacing it".format(
+                    route.destination_cidr_block if hasattr(route, "destination_cidr_block") else ''))
             self.route_table_service.replace_route(route_table=route_table,
                                                    route=route,
                                                    peer_connection_id=peer_connection_id,
                                                    ec2_client=ec2_client)
         else:
-            logger.info("_update_route_to_peered_vpc :: route not found, creating it")
+            logger.info("route not found, creating it")
             self.route_table_service.add_route_to_peered_vpc(route_table=route_table,
                                                              target_peering_id=peer_connection_id,
                                                              target_vpc_cidr=target_vpc_cidr)
 
-    def _get_or_create_security_group(self, ec2_session, reservation, vpc, management_sg_id):
-        sg_name = self.security_group_service.get_sandbox_security_group_name(reservation.reservation_id)
+    def _get_or_create_default_security_groups(self, ec2_session, reservation, vpc, management_sg_id):
+        security_groups = [
+            self._get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc),
+            self._get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation, vpc)]
+
+        return security_groups
+
+    def _get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+        sg_name = self.security_group_service.sandbox_default_sg_name(reservation.reservation_id)
+
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
 
         if not security_group:
@@ -247,13 +325,32 @@ class PrepareConnectivityOperation(object):
                                                                   vpc_id=vpc.id,
                                                                   security_group_name=sg_name)
 
-            tags = self.tag_service.get_security_group_tags(name=sg_name,
-                                                            isolation=IsolationTagValues.Shared,
-                                                            reservation=reservation)
+            tags = self.tag_service.get_sandbox_default_security_group_tags(name=sg_name, reservation=reservation)
+
             self.tag_service.set_ec2_resource_tags(security_group, tags)
 
             self.security_group_service.set_shared_reservation_security_group_rules(security_group=security_group,
                                                                                     management_sg_id=management_sg_id)
+
+        return security_group
+
+    def _get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+        sg_name = self.security_group_service.sandbox_isolated_sg_name(reservation.reservation_id)
+
+        security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
+
+        if not security_group:
+            security_group = \
+                self.security_group_service.create_security_group(ec2_session=ec2_session,
+                                                                  vpc_id=vpc.id,
+                                                                  security_group_name=sg_name)
+
+            tags = self.tag_service.get_sandbox_isolated_security_group_tags(name=sg_name, reservation=reservation)
+
+            self.tag_service.set_ec2_resource_tags(security_group, tags)
+
+            self.security_group_service.set_isolated_security_group_rules(security_group=security_group,
+                                                                          management_sg_id=management_sg_id)
 
         return security_group
 
@@ -266,13 +363,13 @@ class PrepareConnectivityOperation(object):
                                                               cidr=cidr)
         return vpc
 
-    def _create_action_result(self, action, security_group, vpc, access_key):
-        action_result = PrepareConnectivityActionResult()
-        action_result.actionId = action.actionId
+    def _create_prepare_network_result(self, action, security_groups, vpc, access_key):
+        action_result = PrepareNetworkActionResult()
+        action_result.actionId = action.id
         action_result.success = True
-        action_result.infoMessage = 'PrepareConnectivity finished successfully'
+        action_result.infoMessage = 'PrepareNetwork finished successfully'
         action_result.vpcId = vpc.id
-        action_result.securityGroupId = security_group.id
+        action_result.securityGroupId = [sg.id for sg in security_groups]
 
         # encrypt the private key
         cryptography_dto = self.cryptography_service.encrypt(access_key)
@@ -281,21 +378,19 @@ class PrepareConnectivityOperation(object):
 
         return action_result
 
-    @staticmethod
-    def _extract_cidr(action):
-        cidrs = [custom_attribute.attributeValue
-                 for custom_attribute in action.customActionAttributes
-                 if custom_attribute.attributeName == 'Network']
-        if not cidrs:
-            raise ValueError(INVALID_REQUEST_ERROR.format('CIDR is missing'))
-        if len(cidrs) > 1:
-            raise ValueError(INVALID_REQUEST_ERROR.format('Too many CIDRs parameters were found'))
-        return cidrs[0]
+    def _create_prepare_subnet_result(self, action, subnet):
+        action_result = PrepareSubnetActionResult()
+        action_result.actionId = action.id
+        action_result.subnetId = subnet.subnet_id
+        action_result.success = True
+        action_result.infoMessage = 'PrepareSubnet finished successfully'
+
+        return action_result
 
     @staticmethod
     def _create_fault_action_result(action, e):
-        action_result = PrepareConnectivityActionResult()
-        action_result.actionId = action.actionId
+        action_result = ConnectivityActionResult()
+        action_result.actionId = action.id
         action_result.success = False
         action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result

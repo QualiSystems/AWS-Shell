@@ -9,11 +9,20 @@ class TagNames(object):
     Domain = 'Domain'
     Name = 'Name'
     Isolation = 'Isolation'
+    IsPublic = 'IsPublic'
+    Type = 'Type'
 
 
 class IsolationTagValues(object):
     Exclusive = 'Exclusive'
     Shared = 'Shared'
+
+
+class TypeTagValues(object):
+    Default = 'Default'
+    Isolated = 'Isolated'
+    InboundPorts = 'InboundPorts'
+    Interface = 'Interface'
 
 
 class TagService(object):
@@ -22,7 +31,7 @@ class TagService(object):
     def __init__(self):
         pass
 
-    def get_security_group_tags(self, name, isolation, reservation):
+    def get_security_group_tags(self, name, isolation, reservation, type=None):
         """
         returns the default tags with the isolation tag
         :param name: the name of the resource
@@ -31,15 +40,42 @@ class TagService(object):
         :type isolation: str
         :param reservation: reservation model
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
+        :param type: the type of security group
+        :type type: str
         :return: list[dict]
         """
         tags = self.get_default_tags(name, reservation)
         tags.append(self._get_kvp(TagNames.Isolation, isolation))
+        if type:
+            tags.append(self._get_kvp(TagNames.Type, type))
+        return tags
+
+    def get_sandbox_default_security_group_tags(self, name, reservation):
+        return self.get_security_group_tags(name, IsolationTagValues.Shared, reservation, TypeTagValues.Default)
+
+    def get_sandbox_isolated_security_group_tags(self, name, reservation):
+        return self.get_security_group_tags(name, IsolationTagValues.Shared, reservation, TypeTagValues.Isolated)
+
+    def get_custom_security_group_tags(self):
+        """
+        Returns the tags for custom security group
+        :return:
+        """
+        tags = [
+            self._get_kvp(TagNames.Isolation, IsolationTagValues.Exclusive),
+            self._get_kvp(TagNames.Type, TypeTagValues.Interface)
+        ]
         return tags
 
     def find_isolation_tag_value(self, tags):
         for tag in tags:
             if tag['Key'] == TagNames.Isolation:
+                return tag['Value']
+        return None
+
+    def find_type_tag_value(self, tags):
+        for tag in tags:
+            if tag['Key'] == TagNames.Type:
                 return tag['Value']
         return None
 
@@ -64,6 +100,9 @@ class TagService(object):
 
     def get_reservation_tag(self, reservation_id):
         return self._get_kvp(TagNames.ReservationId, reservation_id)
+
+    def get_is_public_tag(self, value):
+        return self._get_kvp(TagNames.IsPublic, str(value))
 
     @retry(stop_max_attempt_number=3, wait_fixed=1000)
     def set_ec2_resource_tags(self, resource, tags):

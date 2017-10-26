@@ -78,12 +78,6 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo  Description="Ports and protocol to open outbound traffic from inside of the sandbox. The syntax is port[single/range]:protocol [tcp(default)/udp] with semi-colon separation, for example: 80;443:tcp;200-220:udp." IsReadOnly="false" Name="Outbound Ports"  Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="false" Description="If set to False the deployment will not wait for the VM to get an ip" IsReadOnly="false" Name="Wait for IP"  Type="Boolean">
       <Rules>
         <Rule Name="Configuration" />
@@ -138,25 +132,31 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo DefaultValue="true"  Name="Allow all Sandbox Traffic" Description="Whether an app should allow inbound traffic from all other apps in the sandbox. If set to false, access from specific apps or subnets can be defined by an API call." IsReadOnly="false" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="Reserved networks that will be excluded when allocating Sandbox networks. Should include at least the management network. The syntax is comma separated CIDRs. For example: 10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24." IsReadOnly="false" Name="Networks In Use" Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo DefaultValue="False" Description="Requests a public IP address from Amazon's public IP address pool, to make your instance reachable from the internet. In most cases the public IP address is associated with the instance until it's stopped or terminated, after which it's no longer available for you to use. If you require a persistent public IP use an Elastic IP address instead." IsReadOnly="false" Name="Add Public IP" Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
-    <AttributeInfo DefaultValue="False" Description="Allocates an Elastic IP address to the instance. An Elastic IP is a static public IP address, which is reachable from the internet. Please enter the specific Elastic IP you want to associate with your instance. If kept empty no Elastic IP will be associated with the instance. Note that this value should be filled in for the app in the environment and not in the app catalog. For example 52.203.236.131." IsReadOnly="false" Name="Allocate Elastic IP" Type="Boolean">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Public IP" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue=""  Name="Public IP Options" Type="String" Description="Select whether to create a public IP. If the VM will be connected to more than one subnet, and public IP is required in at least one of them, the 'elastic IPs' option ought to be selected." IsReadOnly="false">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo DefaultValue="5" Description="Reserved IP addresses are not available to use, and cannot be assigned to an instance." IsReadOnly="false" Name="Reserved IPs in Subnet" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -214,6 +214,9 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Instance Type">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Reserved IPs in Subnet">
+              <AllowedValues />
+            </AttachedAttribute>
           </AttachedAttributes>
           <AttributeValues>
             <AttributeValue Name="Region" Value="us-east-1" />
@@ -260,6 +263,9 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allow all Sandbox Traffic" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Instance Type" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
@@ -282,9 +288,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Inbound Ports" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Outbound Ports" UserInput="true">
-              <AllowedValues />
-            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for IP" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -297,11 +300,12 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Wait for Credentials" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Add Public IP" UserInput="true">
-              <AllowedValues />
-            </AttachedAttribute>
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allocate Elastic IP" UserInput="true">
-              <AllowedValues />
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Public IP Options" UserInput="true">
+              <AllowedValues>
+                <AllowedValue>No Public IP</AllowedValue>
+                <AllowedValue>Public IP (single subnet)</AllowedValue>
+                <AllowedValue>Elastic IPs</AllowedValue>
+              </AllowedValues>
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
               <AllowedValues />
@@ -311,8 +315,8 @@
             <AttributeValue Name="Autoload" Value="true"/>
             <AttributeValue Name="Wait for IP" Value="false"/>
             <AttributeValue Name="Wait for Credentials" Value="true"/>
-            <AttributeValue Name="Add Public IP" Value="true"/>
             <AttributeValue Name="Storage Type" Value="auto"/>
+            <AttributeValue Name="Public IP Options" Value="No Public IP"/>
           </AttributeValues>
           <ParentModels />
           <Drivers />

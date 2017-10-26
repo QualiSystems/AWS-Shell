@@ -12,9 +12,14 @@ class TestVPCService(TestCase):
         self.tags = Mock()
         self.tag_service.get_default_tags = Mock(return_value=self.tags)
         self.subnet_service = Mock()
+        self.logger = Mock()
+        self.aws_ec2_datamodel = Mock()
+        self.ec2_client= Mock()
         self.ec2_session = Mock()
         self.vpc = Mock()
+        self.vpc_id = Mock()
         self.ec2_session.create_vpc = Mock(return_value=self.vpc)
+        self.ec2_session.Vpc = Mock(return_value=self.vpc)
         self.s3_session = Mock()
         self.reservation = Mock()
         self.cidr = Mock()
@@ -22,12 +27,14 @@ class TestVPCService(TestCase):
         self.vpc_peering_waiter = Mock()
         self.instance_service = Mock()
         self.sg_service = Mock()
+        self.route_table_service = Mock()
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
                                       instance_service=self.instance_service,
                                       vpc_waiter=self.vpc_waiter,
                                       vpc_peering_waiter=self.vpc_peering_waiter,
-                                      sg_service=self.sg_service)
+                                      sg_service=self.sg_service,
+                                      route_table_service=self.route_table_service)
 
     def test_get_all_internet_gateways(self):
         internet_gate = Mock()
@@ -160,3 +167,143 @@ class TestVPCService(TestCase):
 
         self.assertTrue(self.vpc.delete.called)
         self.assertTrue(res)
+
+    def test_get_or_create_subnet_for_vpc_1(self): # Scenario(1): Get
+        # Arrange
+        subnet = Mock()
+        self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=subnet)
+        # Act
+        result = self.vpc_service.get_or_create_subnet_for_vpc(reservation=self.reservation,
+                                                               cidr="1.2.3.4/24", alias="MySubnet",
+                                                               vpc=self.vpc,
+                                                               ec2_client=self.ec2_client,
+                                                               aws_ec2_datamodel=self.aws_ec2_datamodel,
+                                                               logger=self.logger)
+        # Assert
+        self.assertEqual(result, subnet)
+
+    def test_get_or_create_subnet_for_vpc_2(self): # Scenario(2): Create
+        # Arrange
+        subnet = Mock()
+        self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=None)
+        self.reservation.reservation_id = "123"
+        self.vpc_service.get_or_pick_availability_zone = Mock(return_value="MyZone")
+        self.subnet_service.create_subnet_for_vpc = Mock(return_value=subnet)
+        # Act
+        result = self.vpc_service.get_or_create_subnet_for_vpc(reservation=self.reservation,
+                                                               cidr="1.2.3.4/24", alias="MySubnet",
+                                                               vpc=self.vpc,
+                                                               ec2_client=self.ec2_client,
+                                                               aws_ec2_datamodel=self.aws_ec2_datamodel,
+                                                               logger=self.logger)
+        # Assert
+        self.assertEqual(result, subnet)
+        self.subnet_service.create_subnet_for_vpc.assert_called_once_with(
+            vpc=self.vpc,
+            cidr="1.2.3.4/24",
+            subnet_name="MySubnet Reservation: 123",
+            availability_zone="MyZone",
+            reservation=self.reservation)
+
+    def test_get_or_create_private_route_table_1(self): # Scenario(1): Get
+        # Arrange
+        table = Mock()
+        self.route_table_service.get_route_table = Mock(return_value=table)
+        # Act
+        result = self.vpc_service.get_or_create_private_route_table(ec2_session=self.ec2_session, reservation=self.reservation,
+                                                           vpc_id=self.vpc_id)
+        # Assert
+        self.assertEqual(result, table)
+
+    def test_get_or_create_private_route_table_2(self): # Scenario(2): Create
+        # Arrange
+        table = Mock()
+        self.reservation.reservation_id = "123"
+        self.route_table_service.get_route_table = Mock(return_value=None)
+        self.route_table_service.create_route_table = Mock(return_value=table)
+        # Act
+        result = self.vpc_service.get_or_create_private_route_table(ec2_session=self.ec2_session,
+                                                                    reservation=self.reservation,
+                                                                    vpc_id=self.vpc_id)
+        # Assert
+        self.assertEqual(result, table)
+        self.route_table_service.create_route_table.assert_called_once_with(
+            self.ec2_session,
+            self.reservation,
+            self.vpc_id,
+            "Private RoutingTable Reservation: 123"
+        )
+
+    def test_get_or_throw_private_route_table(self):
+        # Arrange
+        self.route_table_service.get_route_table = Mock(return_value=None)
+        # Act
+        with self.assertRaises(Exception) as error:
+            self.vpc_service.get_or_throw_private_route_table(ec2_session=self.ec2_session, reservation=self.reservation,
+                                                              vpc_id=self.vpc_id)
+        # Assert
+        self.assertEqual(error.exception.message, "Routing table for non-public subnet was not found")
+
+    def test_get_vpc_cidr(self):
+        # Arrange
+        self.vpc.cidr_block = "1.2.3.4/24"
+        # Act
+        result = self.vpc_service.get_vpc_cidr(ec2_session=self.ec2_session, vpc_id=self.vpc_id)
+        # Assert
+        self.assertEqual(result, "1.2.3.4/24")
+
+    def test_get_or_pick_availability_zone_1(self): #Scenario(1): from existing subnet
+        # Arrange
+        subnet = Mock()
+        subnet.availability_zone = "z"
+        self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=subnet)
+        # Act
+        result = self.vpc_service.get_or_pick_availability_zone(ec2_client=self.ec2_client, vpc=self.vpc,
+                                                       aws_ec2_datamodel=self.aws_ec2_datamodel)
+        # Assert
+        self.assertEqual(result, "z")
+
+    def test_get_or_pick_availability_zone_2(self):  # Scenario(2): from available zones list
+        # Arrange
+        self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=None)
+        self.ec2_client.describe_availability_zones = Mock(return_value={"AvailabilityZones":[{"ZoneName":"z"}]})
+        # Act
+        result = self.vpc_service.get_or_pick_availability_zone(ec2_client=self.ec2_client, vpc=self.vpc,
+                                                                aws_ec2_datamodel=self.aws_ec2_datamodel)
+        # Assert
+        self.assertEqual(result, "z")
+
+    def test_get_or_pick_availability_zone_3(self):  # Scenario(3): no available zone
+        # Arrange
+        self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=None)
+        self.ec2_client.describe_availability_zones = Mock(return_value=None)
+        # Act
+        with self.assertRaises(Exception) as error:
+            self.vpc_service.get_or_pick_availability_zone(ec2_client=self.ec2_client, vpc=self.vpc,
+                                                           aws_ec2_datamodel=self.aws_ec2_datamodel)
+        # Assert
+        self.assertEqual(error.exception.message, "No AvailabilityZone is available for this vpc")
+
+    def test_remove_custom_route_tables(self):
+        # Arrange
+        tables = [Mock(), Mock()]
+        self.vpc.id = "123"
+        self.route_table_service.get_custom_route_tables = Mock(return_value=tables)
+        # Act
+        result = self.vpc_service.remove_custom_route_tables(ec2_session=self.ec2_session, vpc=self.vpc)
+        # Assert
+        self.assertTrue(result)
+        self.route_table_service.delete_table.assert_any_call(tables[0])
+        self.route_table_service.delete_table.assert_any_call(tables[1])
+
+    def test_set_main_route_table_tags(self):
+        # Arrange
+        table = Mock()
+        tags = Mock()
+        self.reservation.reservation_id = "123"
+        self.tag_service.get_default_tags = Mock(return_value=tags)
+        # Act
+        self.vpc_service.set_main_route_table_tags(main_route_table=table, reservation=self.reservation)
+        # Assert
+        self.tag_service.get_default_tags.assert_called_once_with("Main RoutingTable Reservation: 123", self.reservation)
+        self.tag_service.set_ec2_resource_tags.assert_called_once_with(table, tags)
