@@ -4,6 +4,9 @@
             <Command Description="" DisplayName="Deploy From AMI" EnableCancellation="true" Name="deploy_ami" Tags="allow_unreserved" />
         </Category>
         <Category Name="Connectivity">
+            <Command Description="" DisplayName="Set AIM Roles" Name="remote_set_aim_role" Tags="remote_connectivity,allow_shared" />
+            <Command Description="" DisplayName="Attach Volume" Name="remote_attach_volume" Tags="remote_connectivity,allow_shared" />
+            <Command Description="" DisplayName="Detach Volume" Name="remote_detach_volume" Tags="remote_connectivity,allow_shared" />
             <Command Description="" DisplayName="Refresh IP" EnableCancellation="true" Name="remote_refresh_ip" Tags="remote_connectivity,allow_shared" />
             <Command Description="" DisplayName="Get Application Ports" Name="GetApplicationPorts" Tags="remote_connectivity,allow_shared" />
             <Command Description="" DisplayName="Prepare Connectivity" EnableCancellation="true" Name="PrepareConnectivity" Tags="allow_unreserved" />
