@@ -1,7 +1,7 @@
 {
 	"Description": "Main Template",
 	"Parameters": {
-		"1VPCCIDR": {
+		"1_VPCCIDR": {
 			"Type": "String",
 			"Description": "IP Address range for Management VPC",
 			"MinLength": "9",
@@ -10,7 +10,7 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
 		},
-		"2ESCIDR": {
+		"2ESCIDR1": {
 			"Type": "String",
 			"Description": "Must be inside VPC CIDR",
 			"MinLength": "9",
@@ -19,7 +19,16 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
-		"3QualiCIDR": {
+		"2ESCIDR2": {
+			"Type": "String",
+			"Description": "Must be inside VPC CIDR. Will be created when in high availability mode",
+			"MinLength": "9",
+			"MaxLength": "18",
+			"Default": "10.0.16.0/28",
+			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
+		},
+		"3QualiXCIDR": {
 			"Type": "String",
 			"Description": "Must be inside VPC CIDR",
 			"MinLength": "9",
@@ -51,6 +60,12 @@
 			"Description": "The instance type to be used for the Cloud Shell Server instances. The minimum recommended instance type is c4.xlarge.",
 			"Default": "c4.xlarge"
 		},
+        "8HighAvailabilityMode": {
+            "Type": "String",
+            "Description": "",
+            "Default": "True",
+            "AllowedValues": ["True", "False"]
+        },
 		"ZUsername": {
 			"Type": "String",
 			"Description": "Username for CloudShell server"
@@ -135,44 +150,6 @@
 				"NatAMI": "ami-9336bcff",
 				"QSAMI":"ami-1d364b71"
 			}
-		},
-		"AZFromRegion": {
-			"us-east-1": {
-				"AZ": "us-east-1b"
-			},
-			"us-east-2": {
-				"AZ": "us-east-2a"
-			},
-			"us-west-2": {
-				"AZ": "us-west-2b"
-			},
-			"us-west-1": {
-				"AZ": "us-west-1a"
-			},
-			"eu-west-1": {
-				"AZ": "eu-west-1c"
-			},
-			"eu-central-1": {
-				"AZ": "eu-central-1b"
-			},
-			"ap-southeast-1": {
-				"AZ": "ap-southeast-1a"
-			},
-			"ap-northeast-1": {
-				"AZ": "ap-northeast-1a"
-			},
-			"ap-southeast-2": {
-				"AZ": "ap-southeast-2a"
-			},
-			"ap-northeast-2": {
-				"AZ": "ap-northeast-2a"
-			},
-			"sa-east-1": {
-				"AZ": "sa-east-1a"
-			},
-			"ap-south-1": {
-				"AZ": "ap-south-1a"
-			}
 		}
 	},
 	"Resources": {
@@ -184,8 +161,11 @@
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
 					},
-					"ESCIDR": {
-						"Ref": "2ESCIDR"
+					"ESCIDR1": {
+						"Ref": "2ESCIDR1"
+					},
+					"ESCIDR2": {
+						"Ref": "2ESCIDR2"
 					},
 					"QualiServerCIDR": {
 						"Ref": "4QualiServerCIDR"
@@ -193,15 +173,17 @@
 					"KeyPair": {
 						"Ref": "5KeyPair"
 					},
-					"QualiCIDR": {
-						"Ref": "3QualiCIDR"
+					"QualiXCIDR": {
+						"Ref": "3QualiXCIDR"
 					},
-					"AZ": {
-						"Fn::FindInMap": ["AZFromRegion",
-						{
-							"Ref": "AWS::Region"
-						},
-						"AZ"]
+					"AZ1": {
+						"Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
+					},
+					"AZ2": {
+						"Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
+					},
+					"HA": {
+						"Ref": "8HighAvailabilityMode"
 					}
 				}
 			}
@@ -216,7 +198,7 @@
 					},
 					"ESInstanceSN": {
 						"Fn::GetAtt": ["VPCNAT",
-						"Outputs.ESInstanceSN"]
+						"Outputs.ESInstanceSN1"]
 					},
 					"QualiServerInstanceSN": {
 						"Fn::GetAtt": ["VPCNAT",

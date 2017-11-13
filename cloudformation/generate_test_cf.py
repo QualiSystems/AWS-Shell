@@ -1,5 +1,7 @@
 import os
 
+TEST_DIR = 'test'
+
 EC2_JSON = '2_EC2.json'
 EC2_EX_JSON = '2_EC2_EX.json'
 
@@ -40,7 +42,7 @@ def read_file_data(file_name):
 
 
 def write_file_to_test_dir(file_data, file_name):
-    test_dir = os.path.join(os.getcwd(), 'deploy_execution_server_by_selected_version')
+    test_dir = os.path.join(os.getcwd(), TEST_DIR)
     if not os.path.exists(test_dir):
         os.makedirs(test_dir)
 
