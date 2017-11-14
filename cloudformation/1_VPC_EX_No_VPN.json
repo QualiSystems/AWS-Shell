@@ -16,7 +16,10 @@
 		"KeyPair": {
 			"Type": "AWS::EC2::KeyPair::KeyName"
 		},
-		"QualiXCIDR": {
+		"QualiXCIDR1": {
+			"Type": "String"
+		},
+		"QualiXCIDR2": {
 			"Type": "String"
 		},
 		"AZ1": {
@@ -29,7 +32,7 @@
 			"Type": "String"
 		}
 	},
-	"Conditions" : {
+	"Conditions": {
 		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "HA"}, "True"]}
 	},
 	"Resources": {
@@ -80,18 +83,18 @@
 				}
 			}
 		},
-		"QualixSN": {
+		"QualixSN1": {
 			"Type": "AWS::EC2::Subnet",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
 				},
 				"CidrBlock": {
-					"Ref": "QualiCIDR"
+					"Ref": "QualiXCIDR1"
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "Qualix"
+					"Value": "Qualix A"
 				},
 				{
 					"Key": "Role",
@@ -103,6 +106,33 @@
 				}],
 				"AvailabilityZone": {
 					"Ref": "AZ1"
+				}
+			}
+		},
+		"QualixSN2": {
+			"Type": "AWS::EC2::Subnet",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"CidrBlock": {
+					"Ref": "QualiXCIDR2"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "Qualix B"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}],
+				"AvailabilityZone": {
+					"Ref": "AZ2"
 				}
 			}
 		},
@@ -231,11 +261,23 @@
 			},
 			"DependsOn": "ManagementIGW"
 		},
-		"QualixRTAssociation": {
+		"QualixRTAssociation1": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
-					"Ref": "QualixSN"
+					"Ref": "QualixSN1"
+				},
+				"RouteTableId": {
+					"Ref": "QualixRT"
+				}
+			}
+		},
+		"QualixRTAssociation2": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "QualixSN2"
 				},
 				"RouteTableId": {
 					"Ref": "QualixRT"
@@ -253,7 +295,7 @@
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "ES"
+					"Value": "ES A"
 				},
 				{
 					"Key": "Role",
@@ -280,7 +322,7 @@
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "ES"
+					"Value": "ES B"
 				},
 				{
 					"Key": "Role",
@@ -547,10 +589,6 @@
 					"-",
 					{
 						"Ref": "AWS::Region"
-					},
-					"-",
-					{
-						"Ref": "AWS::StackName"
 					}]]
 				},
 				"Tags": [{
@@ -678,7 +716,7 @@
 				"Fn::If" : [
 					"IsHighAvailabilityMode",
 					{"Ref": "ESInstanceSN2"},
-					{"Ref" : "AWS::NoValue"}
+					"NULL"
 				]
 			}
 		},
@@ -688,9 +726,18 @@
 				"Ref": "QualiServerInstanceSN"
 			}
 		},
-		"QualixSN": {
+		"QualixSN1": {
 			"Value": {
-				"Ref": "QualixSN"
+				"Ref": "QualixSN1"
+			}
+		},
+		"QualixSN2": {
+			"Value": {
+				"Fn::If" : [
+					"IsHighAvailabilityMode",
+					{"Ref": "QualixSN2"},
+					"NULL"
+				]
 			}
 		},
 		"QualiXInstanceProfile": {
