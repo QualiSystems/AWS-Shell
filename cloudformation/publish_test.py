@@ -1,4 +1,4 @@
-import sys
+import json
 
 import boto3
 
@@ -26,8 +26,8 @@ cloudformation_stacks = [
 def main():
     set_working_dir()
 
-    bucket_name = "alex-az"  #sys.argv[1]
-    folder = "tmp"  #sys.argv[2]
+    bucket_name = "alex-az"  # sys.argv[1]
+    folder = "tmp"  # sys.argv[2]
 
     uploaded_keys = []
 
@@ -36,6 +36,8 @@ def main():
 
     for stack in cloudformation_stacks:
         for specs_file in stack:
+            test_if_json_valid(specs_file)
+
             content = None
             if specs_file.startswith("0_Main"):
                 content = read_file_data(specs_file)
@@ -44,14 +46,19 @@ def main():
 
             key = "{0}/{1}".format(folder, specs_file)
             uploaded_keys.append(key)
-            bucket.upload_file(specs_file if content is None else "{}/{}".format(TEST_DIR, specs_file),
-                               key)
+            bucket.upload_file(specs_file if content is None else "{}/{}".format(TEST_DIR, specs_file), key)
 
     for obj in bucket.objects.all():
         if obj.key in uploaded_keys:
             # Make all the uploaded files public
             obj.Acl().put(ACL='public-read')
             print "https://s3.amazonaws.com/{}/{}".format(bucket_name, obj.key)
+
+
+def test_if_json_valid(file_name):
+    json_file = open(file_name, 'r')
+    json_string = json_file.read()
+    json.loads(json_string)
 
 
 if __name__ == "__main__":

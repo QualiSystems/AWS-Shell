@@ -29,6 +29,9 @@
 			"Type": "String"
 		}
 	},
+	"Conditions" : {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "HA"}, "True"]}
+	},
 	"Resources": {
 		"ManagementVPC": {
 			"Type": "AWS::EC2::VPC",
@@ -267,6 +270,7 @@
 		},
 		"ESInstanceSN2": {
 			"Type": "AWS::EC2::Subnet",
+			"Condition": "IsHighAvailabilityMode",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
@@ -388,6 +392,18 @@
 			"Properties": {
 				"SubnetId": {
 					"Ref": "ESInstanceSN1"
+				},
+				"RouteTableId": {
+					"Ref": "ESInstanceRT"
+				}
+			}
+		},
+		"ESInstRTAssociation2": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "ESInstanceSN2"
 				},
 				"RouteTableId": {
 					"Ref": "ESInstanceRT"
@@ -659,7 +675,11 @@
 		"ESInstanceSN2": {
 			"Description": "ES instance Subnet 2",
 			"Value": {
-				"Ref": "ESInstanceSN2"
+				"Fn::If" : [
+					"IsHighAvailabilityMode",
+					{"Ref": "ESInstanceSN2"},
+					{"Ref" : "AWS::NoValue"}
+				]
 			}
 		},
         "QualiServerInstanceSN": {

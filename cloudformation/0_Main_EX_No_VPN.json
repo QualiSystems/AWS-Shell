@@ -1,7 +1,7 @@
 {
 	"Description": "Main Template",
 	"Parameters": {
-		"1_VPCCIDR": {
+		"1VPCCIDR": {
 			"Type": "String",
 			"Description": "IP Address range for Management VPC",
 			"MinLength": "9",
