@@ -251,6 +251,8 @@ class TestPrepareConnectivity(TestCase):
         sg = Mock()
         vpc = Mock()
         management_sg_id = Mock()
+        isolated_sg = Mock()
+        isolated_sg.id = 'dummy'
         security_group_service = Mock()
         security_group_service.get_security_group_name = Mock(return_value=sg_name)
         security_group_service.get_security_group_by_name = Mock(return_value=None)
@@ -262,7 +264,7 @@ class TestPrepareConnectivity(TestCase):
                                                     self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_sandbox_default_security_group(self.ec2_session, self.reservation, vpc,
-                                                                         management_sg_id)
+                                                                         management_sg_id, isolated_sg)
 
         self.assertTrue(security_group_service.get_security_group_name.called_with('reservation'))
         self.assertTrue(security_group_service.get_security_group_by_name.called_with(vpc, sg_name))

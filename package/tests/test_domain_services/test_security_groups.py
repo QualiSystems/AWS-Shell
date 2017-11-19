@@ -107,7 +107,11 @@ class TestSecurityGroups(TestCase):
         sg = Fake()
         sg.id = 'id'
         sg.authorize_ingress = Mock()
-        self.sg_service.set_shared_reservation_security_group_rules(sg, 'man')
+
+        isolated_sg = Mock()
+        isolated_sg.id = 'dummy'
+
+        self.sg_service.set_shared_reservation_security_group_rules(sg, 'man',isolated_sg)
 
         self.assertTrue(sg.authorize_ingress.called_with(IpPermissions=[
             {
@@ -126,6 +130,9 @@ class TestSecurityGroups(TestCase):
             'UserIdGroupPairs': [
                 {
                     'GroupId': 'id'
+                },
+                {
+                    'GroupId': 'dummy'
                 }
             ]
         }
