@@ -330,7 +330,8 @@ class PrepareConnectivityOperation(object):
             self.tag_service.set_ec2_resource_tags(security_group, tags)
 
             self.security_group_service.set_shared_reservation_security_group_rules(security_group=security_group,
-                                                                                    management_sg_id=management_sg_id,isolated_sg=isolated_sg)
+                                                                                    management_sg_id=management_sg_id,
+                                                                                    isolated_sg=isolated_sg)
 
         return security_group
 
