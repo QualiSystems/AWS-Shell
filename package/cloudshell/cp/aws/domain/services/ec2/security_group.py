@@ -68,7 +68,7 @@ class SecurityGroupService(object):
 
         return security_groups[0]
 
-    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id):
+    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id, isolated_sg):
         """
         Set inbound rules for the reservation shared security group.
         The default rules are:
@@ -97,6 +97,9 @@ class SecurityGroupService(object):
                 'UserIdGroupPairs': [
                     {
                         'GroupId': security_group.id
+                    },
+                    {
+                        'GroupId': isolated_sg.id
                     }
                 ]
             }
