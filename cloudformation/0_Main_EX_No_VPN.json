@@ -28,7 +28,7 @@
 			"AllowedPattern": "^$|(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
-		"3QualiXCIDR1": {
+		"3QualiXCIDR": {
 			"Type": "String",
 			"Description": "Must be inside VPC CIDR",
 			"MinLength": "9",
@@ -37,21 +37,12 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
-		"3QualiXCIDR2": {
-			"Type": "String",
-			"Description": "Must be inside VPC CIDR. Optional when HighAvailabilityMode is False.",
-			"MinLength": "0",
-			"MaxLength": "18",
-			"Default": "10.0.0.48/28",
-			"AllowedPattern": "^$|(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
-			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
-		},
 		"4QualiServerCIDR": {
 			"Type": "String",
 			"Description": "Must be inside VPC CIDR",
 			"MinLength": "9",
 			"MaxLength": "18",
-			"Default": "10.0.0.64/28",
+			"Default": "10.0.0.48/28",
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
@@ -95,67 +86,67 @@
 			},
 			"us-east-2": {
 				"QualixAMI": "ami-6a2d760f",
-				"ESAMI": "ami-a57055c0",
+				"ESAMI": "ami-6a2d760f",
 				"NatAMI": "ami-92a6fef7",
 				"QSAMI":"ami-d3e7c5b6"
 			},
 			"eu-west-1": {
 				"QualixAMI": "ami-7abd0209",
-				"ESAMI": "ami-f88bf78b",
+				"ESAMI": "ami-7abd0209",
 				"NatAMI": "ami-a8dd45db",
 				"QSAMI":"ami-e92fec90"
 			},
 			"us-west-1": {
 				"QualixAMI": "ami-af4333cf",
-				"ESAMI": "ami-ecc9898c",
+				"ESAMI": "ami-af4333cf",
 				"NatAMI": "ami-004b0f60",
 				"QSAMI":"ami-32320452"
 			},
 			"us-west-2": {
 				"QualixAMI": "ami-d2c924b2",
-				"ESAMI": "ami-3f72bc5f",
+				"ESAMI": "ami-d2c924b2",
 				"NatAMI": "ami-a275b1c2",
 				"QSAMI":"ami-47897a3f"
 			},
 			"ap-south-1": {
 				"QualixAMI": "ami-95cda6fa",
-				"ESAMI": "ami-2b265344",
+				"ESAMI": "ami-95cda6fa",
 				"NatAMI": "ami-e2b9d38d",
 				"QSAMI":"ami-6af0b705"
 			},
 			"ap-northeast-2": {
 				"QualixAMI": "ami-c74789a9",
-				"ESAMI": "ami-6017dd0e",
+				"ESAMI": "ami-c74789a9",
 				"NatAMI": "ami-d14388bf",
 				"QSAMI":"ami-073be069"
 			},
 			"ap-southeast-1": {
 				"QualixAMI": "ami-f068a193",
-				"ESAMI": "ami-3c65ba5f",
+				"ESAMI": "ami-f068a193",
 				"NatAMI": "ami-a79b49c4",
 				"QSAMI":"ami-1c61147f"
 			},
 			"ap-southeast-2": {
 				"QualixAMI": "ami-fedafc9d",
-				"ESAMI": "ami-cdb085ae",
+				"ESAMI": "ami-fedafc9d",
 				"NatAMI": "ami-53371f30",
 				"QSAMI":"ami-663bdc04"
 			},
 			"ap-northeast-1": {
 				"QualixAMI": "ami-eec1c380",
-				"ESAMI": "ami-e43bff85",
+				"ESAMI": "ami-eec1c380",
 				"NatAMI": "ami-2443b745",
 				"QSAMI":"ami-de8d40b8"
 			},
 			"eu-central-1": {
 				"QualixAMI": "ami-9bf712f4",
-				"ESAMI": "ami-69dd2a06",
+				"ESAMI": "ami-9bf712f4",
 				"NatAMI": "ami-5825cd37",
 				"QSAMI":"ami-29fd4b46"
 			},
 			"sa-east-1": {
 				"QualixAMI": "ami-26b93b4a",
-				"ESAMI": "ami-1ba23277",
+				"ESAMI": "ami-26b93b4a",
 				"NatAMI": "ami-9336bcff",
 				"QSAMI":"ami-1d364b71"
 			}
@@ -183,10 +174,7 @@
 						"Ref": "5KeyPair"
 					},
 					"QualiXCIDR1": {
-						"Ref": "3QualiXCIDR1"
-					},
-					"QualiXCIDR2": {
-						"Ref": "3QualiXCIDR2"
+						"Ref": "3QualiXCIDR"
 					},
 					"AZ1": {
 						"Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
@@ -207,10 +195,6 @@
 					"QualixSN1": {
 						"Fn::GetAtt": ["VPCNAT",
 						"Outputs.QualixSN1"]
-					},
-					"QualixSN2": {
-						"Fn::GetAtt": ["VPCNAT",
-						"Outputs.QualixSN2"]
 					},
 					"ESInstanceSN1": {
 						"Fn::GetAtt": ["VPCNAT",
@@ -287,8 +271,7 @@
 					},
 					"CloudShellServerInstanceSize": {
 						"Ref": "7CloudShellServerInstanceType"
-					},
-					"ExecutionServerBinaryLocation": "https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell-version/exec.tar"
+					}
 				},
 				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/2_EC2_EX_No_VPN.json"
 			}

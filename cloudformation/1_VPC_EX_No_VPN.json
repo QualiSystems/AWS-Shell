@@ -19,9 +19,6 @@
 		"QualiXCIDR1": {
 			"Type": "String"
 		},
-		"QualiXCIDR2": {
-			"Type": "String"
-		},
 		"AZ1": {
 			"Type": "String"
 		},
@@ -106,33 +103,6 @@
 				}],
 				"AvailabilityZone": {
 					"Ref": "AZ1"
-				}
-			}
-		},
-		"QualixSN2": {
-			"Type": "AWS::EC2::Subnet",
-			"Condition": "IsHighAvailabilityMode",
-			"Properties": {
-				"VpcId": {
-					"Ref": "ManagementVPC"
-				},
-				"CidrBlock": {
-					"Ref": "QualiXCIDR2"
-				},
-				"Tags": [{
-					"Key": "Name",
-					"Value": "Qualix B"
-				},
-				{
-					"Key": "Role",
-					"Value": "Management"
-				},
-				{
-					"Key": "CreateBy",
-					"Value": "CloudShell"
-				}],
-				"AvailabilityZone": {
-					"Ref": "AZ2"
 				}
 			}
 		},
@@ -223,7 +193,7 @@
 					"FromPort": "0",
 					"ToPort": "65535",
 					"CidrIp": {
-                      "Ref": "ESCIDR1"
+                      "Ref": "VPCCIDR"
                     }
 				}]
 			}
@@ -266,18 +236,6 @@
 			"Properties": {
 				"SubnetId": {
 					"Ref": "QualixSN1"
-				},
-				"RouteTableId": {
-					"Ref": "QualixRT"
-				}
-			}
-		},
-		"QualixRTAssociation2": {
-			"Type": "AWS::EC2::SubnetRouteTableAssociation",
-			"Condition": "IsHighAvailabilityMode",
-			"Properties": {
-				"SubnetId": {
-					"Ref": "QualixSN2"
 				},
 				"RouteTableId": {
 					"Ref": "QualixRT"
@@ -729,15 +687,6 @@
 		"QualixSN1": {
 			"Value": {
 				"Ref": "QualixSN1"
-			}
-		},
-		"QualixSN2": {
-			"Value": {
-				"Fn::If" : [
-					"IsHighAvailabilityMode",
-					{"Ref": "QualixSN2"},
-					"NULL"
-				]
 			}
 		},
 		"QualiXInstanceProfile": {
