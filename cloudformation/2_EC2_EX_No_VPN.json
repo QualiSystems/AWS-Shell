@@ -236,7 +236,7 @@
 								{
 									"Ref": "ZPassword"
 								},
-								" ES-Shells-",
+								" ES-Commands-",
 								{
 									"Ref": "AWS::Region"
 								}
@@ -321,7 +321,7 @@
 								{
 									"Ref": "ZPassword"
 								},
-								" ES-Shells-",
+								" ES-Shells-B-",
 								{
 									"Ref": "AWS::Region"
 								}
@@ -383,7 +383,7 @@
 								{
 									"Ref": "ZPassword"
 								},
-								" ES-Shells-",
+								" ES-Commands-B-",
 								{
 									"Ref": "AWS::Region"
 								}
