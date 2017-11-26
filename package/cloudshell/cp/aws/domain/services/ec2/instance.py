@@ -93,6 +93,9 @@ class InstanceService(object):
         default_tags = self.tags_creator_service.get_default_tags(new_name, reservation)
         self.tags_creator_service.set_ec2_resource_tags(instance, default_tags)
 
+        for volume in instance.volumes.all():
+            self.tags_creator_service.set_ec2_resource_tags(volume, default_tags)
+
     @staticmethod
     def get_instance_by_id(ec2_session, id):
         return ec2_session.Instance(id=id)
