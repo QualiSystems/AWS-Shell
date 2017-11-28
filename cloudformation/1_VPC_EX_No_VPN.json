@@ -4,7 +4,10 @@
 		"VPCCIDR": {
 			"Type": "String"
 		},
-		"ESCIDR": {
+		"ESCIDR1": {
+			"Type": "String"
+		},
+		"ESCIDR2": {
 			"Type": "String"
 		},
 		"QualiServerCIDR": {
@@ -13,12 +16,21 @@
 		"KeyPair": {
 			"Type": "AWS::EC2::KeyPair::KeyName"
 		},
-		"QualiCIDR": {
+		"QualiXCIDR1": {
 			"Type": "String"
 		},
-		"AZ": {
+		"AZ1": {
+			"Type": "String"
+		},
+		"AZ2": {
+			"Type": "String"
+		},
+		"HA": {
 			"Type": "String"
 		}
+	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "HA"}, "True"]}
 	},
 	"Resources": {
 		"ManagementVPC": {
@@ -68,18 +80,18 @@
 				}
 			}
 		},
-		"QualixSN": {
+		"QualixSN1": {
 			"Type": "AWS::EC2::Subnet",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
 				},
 				"CidrBlock": {
-					"Ref": "QualiCIDR"
+					"Ref": "QualiXCIDR1"
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "Qualix"
+					"Value": "Qualix A"
 				},
 				{
 					"Key": "Role",
@@ -90,7 +102,7 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},
@@ -181,7 +193,7 @@
 					"FromPort": "0",
 					"ToPort": "65535",
 					"CidrIp": {
-                      "Ref": "ESCIDR"
+                      "Ref": "VPCCIDR"
                     }
 				}]
 			}
@@ -219,29 +231,29 @@
 			},
 			"DependsOn": "ManagementIGW"
 		},
-		"QualixRTAssociation": {
+		"QualixRTAssociation1": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
-					"Ref": "QualixSN"
+					"Ref": "QualixSN1"
 				},
 				"RouteTableId": {
 					"Ref": "QualixRT"
 				}
 			}
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
 			"Type": "AWS::EC2::Subnet",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
 				},
 				"CidrBlock": {
-					"Ref": "ESCIDR"
+					"Ref": "ESCIDR1"
 				},
 				"Tags": [{
 					"Key": "Name",
-					"Value": "ES"
+					"Value": "ES A"
 				},
 				{
 					"Key": "Role",
@@ -252,7 +264,34 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
+				}
+			}
+		},
+		"ESInstanceSN2": {
+			"Type": "AWS::EC2::Subnet",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"CidrBlock": {
+					"Ref": "ESCIDR2"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "ES B"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}],
+				"AvailabilityZone": {
+					"Ref": "AZ2"
 				}
 			}
 		},
@@ -278,7 +317,7 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},
@@ -302,7 +341,7 @@
 				}]
 			}
 		},
-      "QualiServerInstanceRT": {
+      	"QualiServerInstanceRT": {
 			"Type": "AWS::EC2::RouteTable",
 			"Properties": {
 				"VpcId": {
@@ -335,7 +374,7 @@
 			},
 			"DependsOn": "ManagementIGW"
 		},
-      "QSWWWRoute": {
+      	"QSWWWRoute": {
 			"Type": "AWS::EC2::Route",
 			"Properties": {
 				"RouteTableId": {
@@ -348,18 +387,30 @@
 			},
 			"DependsOn": "ManagementIGW"
 		},
-		"ESInstRTAssociation": {
+		"ESInstRTAssociation1": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
-					"Ref": "ESInstanceSN"
+					"Ref": "ESInstanceSN1"
 				},
 				"RouteTableId": {
 					"Ref": "ESInstanceRT"
 				}
 			}
 		},
-      "QualiServerInstRTAssociation": {
+		"ESInstRTAssociation2": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "ESInstanceSN2"
+				},
+				"RouteTableId": {
+					"Ref": "ESInstanceRT"
+				}
+			}
+		},
+      	"QualiServerInstRTAssociation": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
@@ -459,7 +510,7 @@
 				"Path": "/"
 			}
 		},
-      "QualiServerRole": {
+      	"QualiServerRole": {
 			"Type": "AWS::IAM::Role",
 			"Properties": {
 				"AssumeRolePolicyDocument": {
@@ -611,10 +662,20 @@
 				"Ref": "S3Bucket"
 			}
 		},
-		"ESInstanceSN": {
-			"Description": "ES instance Subnet",
+		"ESInstanceSN1": {
+			"Description": "ES instance Subnet 1",
 			"Value": {
-				"Ref": "ESInstanceSN"
+				"Ref": "ESInstanceSN1"
+			}
+		},
+		"ESInstanceSN2": {
+			"Description": "ES instance Subnet 2",
+			"Value": {
+				"Fn::If" : [
+					"IsHighAvailabilityMode",
+					{"Ref": "ESInstanceSN2"},
+					"NULL"
+				]
 			}
 		},
         "QualiServerInstanceSN": {
@@ -623,9 +684,9 @@
 				"Ref": "QualiServerInstanceSN"
 			}
 		},
-		"QualixSN": {
+		"QualixSN1": {
 			"Value": {
-				"Ref": "QualixSN"
+				"Ref": "QualixSN1"
 			}
 		},
 		"QualiXInstanceProfile": {
