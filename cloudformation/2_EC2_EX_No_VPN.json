@@ -145,7 +145,7 @@
 					"Value": "Management"
 				}],
 				"ImageId": {
-					"Ref": "QualixAMI"
+					"Ref": "ESAMI"
 				},
 				"InstanceType": { "Ref": "InstanceSize" },				
 				"UserData": {

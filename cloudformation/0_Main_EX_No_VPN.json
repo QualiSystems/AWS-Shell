@@ -79,7 +79,7 @@
 		"AMIFromRegion": {
 			"us-east-1": {
 				"QualixAMI": "ami-6d1c2007",
-				"ESAMI": "ami-84780f93",
+				"ESAMI": "ami-6d1c2007",
 				"NatAMI": "ami-4868ab25",
 				"QSAMI":"ami-5648ad2c"
 
