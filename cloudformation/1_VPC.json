@@ -10,13 +10,22 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x."
 		},
-		"ESCIDR": {
+		"ESCIDR1": {
 			"Type": "String",
 			"Description": "Must be inside VPC CIDR",
 			"MinLength": "9",
 			"MaxLength": "18",
 			"Default": "172.28.1.0/24",
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
+			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
+		},
+		"ESCIDR2": {
+			"Type": "String",
+			"Description": "Must be inside VPC CIDR. Optional when HighAvailabilityMode is False.",
+			"MinLength": "0",
+			"MaxLength": "18",
+			"Default": "10.0.0.16/28",
+			"AllowedPattern": "^$|(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
 		"VPNAddress": {
@@ -66,14 +75,21 @@
 			"AllowedPattern": "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})",
 			"ConstraintDescription": "must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR"
 		},
-		"AZ": {
-			"Type": "String",
-			"Default": "us-east-1a",
-			"Description": "Choose AZ for deployment"
+		"AZ1": {
+			"Type": "String"
+		},
+		"AZ2": {
+			"Type": "String"
+		},
+		"HA": {
+			"Type": "String"
 		},
 		"NatAMI": {
 			"Type": "String"
 		}
+	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "HA"}, "True"]}
 	},
 	"Resources": {
 		"ManagementVPC": {
@@ -223,7 +239,7 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},
@@ -373,14 +389,14 @@
 			},
 			"DependsOn": "ManagementVPNGwAttachement"
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
 			"Type": "AWS::EC2::Subnet",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
 				},
 				"CidrBlock": {
-					"Ref": "ESCIDR"
+					"Ref": "ESCIDR1"
 				},
 				"Tags": [{
 					"Key": "Name",
@@ -395,7 +411,34 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
+				}
+			}
+		},
+		"ESInstanceSN2": {
+			"Type": "AWS::EC2::Subnet",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"CidrBlock": {
+					"Ref": "ESCIDR2"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "ES B"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}],
+				"AvailabilityZone": {
+					"Ref": "AZ2"
 				}
 			}
 		},
@@ -422,7 +465,7 @@
 				}],
 				"MapPublicIpOnLaunch": "true",
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},
@@ -577,11 +620,23 @@
 			},
 			"DependsOn": "NatInstance"
 		},
-		"ESInstRTAssociation": {
+		"ESInstRTAssociation1": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
-					"Ref": "ESInstanceSN"
+					"Ref": "ESInstanceSN1"
+				},
+				"RouteTableId": {
+					"Ref": "ESInstanceRT"
+				}
+			}
+		},
+		"ESInstRTAssociation2": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "ESInstanceSN2"
 				},
 				"RouteTableId": {
 					"Ref": "ESInstanceRT"
@@ -801,10 +856,20 @@
 				"Ref": "S3Bucket"
 			}
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
 			"Description": "ES instance Subnet",
 			"Value": {
-				"Ref": "ESInstanceSN"
+				"Ref": "ESInstanceSN1"
+			}
+		},
+		"ESInstanceSN2": {
+			"Description": "ES instance Subnet 2",
+			"Value": {
+				"Fn::If" : [
+					"IsHighAvailabilityMode",
+					{"Ref": "ESInstanceSN2"},
+					"NULL"
+				]
 			}
 		},
 		"QualixSN": {

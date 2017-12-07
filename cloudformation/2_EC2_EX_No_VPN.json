@@ -1,9 +1,12 @@
 {
 	"Parameters": {
-		"QualixSN": {
+		"QualixSN1": {
 			"Type": "String"
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
+			"Type": "String"
+		},
+		"ESInstanceSN2": {
 			"Type": "String"
 		},
 		"QualiServerInstanceSN": {
@@ -48,14 +51,18 @@
 		"ZPassword": {
 			"Type": "String"
 		},
-		"ExecutionServerBinaryLocation": {
-			"Type": "String"
-		},
 		"InstanceSize": {
 			"Type": "String"
 		},
 		"CloudShellServerInstanceSize": {
 			"Type": "String"
+		}
+	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {
+			"Fn::Not": [{
+				"Fn::Equals": [ { "Ref": "ESInstanceSN2" }, "NULL" ]
+			}]
 		}
 	},
 	"Resources": {
@@ -67,7 +74,7 @@
 					"Ref": "QualiXInstanceProfile"
 				},
 				"SubnetId": {
-					"Ref": "QualixSN"
+					"Ref": "QualixSN1"
 				},
 				"KeyName": {
 					"Ref": "KeyPair"
@@ -106,14 +113,14 @@
 				}
 			}
 		},
-		"ESInstance": {
+		"ESInstance1a": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
 				"NetworkInterfaces": [ {
 					      "AssociatePublicIpAddress": "true",
 					      "DeviceIndex": "0",
 					      "SubnetId": {
-							"Ref": "ESInstanceSN"
+							"Ref": "ESInstanceSN1"
 						},
 					      "GroupSet": [{
 							"Ref": "SG1id"
@@ -143,51 +150,50 @@
 				"InstanceType": { "Ref": "InstanceSize" },				
 				"UserData": {
 					"Fn::Base64": {
-						"Fn::Join": ["",
-						["#!/bin/bash -xe\n",
-						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
-						"chattr +i /etc/resolv.conf\n",
-						"wget -O /root/ExecutionServer/exec.tar ",
-						{
-						  "Ref": "ExecutionServerBinaryLocation"
-						},
-						"\n",
-						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
-						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"/bin/echo \"",
-						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
-						{
-							"Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
-						},
-						" /u:",
-						{
-							"Ref": "ZUsername"
-						},
-						" /p:",
-						{
-							"Ref": "ZPassword"
-						},
-						" /esn:ES-Shells-",
-						{
-							"Ref": "AWS::Region"
-						},
-						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
-						"supervisorctl restart ex"]]
+						"Fn::Join": [
+							"",
+							[
+								"#!/bin/bash -xe\n",
+								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"chattr +i /etc/resolv.conf\n",
+								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
+								"chmod +rwx ./cloudshell_es_install_script.sh\n",
+								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
+								"./cloudshell_es_install_script.sh ",
+								{
+									"Fn::GetAtt": [
+										"CloudShellServerInstance",
+										"PrivateIp"
+									]
+								},
+								" ",
+								{
+									"Ref": "ZUsername"
+								},
+								" ",
+								{
+									"Ref": "ZPassword"
+								},
+								" ES-Shells-",
+								{
+									"Ref": "AWS::Region"
+								}
+							]
+						]
 					}
 				}
 			},
 			"DependsOn": "CloudShellServerInstance"
 		},
-		"ESInstance2": {
+		"ESInstance2a": {
 			"Type": "AWS::EC2::Instance",
 			"Properties": {
 				"NetworkInterfaces": [{
 					      "AssociatePublicIpAddress": "true",
 					      "DeviceIndex": "0",
 					      "SubnetId": {
-						"Ref": "ESInstanceSN"
+						"Ref": "ESInstanceSN1"
 					       },
 					      "GroupSet": [{
 							"Ref": "SG1id"
@@ -207,42 +213,187 @@
 				"UserData": {
 					"Fn::Base64": {
 						"Fn::Join": ["",
-						["#!/bin/bash -xe\n",
-						"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-						"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
-						"chattr +i /etc/resolv.conf\n",
-						"wget -O /root/ExecutionServer/exec.tar ",
-						{
-						  "Ref": "ExecutionServerBinaryLocation"
-						},
-						"\n",
-						"curl https://s3.amazonaws.com/cf-dynamic-execution-server/cf_config_ex --output /root/ExecutionServer/cf_config_ex --retry 20 -s -S\n",
-						"tar -xvf /root/ExecutionServer/exec.tar -C /root/ExecutionServer\n",
-						"/bin/echo \"",
-						"mono /root/ExecutionServer/QsExecutionServerConsoleConfig.exe /s:",
-						{
-							 "Fn::GetAtt" : [ "CloudShellServerInstance", "PrivateIp" ]
-						},
-						" /u:",
-						{
-							"Ref": "ZUsername"
-						},
-						" /p:",
-						{
-							"Ref": "ZPassword"
-						},
-						" /esn:ES-Commands-",
-						{
-							"Ref": "AWS::Region"
-						},
-						" /i:",
-						"100 \" >> /root/ExecutionServer/cf_config_params.txt\n",
-						"supervisorctl restart ex"]]
+							[
+								"#!/bin/bash -xe\n",
+								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"chattr +i /etc/resolv.conf\n",
+								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
+								"chmod +rwx ./cloudshell_es_install_script.sh\n",
+								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
+								"./cloudshell_es_install_script.sh ",
+								{
+									"Fn::GetAtt": [
+										"CloudShellServerInstance",
+										"PrivateIp"
+									]
+								},
+								" ",
+								{
+									"Ref": "ZUsername"
+								},
+								" ",
+								{
+									"Ref": "ZPassword"
+								},
+								" ES-Commands-",
+								{
+									"Ref": "AWS::Region"
+								}
+							]
+						]
 					}
 				},
 				"Tags": [{
 					"Key": "Name",
 					"Value": "es-commands"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}]
+			},
+			"DependsOn": "CloudShellServerInstance"
+		},
+		"ESInstance1b": {
+			"Type": "AWS::EC2::Instance",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"NetworkInterfaces": [ {
+					      "AssociatePublicIpAddress": "true",
+					      "DeviceIndex": "0",
+					      "SubnetId": {
+							"Ref": "ESInstanceSN2"
+						},
+					      "GroupSet": [{
+							"Ref": "SG1id"
+						}]
+				}],
+				"IamInstanceProfile": {
+					"Ref": "ESInstanceProfile"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-shells-b"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				}],
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": { "Ref": "InstanceSize" },
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+							[
+								"#!/bin/bash -xe\n",
+								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"chattr +i /etc/resolv.conf\n",
+								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
+								"chmod +rwx ./cloudshell_es_install_script.sh\n",
+								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
+								"./cloudshell_es_install_script.sh ",
+								{
+									"Fn::GetAtt": [
+										"CloudShellServerInstance",
+										"PrivateIp"
+									]
+								},
+								" ",
+								{
+									"Ref": "ZUsername"
+								},
+								" ",
+								{
+									"Ref": "ZPassword"
+								},
+								" ES-Shells-B-",
+								{
+									"Ref": "AWS::Region"
+								}
+							]
+						]
+					}
+				}
+			},
+			"DependsOn": "CloudShellServerInstance"
+		},
+		"ESInstance2b": {
+			"Type": "AWS::EC2::Instance",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"NetworkInterfaces": [{
+					      "AssociatePublicIpAddress": "true",
+					      "DeviceIndex": "0",
+					      "SubnetId": {
+						"Ref": "ESInstanceSN2"
+					       },
+					      "GroupSet": [{
+							"Ref": "SG1id"
+						}]
+
+				}],
+				"IamInstanceProfile": {
+					"Ref": "ESInstance2Profile"
+				},
+				"KeyName": {
+					"Ref": "KeyPair"
+				},
+				"ImageId": {
+					"Ref": "ESAMI"
+				},
+				"InstanceType": { "Ref": "InstanceSize" },
+				"UserData": {
+					"Fn::Base64": {
+						"Fn::Join": ["",
+							[
+								"#!/bin/bash -xe\n",
+								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
+								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"chattr +i /etc/resolv.conf\n",
+								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
+								"chmod +rwx ./cloudshell_es_install_script.sh\n",
+								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
+								"./cloudshell_es_install_script.sh ",
+								{
+									"Fn::GetAtt": [
+										"CloudShellServerInstance",
+										"PrivateIp"
+									]
+								},
+								" ",
+								{
+									"Ref": "ZUsername"
+								},
+								" ",
+								{
+									"Ref": "ZPassword"
+								},
+								" ES-Commands-B-",
+								{
+									"Ref": "AWS::Region"
+								}
+							]
+						]
+					}
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "es-commands-b"
 				},
 				{
 					"Key": "CreateBy",
