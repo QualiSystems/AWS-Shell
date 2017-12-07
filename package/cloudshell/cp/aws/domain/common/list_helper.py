@@ -5,3 +5,14 @@ def first_or_default(lst, lambda_expression):
 
 def single(lst, lambda_expression):
     return filter(lambda_expression, lst)[0]
+
+
+def index_of(lst, lambda_predicate):
+    gen = (index for index, item in enumerate(lst) if lambda_predicate(item))
+
+    try:
+        first = gen.next()
+    except StopIteration:
+        return None
+
+    return first
