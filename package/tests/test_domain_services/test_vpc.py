@@ -137,7 +137,7 @@ class TestVPCService(TestCase):
         self.vpc.security_groups = Mock()
         self.vpc.security_groups.all = Mock(return_value=[sg])
 
-        res = self.vpc_service.remove_all_security_groups(self.vpc)
+        res = self.vpc_service.remove_all_security_groups(self.vpc, self.reservation.reservation_id )
 
         self.assertTrue(res)
         self.assertTrue(self.sg_service.delete_security_group.called_with(sg))
