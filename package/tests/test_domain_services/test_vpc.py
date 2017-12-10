@@ -52,6 +52,7 @@ class TestVPCService(TestCase):
         self.vpc_service.remove_all_internet_gateways(self.vpc)
 
         internet_gate.detach_from_vpc.assert_called_with(VpcId=self.vpc.id)
+        self.assertTrue(internet_gate.delete.called)
 
 
     def test_create_and_attach_internet_gateway(self):
