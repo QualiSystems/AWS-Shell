@@ -49,7 +49,7 @@ class VPCService(object):
         """
         vpc = ec2_session.create_vpc(CidrBlock=cidr)
 
-        self.vpc_waiter.wait(vpc, self.vpc_waiter.AVAILABLE)
+        self.vpc_waiter.wait(vpc=vpc,state= self.vpc_waiter.AVAILABLE)
 
         vpc_name = self.VPC_RESERVATION.format(reservation.reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation=reservation, vpc=vpc)
@@ -243,7 +243,7 @@ class VPCService(object):
         isolated_ix =  index_of(security_groups, lambda sg: sg.group_name == isolated_sg_name)
 
         # if there is one
-        if(isolated_ix):
+        if(isolated_ix != None):
             # move isolated group to the end
             security_groups.insert(len(security_groups), security_groups.pop(isolated_ix))
 
