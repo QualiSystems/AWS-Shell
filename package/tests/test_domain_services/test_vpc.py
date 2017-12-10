@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock, call
 
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
@@ -42,42 +42,42 @@ class TestVPCService(TestCase):
         self.vpc.internet_gateways.all = Mock(return_value=[internet_gate])
         res = self.vpc_service.get_all_internet_gateways(self.vpc)
 
-        self.assertEqual(res, [internet_gate])
+        self.assertEquals(res, [internet_gate])
 
     def test_remove_all_internet_gateways(self):
         internet_gate = Mock()
+
         self.vpc.internet_gateways = Mock()
         self.vpc.internet_gateways.all = Mock(return_value=[internet_gate])
         self.vpc_service.remove_all_internet_gateways(self.vpc)
 
-        self.assertTrue(internet_gate.detach_from_vpc.called_with(VpcId=self.vpc.id))
+        internet_gate.detach_from_vpc.assert_called_with(VpcId=self.vpc.id)
         self.assertTrue(internet_gate.delete.called)
 
+
     def test_create_and_attach_internet_gateway(self):
-        self.vpc_service.create_and_attach_internet_gateway(self.ec2_session, self.vpc, self.reservation)
+
+        internet_gate = Mock()
+        internet_gate.id = 'super_id'
+        self.ec2_session.create_internet_gateway = Mock(return_value=internet_gate)
+
+        internet_gateway_id = self.vpc_service.create_and_attach_internet_gateway(self.ec2_session, self.vpc, self.reservation)
 
         self.assertTrue(self.ec2_session.create_internet_gateway.called)
-        ig = self.ec2_session.create_internet_gateway()
-        self.assertTrue(self.tag_service.get_default_tags.called_with(
-            "IGW {0}".format(self.reservation.reservation_id),
-            self.reservation))
-        self.assertTrue(self.tag_service.set_ec2_resource_tags(
-                resource=ig,
-                tags=self.tag_service.get_default_tags()))
+        self.tag_service.get_default_tags.assert_called_once_with("IGW {0}".format(self.reservation.reservation_id),self.reservation)
+        self.tag_service.set_ec2_resource_tags.assert_called_once_with(resource=internet_gate, tags=self.tag_service.get_default_tags())
+        self.assertEqual(internet_gateway_id, internet_gate.id)
 
     def test_create_vpc_for_reservation(self):
         vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation, self.cidr)
+        vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation.reservation_id)
 
-        vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation)
-
-        self.assertTrue(self.vpc_waiter.wait.called_with(vpc, 'available'))
+        self.vpc_waiter.wait.assert_called_once_with(vpc=vpc, state=self.vpc_waiter.AVAILABLE)
         self.assertEqual(self.vpc, vpc)
-        self.assertTrue(self.ec2_session.create_vpc.called_with(self.cidr))
-        self.assertTrue(
-            self.tag_service.get_default_tags.called_with(vpc_name,
-                                                          self.reservation))
-        self.assertTrue(self.tag_service.set_ec2_resource_tags.called_with(self.vpc, self.tags))
-        self.assertTrue(self.subnet_service.create_subnet_for_vpc(self.vpc, self.cidr, vpc_name))
+        self.ec2_session.create_vpc.assert_called_once_with(CidrBlock=self.cidr)
+        self.tag_service.get_default_tags.assert_called_once_with(vpc_name, self.reservation)
+        self.tag_service.set_ec2_resource_tags.assert_called_once_with(self.vpc, self.tags)
+
 
     def test_find_vpc_for_reservation(self):
         self.ec2_session.vpcs = Mock()
@@ -111,8 +111,8 @@ class TestVPCService(TestCase):
 
         res = self.vpc_service.peer_vpcs(self.ec2_session, vpc1, vpc2, reservation_model,Mock())
 
-        self.assertTrue(self.ec2_session.create_vpc_peering_connection.called_with(vpc1, vpc2))
-        self.assertEquals(peered.status['Code'], VpcPeeringConnectionWaiter.ACTIVE)
+        self.ec2_session.create_vpc_peering_connection.assert_called_once_with(VpcId=vpc1, PeerVpcId=vpc2)
+        self.assertEqual(peered.status['Code'], VpcPeeringConnectionWaiter.ACTIVE)
         self.assertEqual(res, peered.id)
 
     def test_remove_all_peering(self):
@@ -127,7 +127,7 @@ class TestVPCService(TestCase):
 
         res = self.vpc_service.remove_all_peering(self.vpc)
 
-        self.assertTrue(res)
+        self.assertIsNotNone(res)
         self.assertTrue(peering.delete.called)
         self.assertFalse(peering1.delete.called)
         self.assertTrue(peering2.delete.called)
@@ -139,8 +139,26 @@ class TestVPCService(TestCase):
 
         res = self.vpc_service.remove_all_security_groups(self.vpc, self.reservation.reservation_id )
 
-        self.assertTrue(res)
-        self.assertTrue(self.sg_service.delete_security_group.called_with(sg))
+        self.assertIsNotNone(res)
+        self.sg_service.delete_security_group.assert_called_once_with(sg)
+
+    # When a trying to delete security group(isolated) and it is referenced in another's group rule.
+    # we get resource sg-XXXXXX has a dependent object, so to fix that , isolated group shall be deleted last.
+    def test_remove_all_sgs_isolated_group_removed_last(self):
+        sg = Mock()
+        sg.group_name = 'dummy'
+        isolated_sg = Mock()
+        isolated_sg.group_name = self.sg_service.sandbox_isolated_sg_name(self.reservation.reservation_id)
+        isolated_at_start_sgs = [isolated_sg, sg]
+        isolated_at_end_sgs_calls = [call(sg), call(isolated_sg)]
+
+        self.vpc.security_groups = Mock()
+        self.vpc.security_groups.all = Mock(return_value=isolated_at_start_sgs)
+
+        res = self.vpc_service.remove_all_security_groups(self.vpc, self.reservation.reservation_id )
+
+        self.assertIsNotNone(res)
+        self.sg_service.delete_security_group.assert_has_calls(isolated_at_end_sgs_calls, any_order=False)
 
     def test_remove_subnets(self):
         subnet = Mock()
@@ -149,8 +167,8 @@ class TestVPCService(TestCase):
 
         res = self.vpc_service.remove_all_subnets(self.vpc)
 
-        self.assertTrue(res)
-        self.assertTrue(self.subnet_service.delete_subnet.called_with(subnet))
+        self.assertIsNotNone(res)
+        self.subnet_service.delete_subnet.assert_called_once_with(subnet)
 
     def test_delete_all_instances(self):
         instance = Mock()
@@ -159,14 +177,14 @@ class TestVPCService(TestCase):
 
         res = self.vpc_service.delete_all_instances(self.vpc)
 
-        self.assertTrue(res)
-        self.assertTrue(self.instance_service.terminate_instances.called_with([instance]))
+        self.assertIsNotNone(res)
+        self.instance_service.terminate_instances.assert_called_once_with([instance])
 
     def test_delete_vpc(self):
         res = self.vpc_service.delete_vpc(self.vpc)
 
         self.assertTrue(self.vpc.delete.called)
-        self.assertTrue(res)
+        self.assertIsNotNone(res)
 
     def test_get_or_create_subnet_for_vpc_1(self): # Scenario(1): Get
         # Arrange

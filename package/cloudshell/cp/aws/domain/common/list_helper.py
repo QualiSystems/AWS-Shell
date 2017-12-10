@@ -7,8 +7,8 @@ def single(lst, lambda_expression):
     return filter(lambda_expression, lst)[0]
 
 
-def index_of(lst, lambda_predicate):
-    gen = (index for index, item in enumerate(lst) if lambda_predicate(item))
+def index_of(lst, predicate):
+    gen = (index for index, item in enumerate(lst) if predicate(item))
 
     try:
         first = gen.next()
