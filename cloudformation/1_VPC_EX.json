@@ -20,7 +20,13 @@
 		"QualiCIDR": {
 			"Type": "String"
 		},
-		"AZ": {
+		"AZ1": {
+			"Type": "String"
+		},
+		"AZ2": {
+			"Type": "String"
+		},
+		"HA": {
 			"Type": "String"
 		},
 		"OnPremiseCIDR": {
@@ -103,7 +109,7 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},

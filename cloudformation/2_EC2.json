@@ -143,10 +143,7 @@
 								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
 								"./cloudshell_es_install_script.sh ",
 								{
-									"Fn::GetAtt": [
-										"CloudShellServerInstance",
-										"PrivateIp"
-									]
+									"Ref": "ServerIP"
 								},
 								" ",
 								{
@@ -164,8 +161,7 @@
 						]
 					}
 				}
-			},
-			"DependsOn": "CloudShellServerInstance"
+			}
 		},
 		"ESInstance2a": {
 			"Type": "AWS::EC2::Instance",
@@ -196,10 +192,7 @@
 								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
 								"./cloudshell_es_install_script.sh ",
 								{
-									"Fn::GetAtt": [
-										"CloudShellServerInstance",
-										"PrivateIp"
-									]
+									"Ref": "ServerIP"
 								},
 								" ",
 								{
@@ -229,8 +222,7 @@
 					"Key": "Role",
 					"Value": "Management"
 				}]
-			},
-			"DependsOn": "CloudShellServerInstance"
+			}
 		},
 		"ESInstance1b": {
 			"Type": "AWS::EC2::Instance",
@@ -274,10 +266,7 @@
 								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
 								"./cloudshell_es_install_script.sh ",
 								{
-									"Fn::GetAtt": [
-										"CloudShellServerInstance",
-										"PrivateIp"
-									]
+									"Ref": "ServerIP"
 								},
 								" ",
 								{
@@ -295,8 +284,7 @@
 						]
 					}
 				}
-			},
-			"DependsOn": "CloudShellServerInstance"
+			}
 		},
 		"ESInstance2b": {
 			"Type": "AWS::EC2::Instance",
@@ -328,10 +316,7 @@
 								"sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n",
 								"./cloudshell_es_install_script.sh ",
 								{
-									"Fn::GetAtt": [
-										"CloudShellServerInstance",
-										"PrivateIp"
-									]
+									"Ref": "ServerIP"
 								},
 								" ",
 								{
@@ -361,8 +346,7 @@
 					"Key": "Role",
 					"Value": "Management"
 				}]
-			},
-			"DependsOn": "CloudShellServerInstance"
+			}
 		}
 	},
 	"Description": "EC2 instances - QualiX and ES",
