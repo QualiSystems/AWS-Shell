@@ -24,11 +24,6 @@ class SecurityGroupService(object):
             sg.delete()
         return True
 
-    def delete_all_security_groups_of_instance(self, instance):
-        if instance.security_groups:
-            for security_group in instance.security_groups:
-                self.delete_security_group(security_group)
-
     def create_security_group(self, ec2_session, vpc_id, security_group_name):
         """
         creating a security group
@@ -68,7 +63,7 @@ class SecurityGroupService(object):
 
         return security_groups[0]
 
-    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id):
+    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id, isolated_sg):
         """
         Set inbound rules for the reservation shared security group.
         The default rules are:
@@ -97,6 +92,9 @@ class SecurityGroupService(object):
                 'UserIdGroupPairs': [
                     {
                         'GroupId': security_group.id
+                    },
+                    {
+                        'GroupId': isolated_sg.id
                     }
                 ]
             }

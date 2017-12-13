@@ -1,3 +1,7 @@
+from botocore.exceptions import ClientError
+from retrying import retry
+
+from cloudshell.cp.aws.common.retry_helper import retry_if_client_error
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, SubnetConnectionParams
@@ -60,6 +64,7 @@ class ElasticIpService(object):
                (isinstance(ami_deployment_model.network_configurations, list) and
                 len(ami_deployment_model.network_configurations) == 1)
 
+    @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=10, wait_fixed=1000)
     def associate_elastic_ip_to_instance(self, ec2_session, instance, elastic_ip):
         """
         Assign an elastic ip to the primary interface and primary private ip of the given instance
@@ -75,6 +80,7 @@ class ElasticIpService(object):
         else:
             raise ValueError("Failed to find elastic ip {0} allocation id".format(elastic_ip))
 
+    @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=10, wait_fixed=1000)
     def associate_elastic_ip_to_network_interface(self, ec2_session, interface_id, elastic_ip):
         """
         Assign an elastic ip to a specific network interface
@@ -99,6 +105,7 @@ class ElasticIpService(object):
         result = ec2_client.allocate_address(Domain='vpc')
         return result["PublicIp"]
 
+    @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=3, wait_fixed=1000)
     def find_and_release_elastic_address(self, ec2_session, elastic_ip):
         """
         :param ec2_session:

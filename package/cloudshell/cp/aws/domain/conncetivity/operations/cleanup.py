@@ -49,7 +49,7 @@ class CleanupConnectivityOperation(object):
 
             logger.info("Deleting vpc and removing dependencies")
             self.vpc_service.remove_all_internet_gateways(vpc)
-            self.vpc_service.remove_all_security_groups(vpc)
+            self.vpc_service.remove_all_security_groups(vpc, reservation_id)
             self.vpc_service.remove_all_subnets(vpc)
             self.vpc_service.remove_all_peering(vpc)
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)

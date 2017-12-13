@@ -4,7 +4,10 @@
 		"VPCCIDR": {
 			"Type": "String"
 		},
-		"ESCIDR": {
+		"ESCIDR1": {
+			"Type": "String"
+		},
+		"ESCIDR2": {
 			"Type": "String"
 		},
 		"ServerIP": {
@@ -17,7 +20,13 @@
 		"QualiCIDR": {
 			"Type": "String"
 		},
-		"AZ": {
+		"AZ1": {
+			"Type": "String"
+		},
+		"AZ2": {
+			"Type": "String"
+		},
+		"HA": {
 			"Type": "String"
 		},
 		"OnPremiseCIDR": {
@@ -26,6 +35,9 @@
 		"VPNAddress": {
 			"Type": "String"
 		}
+	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "HA"}, "True"]}
 	},
 	"Resources": {
 		"ManagementVPC": {
@@ -97,7 +109,7 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
 				}
 			}
 		},
@@ -198,14 +210,14 @@
 				}
 			}
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
 			"Type": "AWS::EC2::Subnet",
 			"Properties": {
 				"VpcId": {
 					"Ref": "ManagementVPC"
 				},
 				"CidrBlock": {
-					"Ref": "ESCIDR"
+					"Ref": "ESCIDR1"
 				},
 				"Tags": [{
 					"Key": "Name",
@@ -220,7 +232,34 @@
 					"Value": "CloudShell"
 				}],
 				"AvailabilityZone": {
-					"Ref": "AZ"
+					"Ref": "AZ1"
+				}
+			}
+		},
+		"ESInstanceSN2": {
+			"Type": "AWS::EC2::Subnet",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"VpcId": {
+					"Ref": "ManagementVPC"
+				},
+				"CidrBlock": {
+					"Ref": "ESCIDR2"
+				},
+				"Tags": [{
+					"Key": "Name",
+					"Value": "ES B"
+				},
+				{
+					"Key": "Role",
+					"Value": "Management"
+				},
+				{
+					"Key": "CreateBy",
+					"Value": "CloudShell"
+				}],
+				"AvailabilityZone": {
+					"Ref": "AZ2"
 				}
 			}
 		},
@@ -257,11 +296,23 @@
 			},
 			"DependsOn": "ManagementIGW"
 		},
-		"ESInstRTAssociation": {
+		"ESInstRTAssociation1": {
 			"Type": "AWS::EC2::SubnetRouteTableAssociation",
 			"Properties": {
 				"SubnetId": {
-					"Ref": "ESInstanceSN"
+					"Ref": "ESInstanceSN1"
+				},
+				"RouteTableId": {
+					"Ref": "ESInstanceRT"
+				}
+			}
+		},
+		"ESInstRTAssociation2": {
+			"Type": "AWS::EC2::SubnetRouteTableAssociation",
+			"Condition": "IsHighAvailabilityMode",
+			"Properties": {
+				"SubnetId": {
+					"Ref": "ESInstanceSN2"
 				},
 				"RouteTableId": {
 					"Ref": "ESInstanceRT"
@@ -589,10 +640,20 @@
 				"Ref": "S3Bucket"
 			}
 		},
-		"ESInstanceSN": {
+		"ESInstanceSN1": {
 			"Description": "ES instance Subnet",
 			"Value": {
-				"Ref": "ESInstanceSN"
+				"Ref": "ESInstanceSN1"
+			}
+		},
+		"ESInstanceSN2": {
+			"Description": "ES instance Subnet 2",
+			"Value": {
+				"Fn::If" : [
+					"IsHighAvailabilityMode",
+					{"Ref": "ESInstanceSN2"},
+					"NULL"
+				]
 			}
 		},
 		"QualixSN": {
