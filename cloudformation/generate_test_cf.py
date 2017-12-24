@@ -8,7 +8,7 @@ EC2_EX_JSON = '2_EC2_EX.json'
 TEST_EC2_JSON = '2_EC2_test.json'
 TEST_EC2_EX_JSON = '2_EC2_EX_test.json'
 
-PROD_INSTANCE_TYPE = '"c3.xlarge"'
+PROD_INSTANCE_TYPE = '"c4.xlarge"'
 TEST_INSTANCE_TYPE = '"t2.small"'
 
 TEST_MAIN_JSON = '0_Main_test.json'
