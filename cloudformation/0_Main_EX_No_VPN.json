@@ -142,7 +142,7 @@
 				"QualixAMI": "ami-9bf712f4",
 				"ESAMI": "ami-9bf712f4",
 				"NatAMI": "ami-5825cd37",
-				"QSAMI":"ami-29fd4b46"
+				"QSAMI":"ami-da9b14b5"
 			},
 			"sa-east-1": {
 				"QualixAMI": "ami-26b93b4a",

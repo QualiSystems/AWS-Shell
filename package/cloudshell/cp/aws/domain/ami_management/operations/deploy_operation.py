@@ -175,6 +175,7 @@ class DeployAMIOperation(object):
                             deployed_app_address=instance.private_ip_address,
                             public_ip=instance.public_ip_address,
                             network_configuration_results=network_actions_results_dtos,
+                            vpc_id=vpc.id,
                             vm_details_data=vm_details_data)
 
     def _validate_public_subnet_exist_if_requested_public_or_elastic_ips(self, ami_deployment_model, logger):

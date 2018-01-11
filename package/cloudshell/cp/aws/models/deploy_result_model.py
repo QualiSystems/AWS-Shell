@@ -7,7 +7,7 @@ class DeployResult(object):
     def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, autoload, auto_delete, wait_for_ip,
                  auto_power_off, inbound_ports, deployed_app_attributes,
                  deployed_app_address, public_ip, network_configuration_results,
-                 vm_details_data):
+                 vpc_id, vm_details_data):
         """
         :param str vm_name: The name of the virtual machine
         :param uuid uuid: The UUID
@@ -20,6 +20,7 @@ class DeployResult(object):
         :param [dict] deployed_app_attributes:
         :param str deployed_app_address:
         :param str public_ip:
+        :param str vpc_id:
         :param list[ConnectToSubnetActionResult] network_configuration_results:
         :return:
         """
@@ -36,4 +37,5 @@ class DeployResult(object):
         self.deployed_app_address = deployed_app_address
         self.public_ip = public_ip
         self.network_configuration_results = network_configuration_results  # type: list[ConnectToSubnetActionResult]
+        self.vpc_id = vpc_id
         self.vm_details_data = vm_details_data
