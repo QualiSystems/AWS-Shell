@@ -142,8 +142,8 @@
 							"",
 							[
 								"#!/bin/bash -xe\n",
-								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.4.4' >> /etc/resolv.conf\n",
 								"chattr +i /etc/resolv.conf\n",
 								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
 								"chmod +rwx ./cloudshell_es_install_script.sh\n",
@@ -199,8 +199,8 @@
 						"Fn::Join": ["",
 							[
 								"#!/bin/bash -xe\n",
-								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.4.4' >> /etc/resolv.conf\n",
 								"chattr +i /etc/resolv.conf\n",
 								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
 								"chmod +rwx ./cloudshell_es_install_script.sh\n",
@@ -280,8 +280,8 @@
 						"Fn::Join": ["",
 							[
 								"#!/bin/bash -xe\n",
-								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.4.4' >> /etc/resolv.conf\n",
 								"chattr +i /etc/resolv.conf\n",
 								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
 								"chmod +rwx ./cloudshell_es_install_script.sh\n",
@@ -338,8 +338,8 @@
 						"Fn::Join": ["",
 							[
 								"#!/bin/bash -xe\n",
-								"sed -i '1s/^/nameserver 8.8.4.4\\n/' /etc/resolv.conf\n",
-								"sed -i '1s/^/nameserver 8.8.8.8\\n/' /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.8.8' >> /etc/resolv.conf\n",
+								"echo 'nameserver 8.8.4.4' >> /etc/resolv.conf\n",
 								"chattr +i /etc/resolv.conf\n",
 								"curl https://s3.amazonaws.com/cf-dynamic-execution-server/execution-server/cloudshell_es_install_script.sh --output cloudshell_es_install_script.sh --retry 20 -s -S\n",
 								"chmod +rwx ./cloudshell_es_install_script.sh\n",
