@@ -109,6 +109,7 @@ class TestDeployOperation(TestCase):
         instance = Mock()
         instance.network_interfaces = []
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
+        instance.placement = {'AvailabilityZone': 'my_av_zone'}
         self.instance_service.create_instance = Mock(return_value=instance)
         sg = Mock()
         self.security_group_service.create_security_group = Mock(return_value=sg)
@@ -123,6 +124,9 @@ class TestDeployOperation(TestCase):
         network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
         self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
         self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
+
+        vpc = Mock()
+        self.vpc_service.find_vpc_for_reservation = Mock(return_value=vpc)
 
         # act
         res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
@@ -150,6 +154,8 @@ class TestDeployOperation(TestCase):
                                                        'User': ami_credentials.user_name,
                                                        'Public IP': instance.public_ip_address})
         self.assertEquals(res.network_configuration_results, network_config_results_dto)
+        self.assertEqual(res.vpc_id, vpc.id)
+        self.assertEqual(res.availability_zone, 'my_av_zone')
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(

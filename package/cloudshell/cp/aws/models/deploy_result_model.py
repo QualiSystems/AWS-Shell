@@ -2,12 +2,10 @@ from cloudshell.cp.aws.models.network_actions_models import ConnectToSubnetActio
 
 
 class DeployResult(object):
-    # def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, ip_regex, refresh_ip_timeout,
-    #              auto_power_off, wait_for_ip, auto_delete, autoload):
     def __init__(self, vm_name, vm_uuid, cloud_provider_resource_name, autoload, auto_delete, wait_for_ip,
                  auto_power_off, inbound_ports, deployed_app_attributes,
                  deployed_app_address, public_ip, network_configuration_results,
-                 vpc_id, vm_details_data):
+                 vpc_id, availability_zone, vm_details_data):
         """
         :param str vm_name: The name of the virtual machine
         :param uuid uuid: The UUID
@@ -21,6 +19,7 @@ class DeployResult(object):
         :param str deployed_app_address:
         :param str public_ip:
         :param str vpc_id:
+        :param str availability_zone:
         :param list[ConnectToSubnetActionResult] network_configuration_results:
         :return:
         """
@@ -38,4 +37,5 @@ class DeployResult(object):
         self.public_ip = public_ip
         self.network_configuration_results = network_configuration_results  # type: list[ConnectToSubnetActionResult]
         self.vpc_id = vpc_id
+        self.availability_zone = availability_zone
         self.vm_details_data = vm_details_data
