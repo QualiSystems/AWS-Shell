@@ -5,14 +5,18 @@ class VmDetailsProvider(object):
     def create(self, instance):
         vm_details = VmDetails()
 
-        vm_details.vm_instance_data = self._get_vm_instance_data(instance)
+        vm_details.vm_instance_data = self._get_vm_instance_data(instance, instance.vpc_id)
         vm_details.vm_network_data = self._get_vm_network_data(instance)
         return vm_details
 
-    def _get_vm_instance_data(self, instance):
+    def _get_vm_instance_data(self, instance, vpc_id):
         # if not windows, instance platform is empty; therefore we default to linux
         platform = instance.platform or 'linux'
-        data = {'ami id': instance.image_id, 'instance type': instance.instance_type, 'platform': platform}
+        data = [AdditionalData('AMI ID', instance.image_id),
+                AdditionalData('instance type', instance.instance_type),
+                AdditionalData('platform', platform),
+                AdditionalData('VPC ID', vpc_id, hidden=True)
+                ]
         return data
 
     def _get_vm_network_data(self, instance):
@@ -20,13 +24,12 @@ class VmDetailsProvider(object):
 
         instance.reload()
         if instance.network_interfaces:
-            for network_interface in instance.network_interfaces:
+            network_interfaces = sorted(instance.network_interfaces, key=lambda x: x.attachment.get("DeviceIndex"))
+            for network_interface in network_interfaces:
                 network_interface_object = {
                     "interface_id": network_interface.network_interface_id,
                     "network_id": network_interface.subnet_id,
-                    "network_data": {
-                        "ip": network_interface.private_ip_address
-                    }
+                    "network_data": [AdditionalData("IP", network_interface.private_ip_address)]
                 }
 
                 is_attached_to_elastic_ip = self._has_elastic_ip(network_interface)
@@ -36,15 +39,15 @@ class VmDetailsProvider(object):
                 if is_primary:
                     network_interface_object["is_primary"] = is_primary
 
-                network_interface_object["network_data"]["elastic ip"] = is_attached_to_elastic_ip
-                network_interface_object["network_data"]["public ip"] = public_ip
+                network_interface_object["network_data"].append(AdditionalData("Public IP", public_ip))
+                network_interface_object["network_data"].append(AdditionalData("Elastic IP", is_attached_to_elastic_ip))
 
-                network_interface_object["network_data"]["mac address"] = network_interface.mac_address
-                network_interface_object["network_data"]["device index"] = \
-                    network_interface.attachment.get("DeviceIndex")
+                network_interface_object["network_data"].append(AdditionalData("MAC Address", network_interface.mac_address))
 
                 network_interface_objects.append(network_interface_object)
 
+
+        # TODO sort by device index
         return network_interface_objects
 
     def _calculate_public_ip(self, interface):
@@ -78,3 +81,16 @@ class VmNetworkData(object):
         self.network_id = {} # type: str
         self.is_primary = False # type: bool
         self.network_data = {} # type: dict
+
+
+def AdditionalData(key, value, hidden=False):
+    """
+    :type key: str
+    :type value: str
+    :type hidden: bool
+    """
+    return {
+        "key": key,
+        "value": value,
+        "hidden": hidden
+    }
