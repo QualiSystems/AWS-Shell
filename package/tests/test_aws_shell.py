@@ -65,7 +65,6 @@ class TestAWSShell(TestCase):
         deploymock.autoload = "True"
         deploymock.cloud_provider = "some_name"
         deploymock.app_name = 'my instance name'
-        deploymock.vpc_id = 'vpc_id'
         cancellation_context = Mock()
 
         result = DeployResult(vm_name=deploymock.app_name,
@@ -80,7 +79,6 @@ class TestAWSShell(TestCase):
                               deployed_app_address='',
                               public_ip='',
                               network_configuration_results=[],
-                              vpc_id=deploymock.vpc_id,
                               vm_details_data=dict())
 
         self.aws_shell.model_parser.convert_to_deployment_resource_model = Mock(return_value=deploymock)
@@ -102,7 +100,6 @@ class TestAWSShell(TestCase):
         self.assertEqual(decoded_res['auto_delete'], deploymock.auto_delete)
         self.assertEqual(decoded_res['autoload'], deploymock.autoload)
         self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider)
-        self.assertEqual(decoded_res['vpc_id'], deploymock.vpc_id)
         self.aws_shell.deploy_ami_operation.deploy.assert_called_with(
                 ec2_session=self.expected_shell_context.aws_api.ec2_session,
                 s3_session=self.expected_shell_context.aws_api.s3_session,
