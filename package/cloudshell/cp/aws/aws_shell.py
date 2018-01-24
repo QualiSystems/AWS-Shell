@@ -360,18 +360,26 @@ class AWSShell(object):
 
                 return json_result
 
-    def get_vm_details(self, context):
+    def get_vm_details(self, context, cancellation_context, requests_json):
         """
         Get vm details for specific deployed app
-        :type context: ResourceRemoteCommandContext
+        :type context: ResourceCommandContext
         :rtype str
         """
-        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
-            with ErrorHandlingContext(shell_context.logger):
-                shell_context.logger.info('Get VmDetails')
-                instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(context)
-                vm_details = self.vm_details_operation.get_vm_details(instance_id, shell_context.aws_api.ec2_session)
-                return self.command_result_parser.set_command_result(vm_details)
+        results = []
+        vm_uids = [item.DeployedAppJson.Vmdetails.UID for item in DeployDataHolder(jsonpickle.decode(requests_json)).items]
+
+        for uid in vm_uids:
+            if cancellation_context.is_cancelled:
+                break
+
+            with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+                with ErrorHandlingContext(shell_context.logger):
+                    shell_context.logger.info('Get VmDetails')
+                    vm_details = self.vm_details_operation.get_vm_details(uid, shell_context.aws_api.ec2_session)
+                    results.append(vm_details)
+
+        return self.command_result_parser.set_command_result(results)
 
     @staticmethod
     def _get_reservation_id(context):
