@@ -1,8 +1,9 @@
 import jsonpickle
+
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
-
+from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetails
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
@@ -367,17 +368,25 @@ class AWSShell(object):
         :rtype str
         """
         results = []
-        vm_uids = [item.DeployedAppJson.Vmdetails.UID for item in DeployDataHolder(jsonpickle.decode(requests_json)).items]
+        vmDetailsRequests = [VmDetailsRequest(item) for item in
+                             DeployDataHolder(jsonpickle.decode(requests_json)).items]
 
-        for uid in vm_uids:
+        for request in vmDetailsRequests:
             if cancellation_context.is_cancelled:
                 break
 
-            with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
-                with ErrorHandlingContext(shell_context.logger):
-                    shell_context.logger.info('Get VmDetails')
-                    vm_details = self.vm_details_operation.get_vm_details(uid, shell_context.aws_api.ec2_session)
-                    results.append(vm_details)
+            try:
+                with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+                    with ErrorHandlingContext(shell_context.logger):
+                        shell_context.logger.info('Get VmDetails')
+                        vm_details = self.vm_details_operation.get_vm_details(request.uuid, shell_context.aws_api.ec2_session)
+                        vm_details.app_name = request.app_name
+                        results.append(vm_details)
+            except Exception as e:
+                result = VmDetails()
+                result.app_name = request.app_name
+                result.error = e.message
+                results.append(result)
 
         return self.command_result_parser.set_command_result(results)
 
@@ -388,3 +397,9 @@ class AWSShell(object):
         if reservation:
             reservation_id = reservation.reservation_id
         return reservation_id
+
+
+class VmDetailsRequest(object):
+    def __init__(self, item):
+        self.uuid = item.deployedAppJson.vmdetails.uid
+        self.app_name = item.deployedAppJson.name
