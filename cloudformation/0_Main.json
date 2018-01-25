@@ -183,8 +183,8 @@
 		},
 		"8InstanceType": {
 			"Type": "String",
-			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c3.xlarge.",
-			"Default": "c3.xlarge"
+			"Description": "The instance type to be used for the Execution Server and QuailX instances. The minimum recommended instance type is c4.xlarge.",
+			"Default": "c4.xlarge"
 		},
 		"ZUsername": {
 			"Type": "String",
