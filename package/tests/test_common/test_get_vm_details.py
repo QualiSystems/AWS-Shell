@@ -8,7 +8,7 @@ class TestGetVmDetails(TestCase):
     def test_get_vm_details(self):
         shell = AWSShell()
 
-        requests_json = encode({'items': [{'deployedAppJson': {'vmdetails': {'uui': '514'}}}]})
+        requests_json = encode({'items': [{'deployedAppJson': {'vmdetails': {'uid': '514'}}}]})
 
         #
         # requests_json = """{ 'Items': [{ 'DeployedAppJson': {
