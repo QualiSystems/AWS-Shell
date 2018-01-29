@@ -12,10 +12,15 @@ class VmDetailsProvider(object):
     def _get_vm_instance_data(self, instance, vpc_id):
         # if not windows, instance platform is empty; therefore we default to linux
         platform = instance.platform or 'linux'
+        volume = self._get_volume(instance)
         data = [AdditionalData('AMI ID', instance.image_id),
                 AdditionalData('instance type', instance.instance_type),
                 AdditionalData('platform', platform),
-                AdditionalData('VPC ID', vpc_id, hidden=True)
+                AdditionalData('Storage Name', self._get_volume_id(volume)),
+                AdditionalData('Storage Type', self._get_volume_type(volume)),
+                AdditionalData('Storage Size', self._get_volume_size(volume)),
+                AdditionalData('VPC ID', vpc_id, hidden=True),
+                AdditionalData('Availability Zone', self._get_availability_zone(instance), hidden=True)
                 ]
         return data
 
@@ -67,6 +72,22 @@ class VmDetailsProvider(object):
 
     def _is_primary_interface(self, interface):
         return interface.attachment.get("DeviceIndex") == 0
+
+    @staticmethod
+    def _get_volume(instance):
+        return next((v for v in instance.volumes.all()), None)
+
+    def _get_availability_zone(self, instance):
+        return instance.placement.get('AvailabilityZone', None)
+
+    def _get_volume_size(self, volume):
+        return '{0} {1}'.format(volume.size, 'GiB') if volume else None
+
+    def _get_volume_type(self, volume):
+        return volume.volume_type if volume else None
+
+    def _get_volume_id(self, volume):
+        return volume.volume_id if volume else None
 
 
 class VmDetails(object):
