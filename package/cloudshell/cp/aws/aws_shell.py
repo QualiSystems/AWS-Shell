@@ -47,6 +47,7 @@ from cloudshell.shell.core.driver_context import CancellationContext
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
+from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
 
 
 class AWSShell(object):
@@ -269,7 +270,8 @@ class AWSShell(object):
                         command_context)
 
                     # Get Allow all Storage Traffic on deployed resource
-                    allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(command_context)
+                    allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(
+                        command_context)
 
                     return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
                         ec2_session=shell_context.aws_api.ec2_session,
@@ -289,8 +291,9 @@ class AWSShell(object):
                 with self.client_err_wrapepr.wrap():
                     shell_context.logger.info('Deploying AMI')
 
-                    aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request,
-                                                                                                      command_context.resource)
+                    aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(
+                        deployment_request,
+                        command_context.resource)
 
                     deploy_data = self.deploy_ami_operation \
                         .deploy(ec2_session=shell_context.aws_api.ec2_session,
@@ -318,7 +321,8 @@ class AWSShell(object):
                     private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
                         command_context)
                     # Get Public IP on deployed resource
-                    public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(command_context)
+                    public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(
+                        command_context)
                     # Get instance id
                     deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
                         command_context)
@@ -380,7 +384,7 @@ class AWSShell(object):
         """
         results = []
         vm_details_requests = [VmDetailsRequest(item) for item in
-                             DeployDataHolder(jsonpickle.decode(requests_json)).items]
+                               DeployDataHolder(jsonpickle.decode(requests_json)).items]
 
         for request in vm_details_requests:
             if cancellation_context.is_cancelled:
@@ -391,7 +395,8 @@ class AWSShell(object):
                     with ErrorHandlingContext(shell_context.logger):
                         with self.client_err_wrapepr.wrap():
                             shell_context.logger.info('Get VmDetails')
-                            vm_details = self.vm_details_operation.get_vm_details(request.uuid, shell_context.aws_api.ec2_session)
+                            vm_details = self.vm_details_operation.get_vm_details(request.uuid,
+                                                                                  shell_context.aws_api.ec2_session)
                             vm_details.app_name = request.app_name
                             results.append(vm_details)
             except Exception as e:
@@ -409,9 +414,3 @@ class AWSShell(object):
         if reservation:
             reservation_id = reservation.reservation_id
         return reservation_id
-
-
-class VmDetailsRequest(object):
-    def __init__(self, item):
-        self.uuid = item.deployedAppJson.vmdetails.uid
-        self.app_name = item.deployedAppJson.name
