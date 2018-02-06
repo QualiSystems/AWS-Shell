@@ -8,7 +8,7 @@ from cloudshell.cp.aws.models.reservation_model import ReservationModel
 
 class TestTagService(TestCase):
     def setUp(self):
-        self.tag_service = TagService()
+        self.tag_service = TagService(MagicMock())
 
     def test_get_security_group_tags(self):
         reservation_context = Mock()
@@ -46,7 +46,6 @@ class TestTagService(TestCase):
                                {'Value': 'Owner', 'Key': 'Owner'},
                                {'Value': 'Global', 'Key': 'Domain'},
                                {'Value': 'ReservationId', 'Key': 'ReservationId'}])
-
 
     def test_set_ec2_resource_tag(self):
         resource = Mock()
