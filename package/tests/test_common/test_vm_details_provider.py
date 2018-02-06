@@ -15,6 +15,7 @@ class TestVmDetailsProvider(TestCase):
         instance.instance_type = 'instance_type'
         instance.platform = 'instance_platform'
         instance.network_interfaces = []
+        instance.volumes.all = lambda: []
 
         vm_instance_data = self.vm_details_provider.create(instance).vm_instance_data
 
