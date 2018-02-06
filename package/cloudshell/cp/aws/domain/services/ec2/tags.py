@@ -28,11 +28,8 @@ class TypeTagValues(object):
 class TagService(object):
     CREATED_BY_QUALI = "Cloudshell"
 
-    def __init__(self, client_err_wrapper):
-        """
-        :param cloudshell.cp.aws.domain.context.client_error.ClientErrorWrapper client_err_wrapper:
-        """
-        self.client_err_wrapper = client_err_wrapper
+    def __init__(self):
+        pass
 
     def get_security_group_tags(self, name, isolation, reservation, type=None):
         """
@@ -107,7 +104,7 @@ class TagService(object):
     def get_is_public_tag(self, value):
         return self._get_kvp(TagNames.IsPublic, str(value))
 
-    @retry(stop_max_attempt_number=30, wait_fixed=1000)
+    @retry(stop_max_attempt_number=10, wait_fixed=1000)
     def set_ec2_resource_tags(self, resource, tags):
         """
         Will set tags on a EC2 resource
@@ -116,8 +113,7 @@ class TagService(object):
         :type tags: list[dict]
         :return:
         """
-        with self.client_err_wrapper.wrap():
-            resource.create_tags(Tags=tags)
+        resource.create_tags(Tags=tags)
 
     def get_created_by_kvp(self):
         return self._get_kvp(TagNames.CreatedBy, TagService.CREATED_BY_QUALI)
