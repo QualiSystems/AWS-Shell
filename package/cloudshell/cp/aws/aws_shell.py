@@ -15,6 +15,7 @@ from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvide
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
+from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
@@ -52,7 +53,8 @@ class AWSShell(object):
     def __init__(self):
         self.command_result_parser = CommandResultsParser()
         self.cancellation_service = CommandCancellationService()
-        self.tag_service = TagService()
+        self.client_err_wrapper = ClientErrorWrapper()
+        self.tag_service = TagService(client_err_wrapper=self.client_err_wrapper)
         self.ec2_instance_waiter = InstanceWaiter(cancellation_service=self.cancellation_service)
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
