@@ -54,7 +54,8 @@ class AWSShell(object):
     def __init__(self):
         self.command_result_parser = CommandResultsParser()
         self.cancellation_service = CommandCancellationService()
-        self.tag_service = TagService()
+        self.client_err_wrapper = ClientErrorWrapper()
+        self.tag_service = TagService(client_err_wrapper=self.client_err_wrapper)
         self.ec2_instance_waiter = InstanceWaiter(cancellation_service=self.cancellation_service)
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
@@ -76,7 +77,6 @@ class AWSShell(object):
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
-        self.client_err_wrapepr = ClientErrorWrapper()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -148,21 +148,20 @@ class AWSShell(object):
 
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Cleanup Connectivity')
+                shell_context.logger.info('Cleanup Connectivity')
 
-                    connectivity_actions = self._request_str_to_actions_list(request)
+                connectivity_actions = self._request_str_to_actions_list(request)
 
-                    result = self.clean_up_operation \
-                        .cleanup(ec2_client=shell_context.aws_api.ec2_client,
-                                 ec2_session=shell_context.aws_api.ec2_session,
-                                 s3_session=shell_context.aws_api.s3_session,
-                                 aws_ec2_data_model=shell_context.aws_ec2_resource_model,
-                                 reservation_id=command_context.reservation.reservation_id,
-                                 actions=connectivity_actions,
-                                 logger=shell_context.logger)
-                    return self.command_result_parser.set_command_result(
-                        {'driverResponse': {'actionResults': [result]}})
+                result = self.clean_up_operation \
+                    .cleanup(ec2_client=shell_context.aws_api.ec2_client,
+                             ec2_session=shell_context.aws_api.ec2_session,
+                             s3_session=shell_context.aws_api.s3_session,
+                             aws_ec2_data_model=shell_context.aws_ec2_resource_model,
+                             reservation_id=command_context.reservation.reservation_id,
+                             actions=connectivity_actions,
+                             logger=shell_context.logger)
+                return self.command_result_parser.set_command_result(
+                    {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, request, cancellation_context):
         """
@@ -175,23 +174,22 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Prepare Connectivity')
+                shell_context.logger.info('Prepare Connectivity')
 
-                    # parse request
-                    connectivity_actions = self._request_str_to_actions_list(request)
+                # parse request
+                connectivity_actions = self._request_str_to_actions_list(request)
 
-                    results = self.prepare_connectivity_operation.prepare_connectivity(
-                        ec2_client=shell_context.aws_api.ec2_client,
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        s3_session=shell_context.aws_api.s3_session,
-                        reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
-                        aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
-                        actions=connectivity_actions,
-                        cancellation_context=cancellation_context,
-                        logger=shell_context.logger)
+                results = self.prepare_connectivity_operation.prepare_connectivity(
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    s3_session=shell_context.aws_api.s3_session,
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                    aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                    actions=connectivity_actions,
+                    cancellation_context=cancellation_context,
+                    logger=shell_context.logger)
 
-                    return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
+                return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
 
     def _request_str_to_actions_list(self, request):
         decoded_request = jsonpickle.decode(request)
@@ -207,16 +205,15 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Power On')
+                shell_context.logger.info('Power On')
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                resource = command_context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                    self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
-                                                             ami_id=data_holder.vmdetails.uid)
+                self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
+                                                         ami_id=data_holder.vmdetails.uid)
 
-                    shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
+                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
 
     def power_off_ami(self, command_context):
         """
@@ -225,16 +222,15 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Power Off')
+                shell_context.logger.info('Power Off')
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                resource = command_context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                    self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
-                                                              ami_id=data_holder.vmdetails.uid)
+                self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
+                                                          ami_id=data_holder.vmdetails.uid)
 
-                    shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
+                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
 
     def delete_instance(self, command_context):
         """
@@ -243,15 +239,14 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Delete instance')
+                shell_context.logger.info('Delete instance')
 
-                    resource = command_context.remote_endpoints[0]
-                    data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                resource = command_context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
 
-                    self.delete_ami_operation.delete_instance(logger=shell_context.logger,
-                                                              ec2_session=shell_context.aws_api.ec2_session,
-                                                              instance_id=data_holder.vmdetails.uid)
+                self.delete_ami_operation.delete_instance(logger=shell_context.logger,
+                                                          ec2_session=shell_context.aws_api.ec2_session,
+                                                          instance_id=data_holder.vmdetails.uid)
 
     def get_application_ports(self, command_context):
         """
@@ -261,23 +256,22 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Get Application Ports')
-                    resource = command_context.remote_endpoints[0]
+                shell_context.logger.info('Get Application Ports')
+                resource = command_context.remote_endpoints[0]
 
-                    # Get instance id
-                    deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
-                        command_context)
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                    command_context)
 
-                    # Get Allow all Storage Traffic on deployed resource
-                    allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(
-                        command_context)
+                # Get Allow all Storage Traffic on deployed resource
+                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(
+                    command_context)
 
-                    return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        instance_id=deployed_instance_id,
-                        resource=resource,
-                        allow_all_storage_traffic=allow_all_storage_traffic)
+                return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    instance_id=deployed_instance_id,
+                    resource=resource,
+                    allow_all_storage_traffic=allow_all_storage_traffic)
 
     def deploy_ami(self, command_context, deployment_request, cancellation_context):
         """
@@ -288,25 +282,24 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Deploying AMI')
+                shell_context.logger.info('Deploying AMI')
 
-                    aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(
-                        deployment_request,
-                        command_context.resource)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(
+                    deployment_request,
+                    command_context.resource)
 
-                    deploy_data = self.deploy_ami_operation \
-                        .deploy(ec2_session=shell_context.aws_api.ec2_session,
-                                s3_session=shell_context.aws_api.s3_session,
-                                name=aws_ami_deployment_model.app_name,
-                                reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
-                                aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
-                                ami_deployment_model=aws_ami_deployment_model,
-                                ec2_client=shell_context.aws_api.ec2_client,
-                                cancellation_context=cancellation_context,
-                                logger=shell_context.logger)
+                deploy_data = self.deploy_ami_operation \
+                    .deploy(ec2_session=shell_context.aws_api.ec2_session,
+                            s3_session=shell_context.aws_api.s3_session,
+                            name=aws_ami_deployment_model.app_name,
+                            reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                            aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
+                            ami_deployment_model=aws_ami_deployment_model,
+                            ec2_client=shell_context.aws_api.ec2_client,
+                            cancellation_context=cancellation_context,
+                            logger=shell_context.logger)
 
-                    return self.command_result_parser.set_command_result(deploy_data)
+                return self.command_result_parser.set_command_result(deploy_data)
 
     def refresh_ip(self, command_context):
         """
@@ -314,27 +307,26 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Refresh IP')
+                shell_context.logger.info('Refresh IP')
 
-                    # Get Private Ip on deployed resource
-                    private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
-                        command_context)
-                    # Get Public IP on deployed resource
-                    public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(
-                        command_context)
-                    # Get instance id
-                    deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
-                        command_context)
-                    # Get connected resource name
-                    resource_fullname = self.model_parser.get_connectd_resource_fullname(command_context)
+                # Get Private Ip on deployed resource
+                private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
+                    command_context)
+                # Get Public IP on deployed resource
+                public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(
+                    command_context)
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
+                    command_context)
+                # Get connected resource name
+                resource_fullname = self.model_parser.get_connectd_resource_fullname(command_context)
 
-                    self.refresh_ip_operation.refresh_ip(cloudshell_session=shell_context.cloudshell_session,
-                                                         ec2_session=shell_context.aws_api.ec2_session,
-                                                         deployed_instance_id=deployed_instance_id,
-                                                         private_ip_on_resource=private_ip_on_resource,
-                                                         public_ip_on_resource=public_ip_on_resource,
-                                                         resource_fullname=resource_fullname)
+                self.refresh_ip_operation.refresh_ip(cloudshell_session=shell_context.cloudshell_session,
+                                                     ec2_session=shell_context.aws_api.ec2_session,
+                                                     deployed_instance_id=deployed_instance_id,
+                                                     private_ip_on_resource=private_ip_on_resource,
+                                                     public_ip_on_resource=public_ip_on_resource,
+                                                     resource_fullname=resource_fullname)
 
     def get_access_key(self, command_context):
         """
@@ -344,12 +336,11 @@ class AWSShell(object):
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('GetAccessKey')
-                    reservation_id = self._get_reservation_id(command_context)
-                    return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
-                                                                    aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
-                                                                    reservation_id=reservation_id)
+                shell_context.logger.info('GetAccessKey')
+                reservation_id = self._get_reservation_id(command_context)
+                return self.access_key_operation.get_access_key(s3_session=shell_context.aws_api.s3_session,
+                                                                aws_ec2_resource_model=shell_context.aws_ec2_resource_model,
+                                                                reservation_id=reservation_id)
 
     def set_app_security_groups(self, context, request):
         """
@@ -360,21 +351,20 @@ class AWSShell(object):
         """
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
-                with self.client_err_wrapepr.wrap():
-                    shell_context.logger.info('Set App Security Groups')
+                shell_context.logger.info('Set App Security Groups')
 
-                    reservation = self.model_parser.convert_to_reservation_model(context.reservation)
-                    app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
+                reservation = self.model_parser.convert_to_reservation_model(context.reservation)
+                app_security_group_models = self.model_parser.convert_to_app_security_group_models(request)
 
-                    result = self.set_app_security_groups_operation.set_apps_security_groups(
-                        app_security_group_models=app_security_group_models,
-                        reservation=reservation,
-                        ec2_session=shell_context.aws_api.ec2_session,
-                        logger=shell_context.logger)
+                result = self.set_app_security_groups_operation.set_apps_security_groups(
+                    app_security_group_models=app_security_group_models,
+                    reservation=reservation,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    logger=shell_context.logger)
 
-                    json_result = SetAppSecurityGroupActionResult.to_json(result)
+                json_result = SetAppSecurityGroupActionResult.to_json(result)
 
-                    return json_result
+                return json_result
 
     def get_vm_details(self, context, cancellation_context, requests_json):
         """
@@ -393,12 +383,11 @@ class AWSShell(object):
             try:
                 with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
                     with ErrorHandlingContext(shell_context.logger):
-                        with self.client_err_wrapepr.wrap():
-                            shell_context.logger.info('Get VmDetails')
-                            vm_details = self.vm_details_operation.get_vm_details(request.uuid,
-                                                                                  shell_context.aws_api.ec2_session)
-                            vm_details.app_name = request.app_name
-                            results.append(vm_details)
+                        shell_context.logger.info('Get VmDetails')
+                        vm_details = self.vm_details_operation.get_vm_details(request.uuid,
+                                                                              shell_context.aws_api.ec2_session)
+                        vm_details.app_name = request.app_name
+                        results.append(vm_details)
             except Exception as e:
                 result = VmDetails()
                 result.app_name = request.app_name
