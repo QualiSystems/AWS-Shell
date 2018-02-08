@@ -48,11 +48,10 @@ class VmDetailsProvider(object):
                 network_interface_object["network_data"].append(AdditionalData("Elastic IP", is_attached_to_elastic_ip))
 
                 network_interface_object["network_data"].append(AdditionalData("MAC Address", network_interface.mac_address))
+                network_interface_object["network_data"].append(AdditionalData("Device Index", network_interface.attachment.get("DeviceIndex")))
 
                 network_interface_objects.append(network_interface_object)
 
-
-        # TODO sort by device index
         return network_interface_objects
 
     def _calculate_public_ip(self, interface):
