@@ -115,6 +115,9 @@
 			}
 		}
 	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "8HighAvailabilityMode"}, "True"]}
+	},
 	"Resources": {
 		"AMILookup": {
 			"Type": "AWS::CloudFormation::Stack",
@@ -153,7 +156,11 @@
 						"Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
 					},
 					"AZ2": {
-						"Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
+						"Fn::If" : [
+							"IsHighAvailabilityMode",
+							{"Fn::Select": [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]},
+							"NULL"
+						]
 					},
 					"HA": {
 						"Ref": "8HighAvailabilityMode"
