@@ -64,5 +64,5 @@ class AWSShellDriver(ResourceDriverInterface):
     def SetAppSecurityGroups(self, context, request):
         return self.aws_shell.set_app_security_groups(context, request)
 
-    def GetVmDetails(self, context, ports):
-        return self.aws_shell.get_vm_details(context)
+    def GetVmDetails(self, context, cancellation_context, requests):
+        return self.aws_shell.get_vm_details(context, cancellation_context, requests)

@@ -15,12 +15,13 @@ class TestVmDetailsProvider(TestCase):
         instance.instance_type = 'instance_type'
         instance.platform = 'instance_platform'
         instance.network_interfaces = []
+        instance.volumes.all = lambda: []
 
         vm_instance_data = self.vm_details_provider.create(instance).vm_instance_data
 
-        self.assertTrue(vm_instance_data['ami id'] == instance.image_id)
-        self.assertTrue(vm_instance_data['instance type'] == instance.instance_type)
-        self.assertTrue(vm_instance_data['platform'] == instance.platform)
+        self.assertTrue(self._get_value(vm_instance_data, 'AMI ID') == instance.image_id)
+        self.assertTrue(self._get_value(vm_instance_data, 'instance type') == instance.instance_type)
+        self.assertTrue(self._get_value(vm_instance_data, 'platform') == instance.platform)
 
     def test_prepare_network_interface_objects_with_elastic_ip(self):
         # elastic_ip
@@ -46,11 +47,11 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
-        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device index'] == 0)
-        self.assertTrue(nio['network_data']['elastic ip'] == True)
-        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public ip'] == 'public_ip')
+        nio_data = nio['network_data']
+        self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
+        self.assertTrue(self._get_value(nio_data, 'Elastic IP') == True)
+        self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
+        self.assertTrue(self._get_value(nio_data, 'Public IP') == 'public_ip')
 
     def test_prepare_network_interface_objects_with_public_ip(self):
         network_interface = Mock()
@@ -75,11 +76,11 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue(nio['is_primary'] == True)
-        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device index'] == 0)
-        self.assertTrue('is_elastic_ip' not in nio['network_data'])
-        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
-        self.assertTrue('public_ip' not in nio['network_data'])
+        nio_data = nio['network_data']
+        self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
+        self.assertTrue(self._get_value(nio_data, 'Elastic IP') == False)
+        self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
+        self.assertTrue(self._get_value(nio_data, 'Public IP') == '')
 
     def test_prepare_network_interface_objects_without_public_ip(self):
         network_interface = Mock()
@@ -103,8 +104,14 @@ class TestVmDetailsProvider(TestCase):
         self.assertTrue(nio['interface_id'] == 'interface_id')
         self.assertTrue(nio['network_id'] == 'subnet_id')
         self.assertTrue('is_primary' not in nio)
-        self.assertTrue(nio['network_data']['mac address'] == 'mac_address')
-        self.assertTrue(nio['network_data']['device index'] == 1)
-        self.assertTrue( nio['network_data']['elastic ip'] == False)
-        self.assertTrue(nio['network_data']['ip'] == 'private_ip')
-        self.assertTrue(nio['network_data']['public ip'] == "")
+        nio_data = nio['network_data']
+        self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
+        self.assertTrue(self._get_value(nio_data, 'Elastic IP') == False)
+        self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
+        self.assertTrue(self._get_value(nio_data, 'Public IP') == "")
+
+    def _get_value(self, data, key):
+        for item in data:
+            if item['key'] == key:
+                return item['value']
+        return None

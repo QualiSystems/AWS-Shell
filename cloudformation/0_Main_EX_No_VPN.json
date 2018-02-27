@@ -78,81 +78,57 @@
 	"Mappings": {
 		"AMIFromRegion": {
 			"us-east-1": {
-				"QualixAMI": "ami-6d1c2007",
-				"ESAMI": "ami-6d1c2007",
-				"NatAMI": "ami-4868ab25",
-				"QSAMI":"ami-5648ad2c"
-
+				"NatAMI": "ami-4868ab25"
 			},
 			"us-east-2": {
-				"QualixAMI": "ami-6a2d760f",
-				"ESAMI": "ami-6a2d760f",
-				"NatAMI": "ami-92a6fef7",
-				"QSAMI":"ami-d3e7c5b6"
+				"NatAMI": "ami-92a6fef7"
 			},
 			"eu-west-1": {
-				"QualixAMI": "ami-7abd0209",
-				"ESAMI": "ami-7abd0209",
-				"NatAMI": "ami-a8dd45db",
-				"QSAMI":"ami-e92fec90"
+				"NatAMI": "ami-a8dd45db"
 			},
 			"us-west-1": {
-				"QualixAMI": "ami-af4333cf",
-				"ESAMI": "ami-af4333cf",
-				"NatAMI": "ami-004b0f60",
-				"QSAMI":"ami-32320452"
+				"NatAMI": "ami-004b0f60"
 			},
 			"us-west-2": {
-				"QualixAMI": "ami-d2c924b2",
-				"ESAMI": "ami-d2c924b2",
-				"NatAMI": "ami-a275b1c2",
-				"QSAMI":"ami-47897a3f"
+				"NatAMI": "ami-a275b1c2"
 			},
 			"ap-south-1": {
-				"QualixAMI": "ami-95cda6fa",
-				"ESAMI": "ami-95cda6fa",
-				"NatAMI": "ami-e2b9d38d",
-				"QSAMI":"ami-6af0b705"
+				"NatAMI": "ami-e2b9d38d"
 			},
 			"ap-northeast-2": {
-				"QualixAMI": "ami-c74789a9",
-				"ESAMI": "ami-c74789a9",
-				"NatAMI": "ami-d14388bf",
-				"QSAMI":"ami-073be069"
+				"NatAMI": "ami-d14388bf"
 			},
 			"ap-southeast-1": {
-				"QualixAMI": "ami-f068a193",
-				"ESAMI": "ami-f068a193",
-				"NatAMI": "ami-a79b49c4",
-				"QSAMI":"ami-1c61147f"
+				"NatAMI": "ami-a79b49c4"
 			},
 			"ap-southeast-2": {
-				"QualixAMI": "ami-fedafc9d",
-				"ESAMI": "ami-fedafc9d",
-				"NatAMI": "ami-53371f30",
-				"QSAMI":"ami-663bdc04"
+				"NatAMI": "ami-53371f30"
 			},
 			"ap-northeast-1": {
-				"QualixAMI": "ami-eec1c380",
-				"ESAMI": "ami-eec1c380",
-				"NatAMI": "ami-2443b745",
-				"QSAMI":"ami-de8d40b8"
+				"NatAMI": "ami-2443b745"
 			},
 			"eu-central-1": {
-				"QualixAMI": "ami-9bf712f4",
-				"ESAMI": "ami-9bf712f4",
-				"NatAMI": "ami-5825cd37",
-				"QSAMI":"ami-da9b14b5"
+				"NatAMI": "ami-5825cd37"
 			},
 			"sa-east-1": {
-				"QualixAMI": "ami-26b93b4a",
-				"ESAMI": "ami-26b93b4a",
-				"NatAMI": "ami-9336bcff",
-				"QSAMI":"ami-1d364b71"
+				"NatAMI": "ami-9336bcff"
 			}
 		}
 	},
+	"Conditions": {
+		"IsHighAvailabilityMode": {"Fn::Equals": [{"Ref": "8HighAvailabilityMode"}, "True"]}
+	},
 	"Resources": {
+		"AMILookup": {
+			"Type": "AWS::CloudFormation::Stack",
+			"Properties": {
+				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/AMI_Lookup.json",
+				"Parameters": {
+					"LookupLatestWindowsServerAmi": "True",
+					"LookupLatestCentosAmi": "True"
+				}
+			}
+		},
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
@@ -180,7 +156,11 @@
 						"Fn::Select" : [ "0", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
 					},
 					"AZ2": {
-						"Fn::Select" : [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]
+						"Fn::If" : [
+							"IsHighAvailabilityMode",
+							{"Fn::Select": [ "1", { "Fn::GetAZs" : { "Ref" : "AWS::Region" } } ]},
+							"NULL"
+						]
 					},
 					"HA": {
 						"Ref": "8HighAvailabilityMode"
@@ -233,25 +213,16 @@
 						"Outputs.SG3id"]
 					},
 					"QualixAMI": {
-						"Fn::FindInMap": ["AMIFromRegion",
-						{
-							"Ref": "AWS::Region"
-						},
-						"QualixAMI"]
+						"Fn::GetAtt": ["AMILookup",
+						"Outputs.CentosAMI"]
 					},
 					"ESAMI": {
-						"Fn::FindInMap": ["AMIFromRegion",
-						{
-							"Ref": "AWS::Region"
-						},
-						"ESAMI"]
+						"Fn::GetAtt": ["AMILookup",
+						"Outputs.CentosAMI"]
 					},
 					"QSAMI": {
-						"Fn::FindInMap": ["AMIFromRegion",
-						{
-							"Ref": "AWS::Region"
-						},
-						"QSAMI"]
+						"Fn::GetAtt": ["AMILookup",
+						"Outputs.WindowsAMI"]
 					},
 					"KeyPair": {
 						"Ref": "5KeyPair"

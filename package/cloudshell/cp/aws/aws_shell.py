@@ -1,8 +1,8 @@
 import jsonpickle
+
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
-from cloudshell.shell.core.session.logging_session import LoggingSessionContext
-
+from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetails
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
@@ -15,6 +15,7 @@ from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvide
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
+from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
@@ -46,13 +47,15 @@ from cloudshell.shell.core.driver_context import CancellationContext
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
+from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
 
 
 class AWSShell(object):
     def __init__(self):
         self.command_result_parser = CommandResultsParser()
         self.cancellation_service = CommandCancellationService()
-        self.tag_service = TagService()
+        self.client_err_wrapper = ClientErrorWrapper()
+        self.tag_service = TagService(client_err_wrapper=self.client_err_wrapper)
         self.ec2_instance_waiter = InstanceWaiter(cancellation_service=self.cancellation_service)
         self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
@@ -261,7 +264,8 @@ class AWSShell(object):
                     command_context)
 
                 # Get Allow all Storage Traffic on deployed resource
-                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(command_context)
+                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(
+                    command_context)
 
                 return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
                     ec2_session=shell_context.aws_api.ec2_session,
@@ -280,8 +284,9 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Deploying AMI')
 
-                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(deployment_request,
-                                                                                                  command_context.resource)
+                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(
+                    deployment_request,
+                    command_context.resource)
 
                 deploy_data = self.deploy_ami_operation \
                     .deploy(ec2_session=shell_context.aws_api.ec2_session,
@@ -308,7 +313,8 @@ class AWSShell(object):
                 private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
                     command_context)
                 # Get Public IP on deployed resource
-                public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(command_context)
+                public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(
+                    command_context)
                 # Get instance id
                 deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
                     command_context)
@@ -360,18 +366,35 @@ class AWSShell(object):
 
                 return json_result
 
-    def get_vm_details(self, context):
+    def get_vm_details(self, context, cancellation_context, requests_json):
         """
         Get vm details for specific deployed app
-        :type context: ResourceRemoteCommandContext
+        :type context: ResourceCommandContext
         :rtype str
         """
-        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
-            with ErrorHandlingContext(shell_context.logger):
-                shell_context.logger.info('Get VmDetails')
-                instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(context)
-                vm_details = self.vm_details_operation.get_vm_details(instance_id, shell_context.aws_api.ec2_session)
-                return self.command_result_parser.set_command_result(vm_details)
+        results = []
+        vm_details_requests = [VmDetailsRequest(item) for item in
+                               DeployDataHolder(jsonpickle.decode(requests_json)).items]
+
+        for request in vm_details_requests:
+            if cancellation_context.is_cancelled:
+                break
+
+            try:
+                with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+                    with ErrorHandlingContext(shell_context.logger):
+                        shell_context.logger.info('Get VmDetails')
+                        vm_details = self.vm_details_operation.get_vm_details(request.uuid,
+                                                                              shell_context.aws_api.ec2_session)
+                        vm_details.app_name = request.app_name
+                        results.append(vm_details)
+            except Exception as e:
+                result = VmDetails()
+                result.app_name = request.app_name
+                result.error = e.message
+                results.append(result)
+
+        return self.command_result_parser.set_command_result(results)
 
     @staticmethod
     def _get_reservation_id(context):
