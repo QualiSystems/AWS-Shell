@@ -1,4 +1,3 @@
-python-dateutil==2.6.1
 boto3==1.4.5
 jsonpickle==0.9.3
 enum==0.4.6
