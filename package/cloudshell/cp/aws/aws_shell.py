@@ -213,7 +213,6 @@ class AWSShell(object):
                 self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
                                                          ami_id=data_holder.vmdetails.uid)
 
-                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
 
     def power_off_ami(self, command_context):
         """
@@ -230,7 +229,6 @@ class AWSShell(object):
                 self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
                                                           ami_id=data_holder.vmdetails.uid)
 
-                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
 
     def delete_instance(self, command_context):
         """
