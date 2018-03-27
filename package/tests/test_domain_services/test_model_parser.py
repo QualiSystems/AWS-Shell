@@ -53,6 +53,7 @@ class TestModelParser(TestCase):
                           '"Storage IOPS":"0",' \
                           '"Storage Type":"storage_type",' \
                           '"Instance Type":"t.nano",' \
+                          '"IAM Role Name":"top secret",'\
                           '"Root Volume Name":"root_vol_name",' \
                           '"Wait for IP":"False",' \
                           '"Wait for Status Check":"True",' \
@@ -78,6 +79,7 @@ class TestModelParser(TestCase):
         self.assertEquals(model.storage_iops, "0")
         self.assertEquals(model.storage_type, "storage_type")
         self.assertEquals(model.instance_type, "t.nano")
+        self.assertEquals(model.iam_role, "top secret")
         self.assertEquals(model.root_volume_name, "root_vol_name")
         self.assertFalse(model.wait_for_ip)
         self.assertTrue(model.wait_for_status_check)
@@ -98,6 +100,7 @@ class TestModelParser(TestCase):
                           '"Storage IOPS":"0",' \
                           '"Storage Type":"storage_type",' \
                           '"Instance Type":"t.nano",' \
+                          '"IAM Role Name":"top secret",'\
                           '"Root Volume Name":"root_vol_name",' \
                           '"Wait for IP":"False",' \
                           '"Wait for Status Check":"True",' \

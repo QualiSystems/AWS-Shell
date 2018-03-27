@@ -20,8 +20,12 @@ class VmDetailsProvider(object):
                 AdditionalData('Storage Type', self._get_volume_type(volume)),
                 AdditionalData('Storage Size', self._get_volume_size(volume)),
                 AdditionalData('VPC ID', vpc_id, hidden=True),
-                AdditionalData('Availability Zone', self._get_availability_zone(instance), hidden=True)
+                AdditionalData('Availability Zone', self._get_availability_zone(instance), hidden=True),
                 ]
+
+        if instance.iam_instance_profile:
+            data.append(AdditionalData('IAM Role', instance.iam_instance_profile["Arn"]))
+
         return data
 
     def _get_vm_network_data(self, instance):

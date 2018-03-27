@@ -44,15 +44,14 @@ class TestInstanceService(TestCase):
                                                     cancellation_context=cancellation_context,
                                                     logger=Mock())
 
-
         self.ec2_session.create_instances.assert_called_once_with(ImageId=ami_dep.aws_ami_id,
                                                                   MinCount=ami_dep.min_count,
                                                                   MaxCount=ami_dep.max_count,
                                                                   InstanceType=ami_dep.instance_type,
+                                                                  IamInstanceProfile=ami_dep.iam_role,
                                                                   KeyName=ami_dep.aws_key,
                                                                   BlockDeviceMappings=ami_dep.block_device_mappings,
                                                                   NetworkInterfaces=ami_dep.network_interfaces)
-
 
         self.instance_waiter.wait.assert_called_once_with(instance=new_instance,
                                                           state=self.instance_waiter.RUNNING,
