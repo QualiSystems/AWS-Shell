@@ -12,8 +12,8 @@ from cloudshell.cp.aws.domain.ami_management.operations.power_operation import P
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
-from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
@@ -86,7 +86,7 @@ class AWSShell(object):
                                       sg_service=self.security_group_service,
                                       route_table_service=self.route_tables_service)
         self.prepare_connectivity_operation = \
-            PrepareConnectivityOperation(vpc_service=self.vpc_service,
+            PrepareSandboxInfraOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
                                          key_pair_service=self.key_pair_service,
                                          tag_service=self.tag_service,
@@ -120,7 +120,7 @@ class AWSShell(object):
                                                        tag_service=self.tag_service,
                                                        elastic_ip_service=self.elastic_ip_service)
 
-        self.clean_up_operation = CleanupConnectivityOperation(vpc_service=self.vpc_service,
+        self.clean_up_operation = CleanupSandboxInfraOperation(vpc_service=self.vpc_service,
                                                                key_pair_service=self.key_pair_service,
                                                                route_table_service=self.route_tables_service)
 

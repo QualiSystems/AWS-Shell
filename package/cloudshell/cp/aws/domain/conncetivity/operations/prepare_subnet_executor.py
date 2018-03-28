@@ -153,6 +153,6 @@ class PrepareSubnetExecutor(object):
             action_result.infoMessage = 'PrepareSubnet finished successfully'
         else:
             action_result.success = False
-            action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(item.error)
+            action_result.errorMessage = 'PrepareSandboxInfra ended with the error: {0}'.format(item.error)
         return action_result
 

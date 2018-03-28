@@ -3,11 +3,11 @@ from unittest import TestCase
 from mock import Mock, MagicMock, patch
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.models.network_actions_models import *
 
 
-class TestPrepareConnectivity(TestCase):
+class TestPrepareSandboxInfra(TestCase):
     def setUp(self):
         self.vpc_serv = Mock()
         self.vpc_serv.get_all_internet_gateways = Mock(return_value=[])
@@ -26,7 +26,7 @@ class TestPrepareConnectivity(TestCase):
         self.cancellation_context = Mock()
         self.subnet_service = Mock()
         self.subnet_waiter = Mock()
-        self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
+        self.prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service, self.route_table_service,
                                                          self.crypto_service, self.cancellation_service,
                                                          self.subnet_service, self.subnet_waiter)
@@ -208,7 +208,7 @@ class TestPrepareConnectivity(TestCase):
     def test_create_key_pair(self):
         key_pair_service = Mock()
         key_pair_service.load_key_pair_by_name = Mock(return_value=None)
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
                                                     self.route_table_service, self.crypto_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
@@ -233,7 +233,7 @@ class TestPrepareConnectivity(TestCase):
         security_group_service.create_security_group = Mock(return_value=sg)
 
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
                                                     self.crypto_service, self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
@@ -273,7 +273,7 @@ class TestPrepareConnectivity(TestCase):
         tags = Mock()
         self.tag_service.get_sandbox_default_security_group_tags = Mock(return_value=tags)
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
                                                     self.crypto_service, self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
@@ -309,7 +309,7 @@ class TestPrepareConnectivity(TestCase):
         security_group_service.sandbox_default_sg_name = Mock(return_value=sg_name)
         security_group_service.sandbox_isolated_sg_name = Mock(return_value=isolated_sg_name)
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
                                                     self.crypto_service, self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
@@ -333,7 +333,7 @@ class TestPrepareConnectivity(TestCase):
         vpc_service.find_vpc_for_reservation = Mock(return_value=None)
         vpc_service.create_vpc_for_reservation = Mock(return_value=vpc)
 
-        prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
+        prepare_conn = PrepareSandboxInfraOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
                                                     self.route_table_service, self.crypto_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)

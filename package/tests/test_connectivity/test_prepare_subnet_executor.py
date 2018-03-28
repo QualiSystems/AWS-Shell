@@ -7,7 +7,7 @@ from cloudshell.cp.aws.domain.services.ec2.tags import TagService, TagNames
 from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkParams, NetworkAction, PrepareSubnetParams
 
 
-class TestPrepareConnectivity(TestCase):
+class TestPrepareSandboxInfra(TestCase):
     def setUp(self):
         self.ec2_client = Mock()
         self.ec2_session = Mock()

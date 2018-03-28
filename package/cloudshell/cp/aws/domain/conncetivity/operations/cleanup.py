@@ -4,7 +4,7 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 from cloudshell.cp.aws.models.network_actions_models import ConnectivityActionResult
 
 
-class CleanupConnectivityOperation(object):
+class CleanupSandboxInfraOperation(object):
     def __init__(self, vpc_service, key_pair_service, route_table_service):
         """
         :param vpc_service: VPC Service
@@ -60,7 +60,7 @@ class CleanupConnectivityOperation(object):
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))
             result.success = False
-            result.errorMessage = 'CleanupConnectivity ended with the error: {0}'.format(exc)
+            result.errorMessage = 'CleanupSandboxInfra ended with the error: {0}'.format(exc)
         return result
 
     def _remove_keypair(self, aws_ec2_data_model, ec2_session, logger, reservation_id, s3_session):

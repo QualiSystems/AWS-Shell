@@ -13,7 +13,7 @@ from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkAction
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
-class PrepareConnectivityOperation(object):
+class PrepareSandboxInfraOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
                  cryptography_service, cancellation_service, subnet_service, subnet_waiter):
         """
@@ -66,7 +66,7 @@ class PrepareConnectivityOperation(object):
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
 
-        logger.info("PrepareConnectivity actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
+        logger.info("PrepareSandboxInfra actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
         results = []
 
         # Execute prepareNetwork action first
@@ -393,7 +393,7 @@ class PrepareConnectivityOperation(object):
         action_result = ConnectivityActionResult()
         action_result.actionId = action.id
         action_result.success = False
-        action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
+        action_result.errorMessage = 'PrepareSandboxInfra ended with the error: {0}'.format(e)
         return action_result
 
     @retry(stop_max_attempt_number=3, wait_fixed=1000)

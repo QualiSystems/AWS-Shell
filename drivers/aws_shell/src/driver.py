@@ -43,13 +43,13 @@ class AWSShellDriver(ResourceDriverInterface):
     def remote_refresh_ip(self, context, ports, cancellation_context):
         return self.aws_shell.refresh_ip(context)
 
-    def destroy_vm_only(self, context, ports):
+    def DeleteInstance(self, context, ports):
         return self.aws_shell.delete_instance(context)
 
-    def PrepareConnectivity(self, context, request, cancellation_context):
+    def PrepareSandboxInfra(self, context, request, cancellation_context):
         return self.aws_shell.prepare_connectivity(context, request, cancellation_context)
 
-    def CleanupConnectivity(self, context, request):
+    def CleanupSandboxInfra(self, context, request):
         return self.aws_shell.cleanup_connectivity(context, request)
 
     def GetApplicationPorts(self, context, ports):
