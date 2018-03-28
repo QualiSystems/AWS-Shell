@@ -38,7 +38,8 @@ class InstanceService(object):
                 InstanceType=ami_deployment_info.instance_type,
                 KeyName=ami_deployment_info.aws_key,
                 BlockDeviceMappings=ami_deployment_info.block_device_mappings,
-                NetworkInterfaces=ami_deployment_info.network_interfaces
+                NetworkInterfaces=ami_deployment_info.network_interfaces,
+                IamInstanceProfile=ami_deployment_info.iam_role
                 # PrivateIpAddress=ami_deployment_info.private_ip_address
         )[0]
 

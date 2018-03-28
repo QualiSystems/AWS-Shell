@@ -335,6 +335,7 @@ class TestDeployOperation(TestCase):
         ami_model = Mock()
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
+        ami_model.iam_role = ""
         ami_model.network_configurations = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
@@ -354,6 +355,78 @@ class TestDeployOperation(TestCase):
         self.assertEquals(aws_model.aws_key, 'keypair')
         self.assertTrue(len(aws_model.security_group_ids) == 1)
         self.assertTrue(len(aws_model.network_interfaces) == 1)
+
+    def test_create_deployment_parameters_no_iam_role(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.iam_role = ""
+        ami_model.network_configurations = None
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger,)
+
+        # if instance doesnt have iam role, the deployment params will have an empty iam instance profile dict
+        self.assertTrue(not any(aws_model.iam_role))  # not any(some_dict) => is empty dictionary
+
+    def test_create_deployment_parameters_iam_role_not_arn(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.iam_role = "admin_role"
+        ami_model.network_configurations = None
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger,)
+
+        # if instance has iam role, but not in the form of arn, will return dict with iam role name
+        self.assertTrue(aws_model.iam_role['Name'] == ami_model.iam_role)
+
+    def test_create_deployment_parameters_iam_role_arn(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.network_configurations = None
+        ami_model.iam_role = "arn:aws:iam::admin_role"
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger,)
+
+        # if instance has iam role, but not in the form of arn, will return dict with iam role name
+        self.assertTrue(aws_model.iam_role['Arn'] == ami_model.iam_role)
 
     def test_prepare_network_interfaces_multi_subnets_with_public_ip(self):
         ami_model = Mock()

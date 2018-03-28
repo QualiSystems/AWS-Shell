@@ -351,6 +351,7 @@ class DeployAMIOperation(object):
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
+        aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
         aws_model.min_count = 1
         aws_model.max_count = 1
         aws_model.instance_type = self._get_instance_item(ami_deployment_model, aws_ec2_resource_model)
@@ -372,6 +373,14 @@ class DeployAMIOperation(object):
                                              logger=logger)
 
         return aws_model
+
+    def _get_iam_instance_profile_request(self, ami_deployment_model):
+        role = ami_deployment_model.iam_role
+        if not role:
+            return dict()
+        if role.startswith('arn:'):
+            return {"Arn": role}
+        return {"Name": role}
 
     def _prepare_network_interfaces(self, vpc, ami_deployment_model, security_group_ids, network_config_results,
                                     logger):

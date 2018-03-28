@@ -92,6 +92,7 @@ class AWSModelsParser(object):
         deployment_resource_model.storage_iops = data["Attributes"]['Storage IOPS']
         deployment_resource_model.storage_type = data["Attributes"]['Storage Type']
         deployment_resource_model.instance_type = data["Attributes"]['Instance Type']
+        deployment_resource_model.iam_role = data["Attributes"]['IAM Role Name']
         deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
         deployment_resource_model.wait_for_ip = convert_to_bool(data["Attributes"]['Wait for IP'])
         deployment_resource_model.wait_for_status_check = convert_to_bool(

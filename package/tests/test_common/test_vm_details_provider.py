@@ -16,12 +16,14 @@ class TestVmDetailsProvider(TestCase):
         instance.platform = 'instance_platform'
         instance.network_interfaces = []
         instance.volumes.all = lambda: []
+        instance.iam_instance_profile = {"Arn": "arn:aws:iam::admin_role"}
 
         vm_instance_data = self.vm_details_provider.create(instance).vm_instance_data
 
         self.assertTrue(self._get_value(vm_instance_data, 'AMI ID') == instance.image_id)
         self.assertTrue(self._get_value(vm_instance_data, 'instance type') == instance.instance_type)
         self.assertTrue(self._get_value(vm_instance_data, 'platform') == instance.platform)
+        self.assertTrue(self._get_value(vm_instance_data, 'IAM Role') == instance.iam_instance_profile['Arn'])
 
     def test_prepare_network_interface_objects_with_elastic_ip(self):
         # elastic_ip
