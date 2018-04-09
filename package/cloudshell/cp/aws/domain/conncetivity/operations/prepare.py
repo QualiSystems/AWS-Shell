@@ -167,7 +167,7 @@ class PrepareConnectivityOperation(object):
                                                                       management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
         return self._create_prepare_network_result(action, security_groups, vpc, access_key)
 
-    @retry(stop_max_attempt_number=2, wait_fixed=1000)
+    @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
         """
 
@@ -269,7 +269,7 @@ class PrepareConnectivityOperation(object):
         # add default tags to main routing table
         self.vpc_service.set_main_route_table_tags(sandbox_main_route_table, reservation_model)
 
-    @retry(stop_max_attempt_number=2, wait_fixed=1000)
+    @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _update_route_to_peered_vpc(self, ec2_client, ec2_session, route_table, peer_connection_id,
                                     target_vpc_cidr, logger):
         """
@@ -396,7 +396,7 @@ class PrepareConnectivityOperation(object):
         action_result.errorMessage = 'PrepareConnectivity ended with the error: {0}'.format(e)
         return action_result
 
-    @retry(stop_max_attempt_number=3, wait_fixed=1000)
+    @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _create_and_attach_internet_gateway(self, ec2_session, vpc, reservation):
         """
         :param ec2_session:
