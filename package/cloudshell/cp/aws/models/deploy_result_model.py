@@ -1,4 +1,4 @@
-from cloudshell.cp.aws.models.network_actions_models import ConnectToSubnetActionResult
+from cloudshell.cp.core.models import ConnectToSubnetActionResult
 
 
 class DeployResult(object):

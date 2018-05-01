@@ -4,8 +4,8 @@ import boto3
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel
-from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.cp.core.models import SetAppSecurityGroupActionResult
 
 
 class SetAppSecurityGroupsOperation(object):

@@ -1,8 +1,9 @@
 from cloudshell.cp.aws.common.converters import convert_to_bool
-from cloudshell.cp.aws.models.network_actions_models import *
-
-
-class ConnectionParamsParser(object):
+from cloudshell.cp.aws.models.network_actions_models import SubnetActionParams
+from cloudshell.cp.aws.models.network_actions_models import NetworkActionAttribute
+from cloudshell.cp.core.models import PrepareCloudInfraParams
+from cloudshell.cp.core.models import PrepareSubnetParams
+class ActionParamsParser(object):
     def __init__(self):
         pass
 
@@ -10,9 +11,9 @@ class ConnectionParamsParser(object):
     def parse(action):
         """
         :param dict params_data:
-        :rtype: ConnectionParamsBase
+        :rtype: ActionParamsBase
         """
-        params_data = action.get("connectionParams")
+        params_data = action.get("actionParams")
         params = None
         if not params_data:
             return params
@@ -20,7 +21,7 @@ class ConnectionParamsParser(object):
         params_type = params_data["type"]
 
         if params_type == "connectToSubnetParams":
-            params = SubnetConnectionParams()
+            params = SubnetActionParams()
             params.subnet_id = params_data['subnetId']
 
         elif params_type == "prepareSubnetParams":
@@ -28,27 +29,27 @@ class ConnectionParamsParser(object):
             params.is_public = convert_to_bool(params_data['isPublic'])
             params.alias = params_data.get('alias', '')
 
-        elif params_type == "prepareNetworkParams":
-            params = PrepareNetworkParams()
+        elif params_type == "prepareCloudInfraParams":
+            params = PrepareCloudInfraParams()
 
         else:
             raise ValueError("Unsupported connection params type {0}".format(type))
 
-        ConnectionParamsParser.parse_base_data(params, params_data, action)
+        ActionParamsParser.parse_base_data(params, params_data, action)
 
         return params
 
     @staticmethod
     def parse_base_data(params_base, data, action):
         """
-        :param ConnectionParamsBase params_base:
+        :param ActionParamsBase params_base:
         :param dict data:
         :param dict action:
         :return:
         """
         params_base.cidr = data['cidr']
-        params_base.subnetServiceAttributes = ConnectionParamsParser.parse_subnet_service_attributes(data)
-        params_base.custom_attributes = ConnectionParamsParser.parse_custom_network_action_attributes(action)
+        params_base.subnetServiceAttributes = ActionParamsParser.parse_subnet_service_attributes(data)
+        params_base.custom_attributes = ActionParamsParser.parse_custom_network_action_attributes(action)
 
     @staticmethod
     def parse_custom_network_action_attributes(action):

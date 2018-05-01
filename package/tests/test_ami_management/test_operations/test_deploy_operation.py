@@ -5,8 +5,7 @@ from mock import Mock, call, MagicMock
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
-from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, NetworkAction, \
-    SubnetConnectionParams
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, NetworkAction, SubnetActionParams
 
 
 class TestDeployOperation(TestCase):
@@ -450,13 +449,13 @@ class TestDeployOperation(TestCase):
 
         action1 = NetworkAction()
         action1.id = 'action1'
-        action1.connection_params = SubnetConnectionParams()
+        action1.connection_params = SubnetActionParams()
         action1.connection_params.subnet_id = 'sub1'
         action1.connection_params.device_index = "0"
 
         action2 = NetworkAction()
         action2.id = 'action2'
-        action2.connection_params = SubnetConnectionParams()
+        action2.connection_params = SubnetActionParams()
         action2.connection_params.subnet_id = 'sub2'
         action2.connection_params.device_index = 1
 
@@ -529,8 +528,8 @@ class TestDeployOperation(TestCase):
         self.assertEquals(dto2.actionId, "bbb")
         self.assertTrue(dto1.success)
         self.assertTrue(dto2.success)
-        self.assertEquals(dto1.type, "connectToSubnet")
-        self.assertEquals(dto2.type, "connectToSubnet")
+        self.assertEquals(dto1.type, "ConnectToSubnet")
+        self.assertEquals(dto2.type, "ConnectToSubnet")
         self.assertTrue('"interface_id": "interface1"' in dto1.interface)
         self.assertTrue('"Device Index": 0' in dto1.interface)
         self.assertTrue('"IP": "priv1"' in dto1.interface)
@@ -581,10 +580,10 @@ class TestDeployOperation(TestCase):
     def test__prepare_network_result_models_returns_result_model_per_action(self):
         # arrange
         action1 = Mock(spec=NetworkAction, id=Mock(spec=str))
-        action1.connection_params = Mock(spec=SubnetConnectionParams)
+        action1.connection_params = Mock(spec=SubnetActionParams)
 
         action2 = Mock(spec=NetworkAction, id=Mock(spec=str))
-        action2.connection_params = Mock(spec=SubnetConnectionParams)
+        action2.connection_params = Mock(spec=SubnetActionParams)
 
         ami_model = Mock(network_configurations=[action1, action2])
 
