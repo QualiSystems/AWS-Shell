@@ -7,9 +7,13 @@ from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor im
 from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.network_actions_models import *
-from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkActionResult, PrepareSubnetActionResult
-
+from cloudshell.cp.aws.models.network_actions_models import PrepareCloudInfraActionResult
+from cloudshell.cp.core.models import PrepareCloudInfra
+from cloudshell.cp.core.models import PrepareSubnet
+from cloudshell.cp.core.models import CreateKeys
+from cloudshell.cp.core.models import CreateKeysActionResult
+from cloudshell.cp.core.models import ActionResultBase
+from cloudshell.cp.core.models import PrepareSubnetActionResult
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
@@ -58,10 +62,10 @@ class PrepareSandboxInfraOperation(object):
         :type reservation: cloudshell.cp.aws.models.reservation_model.ReservationModel
         :param aws_ec2_datamodel: The AWS EC2 data model
         :type aws_ec2_datamodel: cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
-        :param list[NetworkAction] actions: Parsed prepare connectivity actions
+        :param list[RequestActionBase] actions: Parsed prepare connectivity actions
         :param CancellationContext cancellation_context:
         :param logging.Logger logger:
-        :rtype list[ConnectivityActionResult]
+        :rtype list[ActionResultBase]
         """
         if not aws_ec2_datamodel.aws_management_vpc_id:
             raise ValueError('AWS Mgmt VPC ID attribute must be set!')
@@ -69,21 +73,27 @@ class PrepareSandboxInfraOperation(object):
         logger.info("PrepareSandboxInfra actions: {0}".format(','.join([jsonpickle.encode(a) for a in actions])))
         results = []
 
-        # Execute prepareNetwork action first
-        network_action = next((a for a in actions if isinstance(a.connection_params, PrepareNetworkParams)), None)
+        # Execute PrepareCloudInfra action first
+        network_action = next((a for a in actions if isinstance(a, PrepareCloudInfra)), None)
+        create_keys_action = next((a for a in actions if isinstance(a, CreateKeys)), None)
         if not network_action:
-            raise ValueError("Actions list must contain a PrepareNetworkAction.")
-
+            raise ValueError("Actions list must contain a PrepareCloudInfraAction.")
+        if not create_keys_action:
+            raise ValueError("Actions list must contain a CreateKeys.")
         try:
-            result = self._prepare_network(ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel,
+            result = self._prepare_network(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
                                            network_action, cancellation_context, logger)
             results.append(result)
+            result = self._prepare_key(ec2_session, s3_session, aws_ec2_datamodel, reservation, create_keys_action, logger)
+            results.append(result)
+
         except Exception as e:
             logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
             results.append(self._create_fault_action_result(network_action, e))
 
+
         # Execute prepareSubnet actions
-        subnet_actions = [a for a in actions if isinstance(a.connection_params, PrepareSubnetParams)]
+        subnet_actions = [a for a in actions if isinstance(a, PrepareSubnet)]
         subnet_results = PrepareSubnetExecutor(
             cancellation_service=self.cancellation_service,
             vpc_service=self.vpc_service,
@@ -105,36 +115,36 @@ class PrepareSandboxInfraOperation(object):
 
         return results
 
-    def _prepare_network(self, ec2_client, ec2_session, s3_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
+    def _prepare_key(self, ec2_session, s3_session, aws_ec2_datamodel, reservation, action, logger):
+        logger.info("Get or create existing key pair")
+        access_key = self._get_or_create_key_pair(ec2_session=ec2_session,
+                                                  s3_session=s3_session,
+                                                  bucket=aws_ec2_datamodel.key_pairs_location,
+                                                  reservation_id=reservation.reservation_id)
+        return self._create_prepare_create_keys_result(action, access_key)
+
+    def _prepare_network(self, ec2_client, ec2_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
         """
-        :type ec2_client:
-        :type ec2_session:
-        :type s3_session:
-        :type reservation:
-        :type aws_ec2_datamodel:
-        :type action: NetworkAction
-        :type cancellation_context:
-        :type logger:
+        :param ec2_client:
+        :param ec2_session:
+        :param s3_session:
+        :param reservation:
+        :param aws_ec2_datamodel:
+        :param PrepareCloudInfra action: NetworkAction
+        :param CancellationContext cancellation_context:
+        :param logging.Logger logger:
         :return:
         """
-        logger.info("PrepareNetwork");
+        logger.info("PrepareCloudInfra")
 
         # will get cidr form action params
-        cidr = action.connection_params.cidr
+        cidr = action.actionParams.cidr
         logger.info("Received CIDR {0} from server".format(cidr))
 
         # will get or create a vpc for the reservation
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Get or create existing VPC (no subnets yet)")
         vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
-
-        # will get or create a key pair
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        logger.info("Get or create existing key pair")
-        access_key = self._get_or_create_key_pair(ec2_session=ec2_session,
-                                                  s3_session=s3_session,
-                                                  bucket=aws_ec2_datamodel.key_pairs_location,
-                                                  reservation_id=reservation.reservation_id)
 
         # will enable dns for the vpc
         self.cancellation_service.check_if_cancelled(cancellation_context)
@@ -165,7 +175,7 @@ class PrepareSandboxInfraOperation(object):
                                                                       reservation=reservation,
                                                                       vpc=vpc,
                                                                       management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
-        return self._create_prepare_network_result(action, security_groups, vpc, access_key)
+        return self._create_prepare_network_result(action, security_groups, vpc)
 
     @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -363,25 +373,28 @@ class PrepareSandboxInfraOperation(object):
                                                               reservation=reservation,
                                                               cidr=cidr)
         return vpc
-
-    def _create_prepare_network_result(self, action, security_groups, vpc, access_key):
-        action_result = PrepareNetworkActionResult()
-        action_result.actionId = action.id
+    def _create_prepare_create_keys_result(self, action, access_key):
+        action_result = CreateKeysActionResult()
+        action_result.actionId = action.actionId
         action_result.success = True
-        action_result.infoMessage = 'PrepareNetwork finished successfully'
+        action_result.infoMessage = 'PrepareCreateKeys finished successfully'
+        action_result.accessKey = access_key
+
+        return action_result
+
+    def _create_prepare_network_result(self, action, security_groups, vpc):
+        action_result = PrepareCloudInfraActionResult()
+        action_result.actionId = action.actionId
+        action_result.success = True
+        action_result.infoMessage = 'PrepareCloudInfra finished successfully'
         action_result.vpcId = vpc.id
         action_result.securityGroupId = [sg.id for sg in security_groups]
-
-        # encrypt the private key
-        cryptography_dto = self.cryptography_service.encrypt(access_key)
-        action_result.access_key = cryptography_dto.encrypted_input
-        action_result.secret_key = cryptography_dto.encrypted_asymmetric_key
 
         return action_result
 
     def _create_prepare_subnet_result(self, action, subnet):
         action_result = PrepareSubnetActionResult()
-        action_result.actionId = action.id
+        action_result.actionId = action.actionId
         action_result.subnetId = subnet.subnet_id
         action_result.success = True
         action_result.infoMessage = 'PrepareSubnet finished successfully'
@@ -390,8 +403,8 @@ class PrepareSandboxInfraOperation(object):
 
     @staticmethod
     def _create_fault_action_result(action, e):
-        action_result = ConnectivityActionResult()
-        action_result.actionId = action.id
+        action_result = ActionResultBase(action.actionId)
+        action_result.actionId = action.actionId
         action_result.success = False
         action_result.errorMessage = 'PrepareSandboxInfra ended with the error: {0}'.format(e)
         return action_result

@@ -1,7 +1,7 @@
 from unittest import TestCase
 
 import jsonpickle
-from mock import Mock, patch
+from mock import Mock, patch, mock
 
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
@@ -10,6 +10,9 @@ from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.cp.core.converters import DriverRequestParser
+
+
 
 class TestAWSShell(TestCase):
     def setUp(self):
@@ -140,15 +143,15 @@ class TestAWSShell(TestCase):
     def test_prepare_connectivity(self):
         # Assert
         cancellation_context = Mock()
-        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareNetwork", "connectionParams": {"type": "prepareNetworkParams", "cidr": "10.0.0.0/24"}}]}}'
+        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareCloudInfra", "actionParams": {"type": "prepareCloudInfraParams", "cidr": "10.0.0.0/24"}}]}}'
         self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
         res = None
         actions_mock = Mock()
+
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
-            with patch('cloudshell.cp.aws.aws_shell.NetworkActionsParser') as net_parser:
-                net_parser.parse_network_actions_data = Mock(return_value=actions_mock)
 
+            with patch.object(DriverRequestParser, 'convert_driver_request_to_actions',new = Mock(return_value=actions_mock)):
                 # Act
                 res = self.aws_shell.prepare_connectivity(self.command_context, req, cancellation_context)
 
@@ -166,10 +169,10 @@ class TestAWSShell(TestCase):
 
     def test_prepare_connectivity_invalid_req(self):
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext'):
-            req = '{"aa": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
+            req = '{"aa": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareCloudInfra"}]}}'
             self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
 
-            self.assertRaises(ValueError, self.aws_shell.prepare_connectivity, self.command_context, req, Mock())
+            self.assertRaises(KeyError, self.aws_shell.prepare_connectivity, self.command_context, req, Mock())
 
     def test_delete_instance(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})

@@ -9,9 +9,9 @@ from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction, PrepareSubnetParams, \
-    PrepareSubnetActionResult
+from cloudshell.cp.aws.models.network_actions_models import PrepareSubnetActionResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.cp.core.models import PrepareSubnet
 
 
 class PrepareSubnetExecutor(object):
@@ -19,7 +19,7 @@ class PrepareSubnetExecutor(object):
 
     class ActionItem:
         def __init__(self, action):
-            self.action = action # type: NetworkAction
+            self.action = action # type: PrepareSubnet
             self.subnet = None
             self.is_new_subnet = False
             self.error = None
@@ -53,8 +53,8 @@ class PrepareSubnetExecutor(object):
         self.subnet_waiter = subnet_waiter
 
     def execute(self, subnet_actions):
-        if any(not isinstance(a.connection_params, PrepareSubnetParams) for a in subnet_actions):
-            raise ValueError("Not all actions are PrepareSubnetActions")
+        if any(not isinstance(a, PrepareSubnet) for a in subnet_actions):
+            raise ValueError("Not all actions are PrepareSubnet")
         action_items = [PrepareSubnetExecutor.ActionItem(a) for a in subnet_actions]
 
         # get vpc and availability_zone
@@ -104,15 +104,15 @@ class PrepareSubnetExecutor(object):
 
     @step_wrapper
     def _step_get_existing_subnet(self, item, vpc):
-        cidr = item.action.connection_params.cidr
+        cidr = item.action.actionParams.cidr
         self.logger.info("Check if subnet (cidr={0}) already exists".format(cidr))
         item.subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc=vpc, cidr=cidr)
 
     @step_wrapper
     def _step_create_new_subnet_if_needed(self, item, vpc, availability_zone):
         if not item.subnet:
-            cidr = item.action.connection_params.cidr
-            alias = item.action.connection_params.alias
+            cidr = item.action.actionParams.cidr
+            alias = item.action.actionParams.alias
             self.logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(alias, cidr, availability_zone))
             item.subnet = self.subnet_service.create_subnet_nowait(vpc, cidr, availability_zone)
             item.is_new_subnet = True
@@ -120,22 +120,22 @@ class PrepareSubnetExecutor(object):
     @step_wrapper
     def _step_wait_till_available(self, item):
         if item.is_new_subnet:
-            self.logger.info("Waiting for subnet {0} - start".format(item.action.connection_params.cidr))
+            self.logger.info("Waiting for subnet {0} - start".format(item.action.actionParams.cidr))
             self.subnet_waiter.wait(item.subnet, self.subnet_waiter.AVAILABLE)
-            self.logger.info("Waiting for subnet {0} - end".format(item.action.connection_params.cidr))
+            self.logger.info("Waiting for subnet {0} - end".format(item.action.actionParams.cidr))
 
     @step_wrapper
     def _step_set_tags(self, item):
-        alias = item.action.connection_params.alias or "Subnet-{0}".format(item.action.connection_params.cidr)
+        alias = item.action.actionParams.alias or "Subnet-{0}".format(item.action.actionParams.cidr)
         subnet_name = self.SUBNET_RESERVATION.format(alias, self.reservation.reservation_id)
-        is_public_tag = self.tag_service.get_is_public_tag(item.action.connection_params.is_public)
+        is_public_tag = self.tag_service.get_is_public_tag(item.action.actionParams.isPublic)
         tags = self.tag_service.get_default_tags(subnet_name, self.reservation)
         tags.append(is_public_tag)
         self.tag_service.set_ec2_resource_tags(item.subnet, tags)
 
     @step_wrapper
     def _step_attach_to_private_route_table(self, item, vpc):
-        if item.action.connection_params.is_public:
+        if item.action.actionParams.isPublic:
             self.logger.info("Subnet is public - no need to attach private routing table")
         else:
             self.logger.info("Subnet is private - getting and attaching private routing table")
@@ -146,7 +146,7 @@ class PrepareSubnetExecutor(object):
 
     def _create_result(self, item):
         action_result = PrepareSubnetActionResult()
-        action_result.actionId = item.action.id
+        action_result.actionId = item.action.actionId
         if item.subnet and not item.error:
             action_result.success = True
             action_result.subnetId = item.subnet.subnet_id

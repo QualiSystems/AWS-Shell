@@ -4,7 +4,7 @@ from mock import Mock
 
 from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
-from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, NetworkActionAttribute
+from cloudshell.cp.aws.models.network_actions_models import SubnetActionParams , NetworkActionAttribute
 
 
 class TestModelParser(TestCase):
@@ -117,7 +117,7 @@ class TestModelParser(TestCase):
                         '{' \
                             '"actionId": "some_id",' \
                             '"type": "connectToSubnet",' \
-                            '"connectionParams": {' \
+                            '"actionParams": {' \
                                 '"type": "connectToSubnetParams",' \
                                 '"cidr": "10.0.5.0/28",' \
                                 '"subnetId": "some_id",' \
@@ -152,11 +152,11 @@ class TestModelParser(TestCase):
         self.assertEquals(len(model.network_configurations[0].connection_params.custom_attributes), 1)
         self.assertEquals(model.network_configurations[0].connection_params.custom_attributes[0].name, "Vnic Name")
         self.assertEquals(model.network_configurations[0].connection_params.custom_attributes[0].value, "0")
-        self.assertTrue(isinstance(model.network_configurations[0].connection_params, SubnetConnectionParams))
+        self.assertTrue(isinstance(model.network_configurations[0].connection_params, SubnetActionParams))
 
     def test_subnet_connection_params_check_is_public_subnet_true(self):
         # arrange
-        test_obj = SubnetConnectionParams()
+        test_obj = SubnetActionParams()
         attr1 = NetworkActionAttribute()
         attr1.name = "Some Attribute"
         attr1.value = "Some Value"
@@ -173,7 +173,7 @@ class TestModelParser(TestCase):
 
     def test_subnet_connection_params_check_is_public_subnet_false(self):
         # arrange
-        test_obj = SubnetConnectionParams()
+        test_obj = SubnetActionParams()
         attr1 = NetworkActionAttribute()
         attr1.name = "Some Attribute"
         attr1.value = "Some Value"
@@ -190,7 +190,7 @@ class TestModelParser(TestCase):
 
     def test_subnet_connection_params_check_is_public_subnet_true_when_no_attribute(self):
         # arrange
-        test_obj = SubnetConnectionParams()
+        test_obj = SubnetActionParams()
         attr1 = NetworkActionAttribute()
         attr1.name = "Some Attribute"
         attr1.value = "Some Value"

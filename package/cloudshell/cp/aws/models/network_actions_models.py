@@ -3,16 +3,16 @@ from jsonpickle import json
 VNIC_NAME_ATTRIBUTE = "Vnic Name"
 
 
-class ConnectionParamsBase(object):
+class ActionParamsBase(object):
     def __init__(self):
         self.cidr = ''  # type: str
         self.subnetServiceAttributes = []  # type: list[NetworkActionAttribute]
         self.custom_attributes = []  # type: list[NetworkActionAttribute]
 
 
-class SubnetConnectionParams(ConnectionParamsBase):
+class SubnetActionParams (ActionParamsBase):
     def __init__(self):
-        ConnectionParamsBase.__init__(self)
+        ActionParamsBase.__init__(self)
         self.subnet_id = ''
 
     def is_public_subnet(self):
@@ -43,22 +43,22 @@ class SubnetConnectionParams(ConnectionParamsBase):
         self.custom_attributes.append(vnic_name_attr)
 
 
-class PrepareSubnetParams(ConnectionParamsBase):
+class PrepareSubnetParams(ActionParamsBase):
     def __init__(self, cidr=None, alias='', is_public=True):
         """
         :param str cidr:
         :param str alias:
         :param bool is_public:
         """
-        ConnectionParamsBase.__init__(self)
+        ActionParamsBase.__init__(self)
         self.cidr = cidr
         self.is_public = is_public
         self.alias = alias
 
 
-class PrepareNetworkParams(ConnectionParamsBase):
+class PrepareCloudInfraParams(ActionParamsBase):
     def __init__(self):
-        ConnectionParamsBase.__init__(self)
+        ActionParamsBase.__init__(self)
         del self.subnetServiceAttributes
 
 
@@ -73,7 +73,7 @@ class NetworkAction(object):
         """
         :param str id:
         :param str type:
-        :param ConnectionParamsBase connection_params:
+        :param ActionParamsBase connection_params:
         """
         self.id = id or ''
         self.type = type or ''
@@ -99,12 +99,12 @@ class ConnectivityActionResult(object):
         self.errorMessage = ''
 
 
-class PrepareNetworkActionResult(ConnectivityActionResult):
+class PrepareCloudInfraActionResult(ConnectivityActionResult):
     def __init__(self):
         ConnectivityActionResult.__init__(self)
         self.vpcId = ''
         self.securityGroupId = ''
-        self.type = 'PrepareNetwork'
+        self.type = 'PrepareCloudInfra'
 
 
 class PrepareSubnetActionResult(ConnectivityActionResult):

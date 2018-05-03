@@ -3,7 +3,7 @@ from unittest import TestCase
 from mock import Mock, MagicMock, call
 
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
-from cloudshell.cp.aws.models.network_actions_models import SubnetConnectionParams, DeployNetworkingResultModel
+from cloudshell.cp.aws.models.network_actions_models import SubnetActionParams, DeployNetworkingResultModel
 
 
 class TestElasticIpService(TestCase):
@@ -149,15 +149,15 @@ class TestElasticIpService(TestCase):
             {"Attachment": {"DeviceIndex": 3}, "NetworkInterfaceId": "netif3"}]
 
         action1 = Mock()
-        action1.connection_params = Mock(spec=SubnetConnectionParams)
+        action1.connection_params = Mock(spec=SubnetActionParams)
         action1.connection_params.is_public_subnet = Mock(return_value=True)  # public subnet
 
         action2 = Mock()
-        action2.connection_params = Mock(spec=SubnetConnectionParams)
+        action2.connection_params = Mock(spec=SubnetActionParams)
         action2.connection_params.is_public_subnet = Mock(return_value=False)  # private subnet
 
         action3 = Mock()
-        action3.connection_params = Mock(spec=SubnetConnectionParams)
+        action3.connection_params = Mock(spec=SubnetActionParams)
         action3.connection_params.is_public_subnet = Mock(return_value=True)  # public subnet
 
         ami_deployment_model = Mock()

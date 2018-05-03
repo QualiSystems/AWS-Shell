@@ -4,7 +4,7 @@ from retrying import retry
 from cloudshell.cp.aws.common.retry_helper import retry_if_client_error
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
-from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, SubnetConnectionParams
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, SubnetActionParams
 
 
 class ElasticIpService(object):
@@ -38,7 +38,7 @@ class ElasticIpService(object):
 
         # allocate elastic ip for each interface inside a public subnet
         for action in ami_deployment_model.network_configurations:
-            if not isinstance(action.connection_params, SubnetConnectionParams) \
+            if not isinstance(action.connection_params, SubnetActionParams) \
                     or not action.connection_params.is_public_subnet():
                 continue
 

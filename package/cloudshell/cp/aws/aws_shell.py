@@ -46,8 +46,10 @@ from cloudshell.shell.core.driver_context import CancellationContext
 
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
-from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
+from cloudshell.cp.core.models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
+from cloudshell.cp.core.converters import DriverRequestParser
+import json
 
 
 class AWSShell(object):
@@ -177,7 +179,11 @@ class AWSShell(object):
                 shell_context.logger.info('Prepare Connectivity')
 
                 # parse request
-                connectivity_actions = self._request_str_to_actions_list(request)
+                parser = DriverRequestParser()
+                deploy_req = json.loads(request)
+                # action = parser.convert_driver_request_to_actions(deploy_req)
+                connectivity_actions = parser.convert_driver_request_to_actions(
+                    deploy_req)  # self._request_str_to_actions_list(request)
 
                 results = self.prepare_connectivity_operation.prepare_connectivity(
                     ec2_client=shell_context.aws_api.ec2_client,
@@ -213,7 +219,6 @@ class AWSShell(object):
                 self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
                                                          ami_id=data_holder.vmdetails.uid)
 
-
     def power_off_ami(self, command_context):
         """
         Will power on the ami
@@ -228,7 +233,6 @@ class AWSShell(object):
 
                 self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
                                                           ami_id=data_holder.vmdetails.uid)
-
 
     def delete_instance(self, command_context):
         """

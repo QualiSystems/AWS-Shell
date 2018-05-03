@@ -1,5 +1,5 @@
-from cloudshell.cp.aws.domain.services.parsers.connection_params import ConnectionParamsParser
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction, NetworkActionAttribute
+from cloudshell.cp.aws.domain.services.parsers.connection_params import ActionParamsParser
+from cloudshell.cp.aws.models.network_actions_models import NetworkAction
 
 
 class NetworkActionsParser(object):
@@ -21,7 +21,7 @@ class NetworkActionsParser(object):
             network_action = NetworkAction()
             network_action.id = action["actionId"]
             network_action.type = action["type"]
-            network_action.connection_params = ConnectionParamsParser.parse(action)
+            network_action.connection_params = ActionParamsParser.parse(action)
             parsed_data.append(network_action)
 
         return parsed_data if(len(parsed_data) > 0) else None

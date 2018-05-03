@@ -4,8 +4,9 @@ from mock import Mock
 
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService, TagNames
-from cloudshell.cp.aws.models.network_actions_models import PrepareNetworkParams, NetworkAction, PrepareSubnetParams
-
+from cloudshell.cp.core.models import PrepareSubnet
+from cloudshell.cp.core.models import PrepareSubnetParams
+from cloudshell.cp.core.models import PrepareCloudInfraParams
 
 class TestPrepareSandboxInfra(TestCase):
     def setUp(self):
@@ -28,16 +29,22 @@ class TestPrepareSandboxInfra(TestCase):
 
     def test_execute_with_wrong_action_type(self):
         # Arrange
-        actions = [NetworkAction(id="1", connection_params=PrepareNetworkParams())]
+        prepare_subnet = PrepareCloudInfraParams();
+        prepare_subnet.actionId = "1"
+        prepare_subnet.actionParams = PrepareCloudInfraParams()
+        actions = [prepare_subnet]
         # Act
         with self.assertRaises(Exception) as error:
             self.executor.execute(actions)
         # Assert
-        self.assertEqual(error.exception.message, "Not all actions are PrepareSubnetActions")
+        self.assertEqual(error.exception.message, "Not all actions are PrepareSubnet")
 
     def test_execute_with_no_vpc(self):
         # Arrange
-        actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams())]
+        prepare_subnet = PrepareSubnet();
+        prepare_subnet.actionId = "1"
+        prepare_subnet.actionParams = PrepareSubnetParams()
+        actions = [prepare_subnet]
         self.vpc_service.find_vpc_for_reservation = Mock(return_value=None)
         self.vpc_service.get_active_vpcs_count = Mock(return_value=None)
 
@@ -50,7 +57,11 @@ class TestPrepareSandboxInfra(TestCase):
 
     def test_execute_gets_existing_subnet_and_no_wait(self):
         # Arrange
-        actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams(cidr="1.2.3.4/24"))]
+        prepare_subnet = PrepareSubnet();
+        prepare_subnet.actionId = "1"
+        prepare_subnet.actionParams = PrepareSubnetParams()
+        prepare_subnet.actionParams.cidr = "1.2.3.4/24"
+        actions = [prepare_subnet]
         subnet = Mock()
         subnet.subnet_id = "123"
         self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=subnet)
@@ -62,7 +73,12 @@ class TestPrepareSandboxInfra(TestCase):
 
     def test_execute_creates_new_subnet_and_wait(self):
         # Arrange
-        actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams(cidr="1.2.3.4/24"))]
+        prepare_subnet = PrepareSubnet();
+        prepare_subnet.actionId="1"
+        prepare_subnet.actionParams = PrepareSubnetParams()
+        prepare_subnet.actionParams.cidr = "1.2.3.4/24"
+
+        actions = [prepare_subnet]
         self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=None)
         subnet = Mock()
         subnet.subnet_id = "456"
@@ -78,7 +94,13 @@ class TestPrepareSandboxInfra(TestCase):
         def return_public_tag_with_value(*args, **kwargs):
             return {'Key': TagNames.IsPublic, 'Value': args[0]}
 
-        actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams(cidr="1.2.3.4/24", alias="MySubnet"))]
+        prepare_subnet = PrepareSubnet();
+        prepare_subnet.actionId = "1"
+        prepare_subnet.actionParams = PrepareSubnetParams()
+        prepare_subnet.actionParams.cidr = "1.2.3.4/24"
+        prepare_subnet.actionParams.alias = "MySubnet"
+        actions = [prepare_subnet]
+
         self.reservation.reservation_id = "123"
         subnet = Mock()
         self.subnet_service.get_first_or_none_subnet_from_vpc = Mock(return_value=subnet)
@@ -96,7 +118,12 @@ class TestPrepareSandboxInfra(TestCase):
 
     def test_execute_sets_private_subnet_to_private_routing_table(self):
         # Arrange
-        actions = [NetworkAction(id="1", connection_params=PrepareSubnetParams(cidr="1.2.3.4/24", is_public=False))]
+        prepare_subnet = PrepareSubnet();
+        prepare_subnet.actionId = "1"
+        prepare_subnet.actionParams = PrepareSubnetParams()
+        prepare_subnet.actionParams.cidr = "1.2.3.4/24"
+        prepare_subnet.actionParams.is_public = False
+        actions = [prepare_subnet]
         # Act
         self.executor.execute(actions)
         # Assert

@@ -21,7 +21,8 @@ from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
 from cloudshell.cp.aws.domain.services.ec2.network_interface import NetworkInterfaceService
-from cloudshell.cp.aws.models.network_actions_models import *
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
+from cloudshell.cp.core.models import ConnectToSubnetActionResult
 
 
 class DeployAMIOperation(object):
@@ -184,7 +185,7 @@ class DeployAMIOperation(object):
         """
         if ami_deployment_model.add_public_ip or ami_deployment_model.allocate_elastic_ip:
             connect_subnet_actions = \
-                filter(lambda x: isinstance(x.connection_params, SubnetConnectionParams),
+                filter(lambda x: isinstance(x.connection_params, SubnetActionParams),
                        ami_deployment_model.network_configurations)
 
             if not any(x.connection_params.is_public_subnet() for x in connect_subnet_actions):
@@ -217,9 +218,8 @@ class DeployAMIOperation(object):
             'MAC Address': network_config_result.mac_address,
             'Device Index': network_config_result.device_index,
         })
-        return ConnectToSubnetActionResult(action_id=network_config_result.action_id,
-                                           success=True,
-                                           interface_data=interface_data_json_str)
+        return ConnectToSubnetActionResult(actionId=network_config_result.action_id,
+                                           interface=interface_data_json_str)
 
     def _prepare_network_result_models(self, ami_deployment_model):
         """
@@ -231,7 +231,7 @@ class DeployAMIOperation(object):
             network_config_results.append(DeployNetworkingResultModel(''))  # init a result object with empty action id
         else:
             for net_config in ami_deployment_model.network_configurations:
-                if isinstance(net_config.connection_params, SubnetConnectionParams):
+                if isinstance(net_config.connection_params, SubnetActionParams):
                     network_config_results.append(DeployNetworkingResultModel(net_config.id))
         return network_config_results
 
@@ -411,7 +411,7 @@ class DeployAMIOperation(object):
 
         logger.info("Building network interface dtos")
         for net_config in ami_deployment_model.network_configurations:
-            if not isinstance(net_config.connection_params, SubnetConnectionParams):
+            if not isinstance(net_config.connection_params, SubnetActionParams):
                 continue
 
             device_index = net_config.connection_params.device_index

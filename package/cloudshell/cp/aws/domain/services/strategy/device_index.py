@@ -1,4 +1,4 @@
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction, SubnetConnectionParams
+from cloudshell.cp.aws.models.network_actions_models import NetworkAction, SubnetActionParams
 
 
 class AbstractDeviceIndexStrategy(object):
@@ -21,7 +21,7 @@ class AllocateMissingValuesDeviceIndexStrategy(AbstractDeviceIndexStrategy):
         """
 
         # get all SubnetConnection actions
-        subnet_conn_actions = filter(lambda x: isinstance(x.connection_params, SubnetConnectionParams), actions)
+        subnet_conn_actions = filter(lambda x: isinstance(x.connection_params, SubnetActionParams), actions)
 
         # get all actions with valid device index (>=0)
         specific_device_index_actions = filter(
