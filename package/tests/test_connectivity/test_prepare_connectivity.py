@@ -148,7 +148,7 @@ class TestPrepareSandboxInfra(TestCase):
         self.assertTrue(results[1].success)
         self.assertEqual(results[1].infoMessage, 'PrepareCreateKeys finished successfully')
         self.assertEqual(results[1].errorMessage, '')
-        self.assertEqual(results[1].AccessKey, access_key)
+        self.assertEqual(results[1].accessKey, access_key)
         self.cancellation_service.check_if_cancelled.assert_called()
 
     def test_prepare_conn_command_no_management_vpc(self):
