@@ -4,20 +4,22 @@ from retrying import retry
 from cloudshell.cp.aws.common.retry_helper import retry_if_client_error
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
-from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, SubnetActionParams
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
+from cloudshell.cp.core.models import ConnectToSubnetParams
 
 
 class ElasticIpService(object):
     def __init__(self):
         pass
 
-    def set_elastic_ips(self, ec2_session, ec2_client, instance, ami_deployment_model, network_config_results, logger):
+    def set_elastic_ips(self, ec2_session, ec2_client, instance, ami_deployment_model, network_actions, network_config_results, logger):
         """
 
         :param ec2_session: EC2 session
         :param ec2_client: EC2 client
         :param instance:
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :param cloudshell.cp.core.models.ConnectSubnet network_actions:
         :param list[DeployNetworkingResultModel] network_config_results:
         :param logging.Logger logger:
         :return:
@@ -25,7 +27,7 @@ class ElasticIpService(object):
         if not ami_deployment_model.allocate_elastic_ip:
             return
 
-        if self._is_single_subnet_mode(ami_deployment_model):
+        if self._is_single_subnet_mode(network_actions):
             elastic_ip = self.allocate_elastic_address(ec2_client=ec2_client)
             network_config_results[0].public_ip = elastic_ip  # set elastic ip data in deploy result
             network_config_results[0].is_elastic_ip = True
@@ -37,13 +39,13 @@ class ElasticIpService(object):
             return
 
         # allocate elastic ip for each interface inside a public subnet
-        for action in ami_deployment_model.network_configurations:
-            if not isinstance(action.connection_params, SubnetActionParams) \
-                    or not action.connection_params.is_public_subnet():
+        for action in network_actions:
+            if not isinstance(action.actionParams, ConnectToSubnetParams) \
+                    or not action.actionParams.isPublic:
                 continue
 
             # find network interface using device index
-            action_result = first_or_default(network_config_results, lambda x: x.action_id == action.id)
+            action_result = first_or_default(network_config_results, lambda x: x.action_id == action.actionId)
             interface = filter(lambda x: x["Attachment"]["DeviceIndex"] == action_result.device_index,
                                instance.network_interfaces_attribute)[0]
 
@@ -58,11 +60,11 @@ class ElasticIpService(object):
             logger.info("Multi-subnet mode detected. Allocated & associated elastic ip {0} to interface {1}"
                         .format(elastic_ip, interface_id))
 
-    def _is_single_subnet_mode(self, ami_deployment_model):
+    def _is_single_subnet_mode(self, network_actions):
         # todo move code to networking service
-        return ami_deployment_model.network_configurations is None or \
-               (isinstance(ami_deployment_model.network_configurations, list) and
-                len(ami_deployment_model.network_configurations) == 1)
+        return network_actions is None or \
+               (isinstance(network_actions, list) and
+                len(network_actions) == 1)
 
     @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=30, wait_fixed=1000)
     def associate_elastic_ip_to_instance(self, ec2_session, instance, elastic_ip):

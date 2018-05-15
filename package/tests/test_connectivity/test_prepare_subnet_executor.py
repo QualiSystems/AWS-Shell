@@ -122,7 +122,7 @@ class TestPrepareSandboxInfra(TestCase):
         prepare_subnet.actionId = "1"
         prepare_subnet.actionParams = PrepareSubnetParams()
         prepare_subnet.actionParams.cidr = "1.2.3.4/24"
-        prepare_subnet.actionParams.is_public = False
+        prepare_subnet.actionParams.isPublic = False
         actions = [prepare_subnet]
         # Act
         self.executor.execute(actions)

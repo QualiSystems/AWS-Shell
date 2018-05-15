@@ -4,7 +4,7 @@ from unittest import TestCase
 from mock import Mock, MagicMock
 
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction
+from cloudshell.cp.core.models import PrepareCloudInfra
 
 
 class TestCleanupSandboxInfra(TestCase):
@@ -28,7 +28,7 @@ class TestCleanupSandboxInfra(TestCase):
                                        aws_ec2_data_model=self.aws_ec2_data_model,
                                        reservation_id=self.reservation_id,
                                        logger=Mock(),
-                                       actions=[NetworkAction()],
+                                       actions=[PrepareCloudInfra()],
                                        ec2_client=Mock())
 
         self.assertTrue(self.vpc_serv.find_vpc_for_reservation.called_with(self.ec2_session, self.reservation_id))
@@ -54,7 +54,7 @@ class TestCleanupSandboxInfra(TestCase):
                 aws_ec2_data_model=self.aws_ec2_data_model,
                 reservation_id=self.reservation_id,
                 ec2_client=Mock(),
-                actions=[NetworkAction()],
+                actions=[PrepareCloudInfra()],
                 logger=Mock())
 
         self.assertFalse(result.success)

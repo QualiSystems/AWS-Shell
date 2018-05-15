@@ -4,7 +4,6 @@ from mock import Mock, MagicMock, patch
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction
 from cloudshell.cp.core.models import PrepareCloudInfra
 from cloudshell.cp.core.models import PrepareSubnet
 from cloudshell.cp.core.models import PrepareSubnetParams
@@ -25,14 +24,13 @@ class TestPrepareSandboxInfra(TestCase):
         self.tag_service = Mock()
         self.reservation = Mock()
         self.route_table_service = Mock()
-        self.crypto_service = Mock()
         self.cancellation_service = Mock()
         self.cancellation_context = Mock()
         self.subnet_service = Mock()
         self.subnet_waiter = Mock()
         self.prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service, self.route_table_service,
-                                                         self.crypto_service, self.cancellation_service,
+                                                         self.cancellation_service,
                                                          self.subnet_service, self.subnet_waiter)
 
     def test_prepare_conn_must_receive_network_action(self):
@@ -42,7 +40,7 @@ class TestPrepareSandboxInfra(TestCase):
                                                    s3_session=self.s3_session,
                                                    reservation=self.reservation,
                                                    aws_ec2_datamodel=self.aws_dm,
-                                                   actions=[NetworkAction()],
+                                                   actions=[PrepareSubnet()],
                                                    cancellation_context=self.cancellation_context,
                                                    logger=Mock())
         self.assertEqual(error.exception.message, "Actions list must contain a PrepareCloudInfraAction.")
@@ -210,9 +208,18 @@ class TestPrepareSandboxInfra(TestCase):
 
         # Arrage
         actions = []
-        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
-        actions.append(NetworkAction(id="Net", connection_params=PrepareCloudInfraParams()))
-        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        prepare_subnet_sub_a = PrepareSubnet();
+        prepare_subnet_sub_a.actionId = "SubA"
+        prepare_subnet_sub_a.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_a)
+        prepare_cloud_infra = PrepareCloudInfra()
+        prepare_cloud_infra.actionId = "Net"
+        prepare_cloud_infra.actionParams = PrepareCloudInfraParams()
+        actions.append(prepare_cloud_infra)
+        prepare_subnet_sub_b = PrepareSubnet();
+        prepare_subnet_sub_b.actionId = "SubB"
+        prepare_subnet_sub_b.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_b)
 
         # Assert
         self.assertRaisesRegexp(ValueError,
@@ -254,7 +261,7 @@ class TestPrepareSandboxInfra(TestCase):
         key_pair_service = Mock()
         key_pair_service.load_key_pair_by_name = Mock(return_value=None)
         prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
-                                                    self.route_table_service, self.crypto_service,
+                                                    self.route_table_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
         key_pair = Mock()
@@ -280,7 +287,7 @@ class TestPrepareSandboxInfra(TestCase):
 
         prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         prepare_conn._get_or_create_sandbox_isolated_security_group = Mock(return_value=isolated_sg)
@@ -320,7 +327,7 @@ class TestPrepareSandboxInfra(TestCase):
 
         prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_sandbox_default_security_group(ec2_session=self.ec2_session,
@@ -356,7 +363,7 @@ class TestPrepareSandboxInfra(TestCase):
 
         prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_sandbox_isolated_security_group(ec2_session=self.ec2_session,
@@ -379,7 +386,7 @@ class TestPrepareSandboxInfra(TestCase):
         vpc_service.create_vpc_for_reservation = Mock(return_value=vpc)
 
         prepare_conn = PrepareSandboxInfraOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
-                                                    self.route_table_service, self.crypto_service,
+                                                    self.route_table_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 

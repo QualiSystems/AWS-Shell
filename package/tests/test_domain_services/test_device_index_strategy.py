@@ -1,9 +1,9 @@
 from unittest import TestCase
 
-from mock import Mock
+from mock import Mock,MagicMock
 
 from cloudshell.cp.aws.domain.services.strategy.device_index import AllocateMissingValuesDeviceIndexStrategy
-from cloudshell.cp.aws.models.network_actions_models import NetworkAction, SubnetActionParams
+from cloudshell.cp.core.models import PrepareSubnetParams, PrepareCloudInfra, ConnectToSubnetParams
 
 
 class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
@@ -12,21 +12,21 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
 
     def test_strategy_allocates_missing_values_successfully(self):
         # arrange
-        action1 = Mock(spec=NetworkAction)
-        action1.connection_params = Mock(spec=SubnetActionParams)
-        action1.connection_params.device_index = None
+        action1 = Mock(spec=PrepareCloudInfra)
+        action1.actionParams = Mock(spec=ConnectToSubnetParams)
+        action1.actionParams.vnicName = None
 
-        action2 = Mock(spec=NetworkAction)
-        action2.connection_params = Mock(spec=SubnetActionParams)
-        action2.connection_params.device_index = 1
+        action2 = Mock(spec=PrepareCloudInfra)
+        action2.actionParams = Mock(spec=ConnectToSubnetParams)
+        action2.actionParams.vnicName = 1
 
-        action3 = Mock(spec=NetworkAction)
-        action3.connection_params = Mock(spec=SubnetActionParams)
-        action3.connection_params.device_index = None
+        action3 = Mock(spec=PrepareCloudInfra)
+        action3.actionParams = Mock(spec=ConnectToSubnetParams)
+        action3.actionParams.vnicName = None
 
-        action4 = Mock(spec=NetworkAction)
-        action4.connection_params = Mock(spec=SubnetActionParams)
-        action4.connection_params.device_index = 3
+        action4 = Mock(spec=PrepareCloudInfra)
+        action4.actionParams = Mock(spec=ConnectToSubnetParams)
+        action4.actionParams.vnicName = 3
 
         actions = [action1, action2, action3, action4]
 
@@ -35,23 +35,23 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
 
         # assert
         # the order in witch the strategy assign device indexes is not guaranteed
-        self.assertTrue(action1.connection_params.device_index in [0, 2])
-        self.assertTrue(action3.connection_params.device_index in [0, 2])
-        self.assertTrue(action1.connection_params.device_index != action3.connection_params.device_index)
+        self.assertTrue(action1.actionParams.vnicName in [0, 2])
+        self.assertTrue(action3.actionParams.vnicName in [0, 2])
+        self.assertTrue(action1.actionParams.vnicName != action3.actionParams.vnicName)
 
     def test_strategy_allocates_missing_values_raises_on_device_index_duplicates(self):
         # arrange
-        action1 = Mock(spec=NetworkAction)
-        action1.connection_params = Mock(spec=SubnetActionParams)
-        action1.connection_params.device_index = 1
+        action1 = Mock(spec=PrepareCloudInfra)
+        action1.actionParams = Mock(spec=ConnectToSubnetParams)
+        action1.actionParams.vnicName = 1
 
-        action2 = Mock(spec=NetworkAction)
-        action2.connection_params = Mock(spec=SubnetActionParams)
-        action2.connection_params.device_index = 1
+        action2 = Mock(spec=PrepareCloudInfra)
+        action2.actionParams = Mock(spec=ConnectToSubnetParams)
+        action2.actionParams.vnicName = 1
 
-        action3 = Mock(spec=NetworkAction)
-        action3.connection_params = Mock(spec=SubnetActionParams)
-        action3.connection_params.device_index = None
+        action3 = Mock(spec=PrepareCloudInfra)
+        action3.actionParams = Mock(spec=ConnectToSubnetParams)
+        action3.actionParams.vnicName = None
 
         actions = [action1, action2, action3]
 
@@ -61,17 +61,17 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
 
     def test_strategy_allocates_missing_values_raises_when_not_continuous(self):
         # arrange
-        action1 = Mock(spec=NetworkAction)
-        action1.connection_params = Mock(spec=SubnetActionParams)
-        action1.connection_params.device_index = 0
+        action1 = Mock(spec=PrepareCloudInfra)
+        action1.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action1.actionParams.vnicName = 0
 
-        action2 = Mock(spec=NetworkAction)
-        action2.connection_params = Mock(spec=SubnetActionParams)
-        action2.connection_params.device_index = 4
+        action2 = Mock(spec=PrepareCloudInfra)
+        action2.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action2.actionParams.vnicName = 4
 
-        action3 = Mock(spec=NetworkAction)
-        action3.connection_params = Mock(spec=SubnetActionParams)
-        action3.connection_params.device_index = None
+        action3 = Mock(spec=PrepareCloudInfra)
+        action3.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action3.actionParams.vnicName = None
 
         actions = [action1, action2, action3]
 
@@ -81,17 +81,17 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
 
     def test_strategy_allocates_missing_values_no_changes_when_not_needed(self):
         # arrange
-        action1 = Mock(spec=NetworkAction)
-        action1.connection_params = Mock(spec=SubnetActionParams)
-        action1.connection_params.device_index = 0
+        action1 = Mock(spec=PrepareCloudInfra)
+        action1.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action1.actionParams.vnicName = 0
 
-        action2 = Mock(spec=NetworkAction)
-        action2.connection_params = Mock(spec=SubnetActionParams)
-        action2.connection_params.device_index = 1
+        action2 = Mock(spec=PrepareCloudInfra)
+        action2.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action2.actionParams.vnicName = 1
 
-        action3 = Mock(spec=NetworkAction)
-        action3.connection_params = Mock(spec=SubnetActionParams)
-        action3.connection_params.device_index = 2
+        action3 = Mock(spec=PrepareCloudInfra)
+        action3.actionParams = MagicMock(spec=ConnectToSubnetParams)
+        action3.actionParams.vnicName = 2
 
         actions = [action1, action2, action3]
 
@@ -100,6 +100,6 @@ class TestAllocateMissingValuesDeviceIndexStrategy(TestCase):
 
         # assert
         # the order in witch the strategy assign device indexes is not guaranteed
-        self.assertEquals(action1.connection_params.device_index, 0)
-        self.assertEquals(action2.connection_params.device_index, 1)
-        self.assertEquals(action3.connection_params.device_index, 2)
+        self.assertEquals(action1.actionParams.vnicName, 0)
+        self.assertEquals(action2.actionParams.vnicName, 1)
+        self.assertEquals(action3.actionParams.vnicName, 2)

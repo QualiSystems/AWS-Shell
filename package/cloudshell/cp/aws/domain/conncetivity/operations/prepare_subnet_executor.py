@@ -9,7 +9,7 @@ from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.network_actions_models import PrepareSubnetActionResult
+from cloudshell.cp.core.models import PrepareCloudInfraResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
 from cloudshell.cp.core.models import PrepareSubnet
 
@@ -145,7 +145,7 @@ class PrepareSubnetExecutor(object):
                                                        route_table_id=private_route_table.route_table_id)
 
     def _create_result(self, item):
-        action_result = PrepareSubnetActionResult()
+        action_result = PrepareCloudInfraResult()
         action_result.actionId = item.action.actionId
         if item.subnet and not item.error:
             action_result.success = True
