@@ -4,22 +4,21 @@ import jsonpickle
 from cloudshell.shell.core.driver_context import CancellationContext
 
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
-from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
-from cloudshell.cp.aws.models.network_actions_models import PrepareCloudInfraActionResult
 from cloudshell.cp.core.models import PrepareCloudInfra
 from cloudshell.cp.core.models import PrepareSubnet
 from cloudshell.cp.core.models import CreateKeys
 from cloudshell.cp.core.models import CreateKeysActionResult
 from cloudshell.cp.core.models import ActionResultBase
 from cloudshell.cp.core.models import PrepareSubnetActionResult
+from cloudshell.cp.core.models import PrepareCloudInfraResult
 INVALID_REQUEST_ERROR = 'Invalid request: {0}'
 
 
 class PrepareSandboxInfraOperation(object):
     def __init__(self, vpc_service, security_group_service, key_pair_service, tag_service, route_table_service,
-                 cryptography_service, cancellation_service, subnet_service, subnet_waiter):
+                 cancellation_service, subnet_service, subnet_waiter):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -31,8 +30,6 @@ class PrepareSandboxInfraOperation(object):
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
         :param route_table_service:
         :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
-        :param cryptography_service:
-        :type cryptography_service: CryptographyService
         :param cancellation_service:
         :type cancellation_service: cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService
         :param subnet_service: Subnet Service
@@ -45,7 +42,6 @@ class PrepareSandboxInfraOperation(object):
         self.key_pair_service = key_pair_service
         self.tag_service = tag_service
         self.route_table_service = route_table_service
-        self.cryptography_service = cryptography_service
         self.cancellation_service = cancellation_service
         self.subnet_service = subnet_service
         self.subnet_waiter = subnet_waiter
@@ -383,7 +379,7 @@ class PrepareSandboxInfraOperation(object):
         return action_result
 
     def _create_prepare_network_result(self, action, security_groups, vpc):
-        action_result = PrepareCloudInfraActionResult()
+        action_result = PrepareCloudInfraResult()
         action_result.actionId = action.actionId
         action_result.success = True
         action_result.infoMessage = 'PrepareCloudInfra finished successfully'

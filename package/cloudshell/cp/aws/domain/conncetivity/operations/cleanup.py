@@ -1,7 +1,7 @@
 import traceback
 
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.network_actions_models import ConnectivityActionResult
+from cloudshell.cp.core.models import CleanupNetwork
 
 
 class CleanupSandboxInfraOperation(object):
@@ -32,8 +32,8 @@ class CleanupSandboxInfraOperation(object):
         if not actions:
             raise ValueError("No cleanup action was found")
 
-        result = ConnectivityActionResult()
-        result.actionId = actions[0].id
+        result = CleanupNetwork()
+        result.actionId = actions[0].actionId
         result.success = True
 
         try:

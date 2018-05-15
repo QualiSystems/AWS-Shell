@@ -3,7 +3,8 @@ from unittest import TestCase
 from mock import Mock, MagicMock, call
 
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
-from cloudshell.cp.aws.models.network_actions_models import SubnetActionParams, DeployNetworkingResultModel
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
+from cloudshell.cp.core.models import PrepareSubnetParams, ConnectSubnet, ConnectToSubnetParams
 
 
 class TestElasticIpService(TestCase):
@@ -111,6 +112,7 @@ class TestElasticIpService(TestCase):
         ec2_client = Mock()
         instance = Mock()
         ami_deployment_model = Mock()
+        network_actions=Mock()
         network_config_result_mock = Mock()
         network_config_results = [network_config_result_mock]
 
@@ -126,6 +128,7 @@ class TestElasticIpService(TestCase):
                                            ec2_client=ec2_client,
                                            instance=instance,
                                            ami_deployment_model=ami_deployment_model,
+                                           network_actions=network_actions,
                                            network_config_results=network_config_results,
                                            logger=Mock())
 
@@ -149,23 +152,25 @@ class TestElasticIpService(TestCase):
             {"Attachment": {"DeviceIndex": 3}, "NetworkInterfaceId": "netif3"}]
 
         action1 = Mock()
-        action1.connection_params = Mock(spec=SubnetActionParams)
-        action1.connection_params.is_public_subnet = Mock(return_value=True)  # public subnet
+        action1.actionParams = Mock(spec=ConnectToSubnetParams)
+        action1.actionParams.isPublic = True # public subnet
 
         action2 = Mock()
-        action2.connection_params = Mock(spec=SubnetActionParams)
-        action2.connection_params.is_public_subnet = Mock(return_value=False)  # private subnet
+        action2.actionParams = Mock(spec=ConnectToSubnetParams)
+        action2.actionParams.isPublic = False  # private subnet
 
         action3 = Mock()
-        action3.connection_params = Mock(spec=SubnetActionParams)
-        action3.connection_params.is_public_subnet = Mock(return_value=True)  # public subnet
+        action3.actionParams = Mock(spec=ConnectToSubnetParams)
+        action3.actionParams.isPublic = True  # public subnet
 
         ami_deployment_model = Mock()
         ami_deployment_model.network_configurations = [action1, action2, action3]
 
-        result_mock1 = Mock(spec=DeployNetworkingResultModel, action_id=action1.id, device_index=0)
-        result_mock2 = Mock(spec=DeployNetworkingResultModel, action_id=action2.id, device_index=1)
-        result_mock3 = Mock(spec=DeployNetworkingResultModel, action_id=action3.id, device_index=2)
+        network_actions = [action1, action2, action3]
+
+        result_mock1 = Mock(spec=DeployNetworkingResultModel, action_id=action1.actionId, device_index=0)
+        result_mock2 = Mock(spec=DeployNetworkingResultModel, action_id=action2.actionId, device_index=1)
+        result_mock3 = Mock(spec=DeployNetworkingResultModel, action_id=action3.actionId, device_index=2)
         network_config_results = [result_mock1, result_mock2, result_mock3]
 
         elastic_ip_service = ElasticIpService()
@@ -179,6 +184,7 @@ class TestElasticIpService(TestCase):
                                            ec2_client=ec2_client,
                                            instance=instance,
                                            ami_deployment_model=ami_deployment_model,
+                                           network_actions=network_actions,
                                            network_config_results=network_config_results,
                                            logger=Mock())
 
@@ -196,22 +202,21 @@ class TestElasticIpService(TestCase):
 
     def test_is_single_subnet_true(self):
         # arrange
-        ami_model = Mock()
-        ami_model.network_configurations = [Mock()]
+        network_actions =None
 
         # act
-        result = self.elastic_ip_service._is_single_subnet_mode(ami_deployment_model=ami_model)
+        result = self.elastic_ip_service._is_single_subnet_mode(network_actions=network_actions)
 
         # assert
         self.assertTrue(result)
 
     def test_is_single_subnet_false(self):
         # arrange
-        ami_model = Mock()
-        ami_model.network_configurations = [Mock(), Mock()]
+        network_actions = Mock()
+
 
         # act
-        result = self.elastic_ip_service._is_single_subnet_mode(ami_deployment_model=ami_model)
+        result = self.elastic_ip_service._is_single_subnet_mode(network_actions=network_actions)
 
         # assert
         self.assertFalse(result)

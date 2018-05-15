@@ -1,7 +1,10 @@
-import jsonpickle
 from cloudshell.shell.core.driver_context import AutoLoadDetails
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.cp.aws.aws_shell import AWSShell
+from cloudshell.cp.core import DriverRequestParser
+from cloudshell.cp.core.models import DeployApp, DriverResponse
+from cloudshell.cp.core.utils import single
+from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 
 
 class AWSShellDriver(ResourceDriverInterface):
@@ -13,6 +16,8 @@ class AWSShellDriver(ResourceDriverInterface):
         ctor must be without arguments, it is created with reflection at run time
         """
         self.aws_shell = AWSShell()
+        self.request_parser = DriverRequestParser()
+        self.request_parser.add_deployment_model(deployment_model_cls=DeployAWSEc2AMIInstanceResourceModel)
         self.deployments = dict()
         self.deployments['AWS EC2 Instance'] = self.deploy_ami
 
@@ -20,16 +25,19 @@ class AWSShellDriver(ResourceDriverInterface):
         pass
 
     def Deploy(self, context, request=None, cancellation_context=None):
-        app_request = jsonpickle.decode(request)
-        deployment_name = app_request['DeploymentServiceName']
+        actions = self.request_parser.convert_driver_request_to_actions(request)
+        deploy_action = single(actions, lambda x: isinstance(x, DeployApp))
+        deployment_name = deploy_action.actionParams.deployment.deploymentPath
+
         if deployment_name in self.deployments.keys():
             deploy_method = self.deployments[deployment_name]
-            return deploy_method(context, request, cancellation_context)
+            deploy_result = deploy_method(context, actions, cancellation_context)
+            return DriverResponse(deploy_result).to_driver_response_json()
         else:
             raise Exception('Could not find the deployment')
 
-    def deploy_ami(self, context, request, cancellation_context):
-        return self.aws_shell.deploy_ami(context, request, cancellation_context)
+    def deploy_ami(self, context, actions, cancellation_context):
+        return self.aws_shell.deploy_ami(context, actions, cancellation_context)
 
     def PowerOn(self, context, ports):
         return self.aws_shell.power_on_ami(context)
@@ -47,10 +55,13 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.delete_instance(context)
 
     def PrepareSandboxInfra(self, context, request, cancellation_context):
-        return self.aws_shell.prepare_connectivity(context, request, cancellation_context)
+        actions = self.request_parser.convert_driver_request_to_actions(request)
+        action_results = self.aws_shell.prepare_connectivity(context, actions, cancellation_context)
+        return DriverResponse(action_results).to_driver_response_json()
 
     def CleanupSandboxInfra(self, context, request):
-        return self.aws_shell.cleanup_connectivity(context, request)
+        actions = self.request_parser.convert_driver_request_to_actions(request)
+        return self.aws_shell.cleanup_connectivity(context, actions)
 
     def GetApplicationPorts(self, context, ports):
         return self.aws_shell.get_application_ports(context)
