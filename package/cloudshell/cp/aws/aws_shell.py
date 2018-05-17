@@ -2,7 +2,6 @@ import jsonpickle
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
-from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetails
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
