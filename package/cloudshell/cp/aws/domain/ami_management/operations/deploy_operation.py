@@ -173,8 +173,7 @@ class DeployAMIOperation(object):
                                             deployedAppAttributes=convert_dict_to_attributes_list(deployed_app_attributes),
                                             deployedAppAddress=instance.private_ip_address,
                                             vmDetailsData=vm_details_data,
-                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports,
-                                                                       'public_ip': instance.public_ip_address})
+                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports})
         deploy_app_result.actionId = ami_deploy_action.actionId
         network_actions_results_dtos.append(deploy_app_result)
         return network_actions_results_dtos
