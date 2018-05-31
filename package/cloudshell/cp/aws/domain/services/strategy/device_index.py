@@ -61,4 +61,4 @@ class AllocateMissingValuesDeviceIndexStrategy(AbstractDeviceIndexStrategy):
             raise ValueError("'Requested vNic Name' attribute values are not a continuous list")
 
     def _is_vnic_name_valid(self, action): #vnicName = device_index(AWS)
-        return action.actionParams.vnicName is not None and action.actionParams.vnicName is not '' and int(action.actionParams.vnicName) >= 0
+        return action.actionParams.vnicName is not None and int(action.actionParams.vnicName) >= 0
