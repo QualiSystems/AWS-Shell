@@ -5,6 +5,8 @@ from cloudshell.cp.core import DriverRequestParser
 from cloudshell.cp.core.models import DeployApp, DriverResponse
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
+from cloudshell.cp.core.models import ConnectSubnet
+
 
 
 class AWSShellDriver(ResourceDriverInterface):
@@ -28,6 +30,8 @@ class AWSShellDriver(ResourceDriverInterface):
         actions = self.request_parser.convert_driver_request_to_actions(request)
         deploy_action = single(actions, lambda x: isinstance(x, DeployApp))
         deployment_name = deploy_action.actionParams.deployment.deploymentPath
+        self.parse_vnicename(actions)
+
 
         if deployment_name in self.deployments.keys():
             deploy_method = self.deployments[deployment_name]
@@ -35,6 +39,14 @@ class AWSShellDriver(ResourceDriverInterface):
             return DriverResponse(deploy_result).to_driver_response_json()
         else:
             raise Exception('Could not find the deployment')
+
+    def parse_vnicename(self, actions):
+        network_actions = [a for a in actions if isinstance(a, ConnectSubnet)]
+        for network_action in network_actions:
+            try:
+                network_action.actionParams.vnicName = int(network_action.actionParams.vnicName)
+            except:
+                network_action.actionParams.vnicName = None
 
     def deploy_ami(self, context, actions, cancellation_context):
         return self.aws_shell.deploy_ami(context, actions, cancellation_context)

@@ -47,6 +47,7 @@ from cloudshell.cp.core.models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
 from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
 from cloudshell.cp.core.utils import single
+from cloudshell.cp.core.models import VmDetailsData
 
 
 class AWSShell(object):
@@ -367,11 +368,11 @@ class AWSShell(object):
                         shell_context.logger.info('Get VmDetails')
                         vm_details = self.vm_details_operation.get_vm_details(request.uuid,
                                                                               shell_context.aws_api.ec2_session)
-                        vm_details.app_name = request.app_name
+                        vm_details.appName = request.app_name
                         results.append(vm_details)
             except Exception as e:
-                result = VmDetails()
-                result.app_name = request.app_name
+                result = VmDetailsData()
+                result.appName = request.app_name
                 result.error = e.message
                 results.append(result)
 
