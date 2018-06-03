@@ -73,10 +73,11 @@ class TestPrepareSandboxInfra(TestCase):
                                                          cancellation_context=self.cancellation_context,
                                                          logger=Mock())
         # Assert
-        self.assertEqual(len(results), 3)
+        self.assertEqual(len(results), 4)
         self.assertEqual(results[0].actionId, "Net")
-        self.assertEqual(results[1].actionId, "SubA")
-        self.assertEqual(results[2].actionId, "SubB")
+        self.assertEqual(results[1].actionId, "CreateKeys")
+        self.assertEqual(results[2].actionId, "SubA")
+        self.assertEqual(results[3].actionId, "SubB")
 
     def test_prepare_conn_execute_the_subnet_actions(self):
         # Arrage
@@ -110,9 +111,9 @@ class TestPrepareSandboxInfra(TestCase):
                                                              cancellation_context=self.cancellation_context,
                                                              logger=Mock())
         # Assert
-        self.assertEqual(len(results), 3)
-        self.assertEqual(results[1], "ResA")
-        self.assertEqual(results[2], "ResB")
+        self.assertEqual(len(results), 4)
+        self.assertEqual(results[2], "ResA")
+        self.assertEqual(results[3], "ResB")
 
     def test_prepare_conn_command(self):
         # Arrange
@@ -252,7 +253,6 @@ class TestPrepareSandboxInfra(TestCase):
                                                          cancellation_context=cancellation_context,
                                                          logger=Mock())
 
-        self.assertEqual(results[0].actionId, action.actionId)
         self.assertFalse(results[0].success)
         self.assertEqual(results[0].infoMessage, '')
         self.assertIsNotNone(results[0].errorMessage)
