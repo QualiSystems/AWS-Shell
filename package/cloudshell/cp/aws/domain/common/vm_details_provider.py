@@ -4,11 +4,11 @@ class VmDetailsProvider(object):
     def __init__(self):
         pass
 
-    def create(self, instance):
+    def create(self, instance,deploy_app_name=""):
         vm_instance_data = self._get_vm_instance_data(instance, instance.vpc_id)
         vm_network_data = self._get_vm_network_data(instance)
 
-        return VmDetailsData(vmInstanceData=vm_instance_data, vmNetworkData=vm_network_data)
+        return VmDetailsData(vmInstanceData=vm_instance_data, vmNetworkData=vm_network_data , appName=deploy_app_name)
 
     def _get_vm_instance_data(self, instance, vpc_id):
         # if not windows, instance platform is empty; therefore we default to linux
