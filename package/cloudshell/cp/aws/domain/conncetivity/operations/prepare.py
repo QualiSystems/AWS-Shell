@@ -80,13 +80,15 @@ class PrepareSandboxInfraOperation(object):
             result = self._prepare_network(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
                                            network_action, cancellation_context, logger)
             results.append(result)
-            result = self._prepare_key(ec2_session, s3_session, aws_ec2_datamodel, reservation, create_keys_action, logger)
-            results.append(result)
-
         except Exception as e:
             logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
             results.append(self._create_fault_action_result(network_action, e))
-
+        try:
+            result = self._prepare_key(ec2_session, s3_session, aws_ec2_datamodel, reservation, create_keys_action, logger)
+            results.append(result)
+        except Exception as e:
+            logger.error("Error in prepare key. Error: {0}".format(traceback.format_exc()))
+            results.append(self._create_fault_action_result(create_keys_action, e))
 
         # Execute prepareSubnet actions
         subnet_actions = [a for a in actions if isinstance(a, PrepareSubnet)]
@@ -399,7 +401,7 @@ class PrepareSandboxInfraOperation(object):
 
     @staticmethod
     def _create_fault_action_result(action, e):
-        action_result = ActionResultBase(action.actionId)
+        action_result = ActionResultBase()
         action_result.actionId = action.actionId
         action_result.success = False
         action_result.errorMessage = 'PrepareSandboxInfra ended with the error: {0}'.format(e)
