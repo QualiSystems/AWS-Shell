@@ -64,7 +64,7 @@ class ElasticIpService(object):
         # todo move code to networking service
         return network_actions is None or \
                (isinstance(network_actions, list) and
-                len(network_actions) == 1)
+                len(network_actions) <= 1)
 
     @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=30, wait_fixed=1000)
     def associate_elastic_ip_to_instance(self, ec2_session, instance, elastic_ip):
