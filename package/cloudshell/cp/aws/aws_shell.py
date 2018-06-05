@@ -43,7 +43,7 @@ from cloudshell.shell.core.driver_context import CancellationContext
 
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
-from cloudshell.cp.core.models import SetAppSecurityGroupActionResult
+from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
 from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
 from cloudshell.cp.core.utils import single
