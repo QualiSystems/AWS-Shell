@@ -24,7 +24,9 @@ class VmDetailsProvider(object):
                 VmDetailsProperty(key='Availability Zone',value=self._get_availability_zone(instance), hidden=True)]
 
         if instance.iam_instance_profile:
-            data.append(VmDetailsProperty(key='IAM Role',value= instance.iam_instance_profile["Arn"]))
+            arn = instance.iam_instance_profile["Arn"]
+            instance_profile_name = arn.split('instance-profile/')[-1]
+            data.append(VmDetailsProperty(key='IAM Role', value=instance_profile_name))
 
         return data
 
