@@ -21,6 +21,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo Name="Auto Power Off"  DefaultValue="False" Description="If set to False the deployment will not wait for the VM to get an ip" IsReadOnly="false" Type="Boolean">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="User" Type="String">
       <Rules>
         <Rule Name="Configuration" />
@@ -270,6 +276,9 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS AMI Id" UserInput="true" EditableOnlyInAppTemplate="true">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Auto Power Off" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Allow all Sandbox Traffic" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
@@ -327,6 +336,7 @@
             <AttributeValue Name="Wait for Credentials" Value="true"/>
             <AttributeValue Name="Storage Type" Value="auto"/>
             <AttributeValue Name="Public IP Options" Value="No Public IP"/>
+            <AttributeValue Name="Auto Power Off" Value="False"/>
           </AttributeValues>
           <ParentModels />
           <Drivers />
