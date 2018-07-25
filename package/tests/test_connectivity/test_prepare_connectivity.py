@@ -3,11 +3,14 @@ from unittest import TestCase
 from mock import Mock, MagicMock, patch
 
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
-from cloudshell.cp.aws.models.network_actions_models import *
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
+from cloudshell.cp.core.models import PrepareCloudInfra
+from cloudshell.cp.core.models import PrepareSubnet
+from cloudshell.cp.core.models import PrepareSubnetParams
+from cloudshell.cp.core.models import PrepareCloudInfraParams
+from cloudshell.cp.core.models import CreateKeys
 
-
-class TestPrepareConnectivity(TestCase):
+class TestPrepareSandboxInfra(TestCase):
     def setUp(self):
         self.vpc_serv = Mock()
         self.vpc_serv.get_all_internet_gateways = Mock(return_value=[])
@@ -21,14 +24,13 @@ class TestPrepareConnectivity(TestCase):
         self.tag_service = Mock()
         self.reservation = Mock()
         self.route_table_service = Mock()
-        self.crypto_service = Mock()
         self.cancellation_service = Mock()
         self.cancellation_context = Mock()
         self.subnet_service = Mock()
         self.subnet_waiter = Mock()
-        self.prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
+        self.prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, self.key_pair_serv,
                                                          self.tag_service, self.route_table_service,
-                                                         self.crypto_service, self.cancellation_service,
+                                                         self.cancellation_service,
                                                          self.subnet_service, self.subnet_waiter)
 
     def test_prepare_conn_must_receive_network_action(self):
@@ -38,17 +40,29 @@ class TestPrepareConnectivity(TestCase):
                                                    s3_session=self.s3_session,
                                                    reservation=self.reservation,
                                                    aws_ec2_datamodel=self.aws_dm,
-                                                   actions=[NetworkAction()],
+                                                   actions=[PrepareSubnet()],
                                                    cancellation_context=self.cancellation_context,
                                                    logger=Mock())
-        self.assertEqual(error.exception.message, "Actions list must contain a PrepareNetworkAction.")
+        self.assertEqual(error.exception.message, "Actions list must contain a PrepareCloudInfraAction.")
 
     def test_prepare_conn_execute_the_network_action_first(self):
         # Arrage
         actions = []
-        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
-        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
-        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        prepare_subnet_sub_a = PrepareSubnet();
+        prepare_subnet_sub_a.actionId = "SubA"
+        prepare_subnet_sub_a.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_a)
+        prepare_cloud_infra = PrepareCloudInfra()
+        prepare_cloud_infra.actionId = "Net"
+        prepare_cloud_infra.actionParams = PrepareCloudInfraParams()
+        actions.append(prepare_cloud_infra)
+        prepare_subnet_sub_b = PrepareSubnet();
+        prepare_subnet_sub_b.actionId = "SubB"
+        prepare_subnet_sub_b.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_b)
+        prepare_create_key = CreateKeys();
+        prepare_create_key.actionId = "CreateKeys"
+        actions.append(prepare_create_key)
         # Act
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
                                                          ec2_session=self.ec2_session,
@@ -59,17 +73,30 @@ class TestPrepareConnectivity(TestCase):
                                                          cancellation_context=self.cancellation_context,
                                                          logger=Mock())
         # Assert
-        self.assertEqual(len(results), 3)
+        self.assertEqual(len(results), 4)
         self.assertEqual(results[0].actionId, "Net")
-        self.assertEqual(results[1].actionId, "SubA")
-        self.assertEqual(results[2].actionId, "SubB")
+        self.assertEqual(results[1].actionId, "CreateKeys")
+        self.assertEqual(results[2].actionId, "SubA")
+        self.assertEqual(results[3].actionId, "SubB")
 
     def test_prepare_conn_execute_the_subnet_actions(self):
         # Arrage
         actions = []
-        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
-        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
-        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        prepare_subnet_sub_a = PrepareSubnet();
+        prepare_subnet_sub_a.actionId = "SubA"
+        prepare_subnet_sub_a.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_a)
+        prepare_cloud_infra = PrepareCloudInfra()
+        prepare_cloud_infra.actionId = "Net"
+        prepare_cloud_infra.actionParams = PrepareCloudInfraParams()
+        actions.append(prepare_cloud_infra)
+        prepare_subnet_sub_b = PrepareSubnet();
+        prepare_subnet_sub_b.actionId = "SubB"
+        prepare_subnet_sub_b.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_b)
+        prepare_create_key = CreateKeys();
+        prepare_create_key.actionId = "CreateKeys"
+        actions.append(prepare_create_key)
         # Act
         with patch('cloudshell.cp.aws.domain.conncetivity.operations.prepare.PrepareSubnetExecutor') as ctor:
             obj = Mock()
@@ -84,19 +111,22 @@ class TestPrepareConnectivity(TestCase):
                                                              cancellation_context=self.cancellation_context,
                                                              logger=Mock())
         # Assert
-        self.assertEqual(len(results), 3)
-        self.assertEqual(results[1], "ResA")
-        self.assertEqual(results[2], "ResB")
+        self.assertEqual(len(results), 4)
+        self.assertEqual(results[2], "ResA")
+        self.assertEqual(results[3], "ResB")
 
     def test_prepare_conn_command(self):
         # Arrange
-        action = NetworkAction(id="1234", connection_params=PrepareNetworkParams())
+        action = PrepareCloudInfra()
+        action.actionId = "1234"
+        action.actionParams = PrepareCloudInfraParams()
+
+        action2 = CreateKeys()
+        action2.actionId = "123"
 
         self.vpc_serv.get_peering_connection_by_reservation_id = Mock(return_value=None)
         access_key = Mock()
         self.prepare_conn._get_or_create_key_pair = Mock(return_value=access_key)
-        crypto_dto = Mock()
-        self.crypto_service.encrypt = Mock(return_value=crypto_dto)
         self.route_table_service.get_all_route_tables = Mock(return_value=MagicMock())
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
@@ -104,21 +134,20 @@ class TestPrepareConnectivity(TestCase):
                                                          s3_session=self.s3_session,
                                                          reservation=self.reservation,
                                                          aws_ec2_datamodel=self.aws_dm,
-                                                         actions=[action],
+                                                         actions=[action,action2],
                                                          cancellation_context=self.cancellation_context,
                                                          logger=Mock())
 
-        self.prepare_conn._get_or_create_key_pair.assert_called_once_with(ec2_session=self.ec2_session,
-                                                                          s3_session=self.s3_session,
-                                                                          bucket=self.aws_dm.key_pairs_location,
-                                                                          reservation_id=self.reservation.reservation_id)
-        self.crypto_service.encrypt.assert_called_once_with(access_key)
-        self.assertEqual(results[0].actionId, action.id)
+
+        self.assertEqual(results[0].actionId, action.actionId)
         self.assertTrue(results[0].success)
-        self.assertEqual(results[0].infoMessage, 'PrepareNetwork finished successfully')
+        self.assertEqual(results[0].infoMessage, 'PrepareCloudInfra finished successfully')
         self.assertEqual(results[0].errorMessage, '')
-        self.assertEqual(results[0].access_key, crypto_dto.encrypted_input)
-        self.assertEqual(results[0].secret_key, crypto_dto.encrypted_asymmetric_key)
+        self.assertEqual(results[1].actionId, action2.actionId)
+        self.assertTrue(results[1].success)
+        self.assertEqual(results[1].infoMessage, 'PrepareCreateKeys finished successfully')
+        self.assertEqual(results[1].errorMessage, '')
+        self.assertEqual(results[1].accessKey, access_key)
         self.cancellation_service.check_if_cancelled.assert_called()
 
     def test_prepare_conn_command_no_management_vpc(self):
@@ -145,9 +174,21 @@ class TestPrepareConnectivity(TestCase):
 
         # Arrage
         actions = []
-        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
-        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
-        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        prepare_subnet_sub_a = PrepareSubnet();
+        prepare_subnet_sub_a.actionId = "SubA"
+        prepare_subnet_sub_a.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_a)
+        prepare_cloud_infra = PrepareCloudInfra()
+        prepare_cloud_infra.actionId = "Net"
+        prepare_cloud_infra.actionParams = PrepareCloudInfraParams()
+        actions.append(prepare_cloud_infra)
+        prepare_subnet_sub_b = PrepareSubnet();
+        prepare_subnet_sub_b.actionId = "SubB"
+        prepare_subnet_sub_b.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_b)
+        prepare_create_key = CreateKeys();
+        prepare_create_key.actionId = "CreateKeys"
+        actions.append(prepare_create_key)
 
         # Assert
         self.assertRaisesRegexp(ValueError,
@@ -168,9 +209,18 @@ class TestPrepareConnectivity(TestCase):
 
         # Arrage
         actions = []
-        actions.append(NetworkAction(id="SubA", connection_params=PrepareSubnetParams()))
-        actions.append(NetworkAction(id="Net", connection_params=PrepareNetworkParams()))
-        actions.append(NetworkAction(id="SubB", connection_params=PrepareSubnetParams()))
+        prepare_subnet_sub_a = PrepareSubnet();
+        prepare_subnet_sub_a.actionId = "SubA"
+        prepare_subnet_sub_a.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_a)
+        prepare_cloud_infra = PrepareCloudInfra()
+        prepare_cloud_infra.actionId = "Net"
+        prepare_cloud_infra.actionParams = PrepareCloudInfraParams()
+        actions.append(prepare_cloud_infra)
+        prepare_subnet_sub_b = PrepareSubnet();
+        prepare_subnet_sub_b.actionId = "SubB"
+        prepare_subnet_sub_b.actionParams = PrepareSubnetParams()
+        actions.append(prepare_subnet_sub_b)
 
         # Assert
         self.assertRaisesRegexp(ValueError,
@@ -186,9 +236,12 @@ class TestPrepareConnectivity(TestCase):
                                 logger=Mock())
 
     def test_prepare_conn_command_fault_res(self):
-        action = NetworkAction()
-        action.id = "1234"
-        action.connection_params = PrepareNetworkParams()
+        action = PrepareCloudInfra()
+        action.actionId="1234"
+        action.actionParams = PrepareCloudInfraParams()
+        action.actionParams.cidr = "1.2.3.4/24"
+        action2 = CreateKeys()
+        action2.actionId="123"
         cancellation_context = Mock()
 
         results = self.prepare_conn.prepare_connectivity(ec2_client=self.ec2_client,
@@ -196,11 +249,10 @@ class TestPrepareConnectivity(TestCase):
                                                          s3_session=self.s3_session,
                                                          reservation=self.reservation,
                                                          aws_ec2_datamodel=self.aws_dm,
-                                                         actions=[action],
+                                                         actions=[action, action2],
                                                          cancellation_context=cancellation_context,
                                                          logger=Mock())
 
-        self.assertEqual(results[0].actionId, action.id)
         self.assertFalse(results[0].success)
         self.assertEqual(results[0].infoMessage, '')
         self.assertIsNotNone(results[0].errorMessage)
@@ -208,8 +260,8 @@ class TestPrepareConnectivity(TestCase):
     def test_create_key_pair(self):
         key_pair_service = Mock()
         key_pair_service.load_key_pair_by_name = Mock(return_value=None)
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
-                                                    self.route_table_service, self.crypto_service,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, self.sg_serv, key_pair_service, self.tag_service,
+                                                    self.route_table_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
         key_pair = Mock()
@@ -233,9 +285,9 @@ class TestPrepareConnectivity(TestCase):
         security_group_service.create_security_group = Mock(return_value=sg)
 
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         prepare_conn._get_or_create_sandbox_isolated_security_group = Mock(return_value=isolated_sg)
@@ -273,9 +325,9 @@ class TestPrepareConnectivity(TestCase):
         tags = Mock()
         self.tag_service.get_sandbox_default_security_group_tags = Mock(return_value=tags)
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_sandbox_default_security_group(ec2_session=self.ec2_session,
@@ -309,9 +361,9 @@ class TestPrepareConnectivity(TestCase):
         security_group_service.sandbox_default_sg_name = Mock(return_value=sg_name)
         security_group_service.sandbox_isolated_sg_name = Mock(return_value=isolated_sg_name)
 
-        prepare_conn = PrepareConnectivityOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
+        prepare_conn = PrepareSandboxInfraOperation(self.vpc_serv, security_group_service, self.key_pair_serv,
                                                     self.tag_service, self.route_table_service,
-                                                    self.crypto_service, self.cancellation_service,
+                                                    self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 
         res = prepare_conn._get_or_create_sandbox_isolated_security_group(ec2_session=self.ec2_session,
@@ -333,8 +385,8 @@ class TestPrepareConnectivity(TestCase):
         vpc_service.find_vpc_for_reservation = Mock(return_value=None)
         vpc_service.create_vpc_for_reservation = Mock(return_value=vpc)
 
-        prepare_conn = PrepareConnectivityOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
-                                                    self.route_table_service, self.crypto_service,
+        prepare_conn = PrepareSandboxInfraOperation(vpc_service, self.sg_serv, self.key_pair_serv, self.tag_service,
+                                                    self.route_table_service,
                                                     self.cancellation_service,
                                                     self.subnet_service, self.subnet_waiter)
 

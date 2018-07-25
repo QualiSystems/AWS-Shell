@@ -2,7 +2,6 @@ import jsonpickle
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
-from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetails
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
@@ -12,13 +11,12 @@ from cloudshell.cp.aws.domain.ami_management.operations.power_operation import P
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
-from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupConnectivityOperation
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareConnectivityOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
-from cloudshell.cp.aws.domain.services.crypto.cryptography import CryptographyService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
@@ -33,7 +31,6 @@ from cloudshell.cp.aws.domain.services.ec2.vpc import VPCService
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.parsers.command_results_parser import CommandResultsParser
 from cloudshell.cp.aws.domain.services.parsers.custom_param_extractor import VmCustomParamsExtractor
-from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
 from cloudshell.cp.aws.domain.services.s3.bucket import S3BucketService
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
 from cloudshell.cp.aws.domain.services.strategy.device_index import AllocateMissingValuesDeviceIndexStrategy
@@ -48,6 +45,9 @@ from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups im
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
+from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
+from cloudshell.cp.core.utils import single
+from cloudshell.cp.core.models import VmDetailsData
 
 
 class AWSShell(object):
@@ -73,7 +73,6 @@ class AWSShell(object):
         self.key_pair_service = KeyPairService(self.s3_service)
         self.vpc_waiter = VPCWaiter()
         self.route_tables_service = RouteTablesService(self.tag_service)
-        self.cryptography_service = CryptographyService()
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
@@ -86,12 +85,11 @@ class AWSShell(object):
                                       sg_service=self.security_group_service,
                                       route_table_service=self.route_tables_service)
         self.prepare_connectivity_operation = \
-            PrepareConnectivityOperation(vpc_service=self.vpc_service,
+            PrepareSandboxInfraOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
                                          key_pair_service=self.key_pair_service,
                                          tag_service=self.tag_service,
                                          route_table_service=self.route_tables_service,
-                                         cryptography_service=self.cryptography_service,
                                          cancellation_service=self.cancellation_service,
                                          subnet_service=self.subnet_service,
                                          subnet_waiter=self.subnet_waiter)
@@ -120,7 +118,7 @@ class AWSShell(object):
                                                        tag_service=self.tag_service,
                                                        elastic_ip_service=self.elastic_ip_service)
 
-        self.clean_up_operation = CleanupConnectivityOperation(vpc_service=self.vpc_service,
+        self.clean_up_operation = CleanupSandboxInfraOperation(vpc_service=self.vpc_service,
                                                                key_pair_service=self.key_pair_service,
                                                                route_table_service=self.route_tables_service)
 
@@ -137,11 +135,11 @@ class AWSShell(object):
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
 
-    def cleanup_connectivity(self, command_context, request):
+    def cleanup_connectivity(self, command_context, actions):
         """
         Will delete the reservation vpc and all related resources including all remaining instances
         :param ResourceCommandContext command_context:
-        :param request: The json request
+        :param list[RequestActionBase] actions::
         :return: json string response
         :rtype: str
         """
@@ -150,34 +148,29 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Cleanup Connectivity')
 
-                connectivity_actions = self._request_str_to_actions_list(request)
-
                 result = self.clean_up_operation \
                     .cleanup(ec2_client=shell_context.aws_api.ec2_client,
                              ec2_session=shell_context.aws_api.ec2_session,
                              s3_session=shell_context.aws_api.s3_session,
                              aws_ec2_data_model=shell_context.aws_ec2_resource_model,
                              reservation_id=command_context.reservation.reservation_id,
-                             actions=connectivity_actions,
+                             actions=actions,
                              logger=shell_context.logger)
                 return self.command_result_parser.set_command_result(
                     {'driverResponse': {'actionResults': [result]}})
 
-    def prepare_connectivity(self, command_context, request, cancellation_context):
+    def prepare_connectivity(self, command_context, actions, cancellation_context):
         """
         Will create a vpc for the reservation and will peer it with the management vpc
         :param ResourceCommandContext command_context: The Command Context
-        :param request: The json request
+        :param list[RequestActionBase] actions:
         :return: json string response
         :param CancellationContext cancellation_context:
-        :rtype: str
+        :rtype: list[ActionResultBase]
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Prepare Connectivity')
-
-                # parse request
-                connectivity_actions = self._request_str_to_actions_list(request)
 
                 results = self.prepare_connectivity_operation.prepare_connectivity(
                     ec2_client=shell_context.aws_api.ec2_client,
@@ -185,18 +178,11 @@ class AWSShell(object):
                     s3_session=shell_context.aws_api.s3_session,
                     reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
                     aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
-                    actions=connectivity_actions,
+                    actions=actions,
                     cancellation_context=cancellation_context,
                     logger=shell_context.logger)
 
-                return self.command_result_parser.set_command_result({'driverResponse': {'actionResults': results}})
-
-    def _request_str_to_actions_list(self, request):
-        decoded_request = jsonpickle.decode(request)
-        if not decoded_request.get('driverRequest') or not decoded_request.get('driverRequest').get('actions'):
-            raise ValueError('Invalid connectivity request')
-
-        return NetworkActionsParser.parse_network_actions_data(decoded_request['driverRequest']['actions'])
+                return results
 
     def power_on_ami(self, command_context):
         """
@@ -213,8 +199,6 @@ class AWSShell(object):
                 self.power_management_operation.power_on(ec2_session=shell_context.aws_api.ec2_session,
                                                          ami_id=data_holder.vmdetails.uid)
 
-                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Online", "Active")
-
     def power_off_ami(self, command_context):
         """
         Will power on the ami
@@ -229,8 +213,6 @@ class AWSShell(object):
 
                 self.power_management_operation.power_off(ec2_session=shell_context.aws_api.ec2_session,
                                                           ami_id=data_holder.vmdetails.uid)
-
-                shell_context.cloudshell_session.SetResourceLiveStatus(resource.fullname, "Offline", "Powered Off")
 
     def delete_instance(self, command_context):
         """
@@ -273,33 +255,33 @@ class AWSShell(object):
                     resource=resource,
                     allow_all_storage_traffic=allow_all_storage_traffic)
 
-    def deploy_ami(self, command_context, deployment_request, cancellation_context):
+    def deploy_ami(self, command_context, actions, cancellation_context):
         """
         Will deploy Amazon Image on the cloud provider
         :param ResourceCommandContext command_context:
-        :param JSON Obj deployment_request:
+        :param list[RequestActionBase] actions::
         :param CancellationContext cancellation_context:
         """
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Deploying AMI')
 
-                aws_ami_deployment_model = self.model_parser.convert_to_deployment_resource_model(
-                    deployment_request,
-                    command_context.resource)
+                deploy_action = single(actions, lambda x: isinstance(x, DeployApp))
+                network_actions = [a for a in actions if isinstance(a, ConnectSubnet)]
 
                 deploy_data = self.deploy_ami_operation \
                     .deploy(ec2_session=shell_context.aws_api.ec2_session,
                             s3_session=shell_context.aws_api.s3_session,
-                            name=aws_ami_deployment_model.app_name,
+                            name=deploy_action.actionParams.appName,
                             reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
                             aws_ec2_cp_resource_model=shell_context.aws_ec2_resource_model,
-                            ami_deployment_model=aws_ami_deployment_model,
+                            ami_deploy_action=deploy_action,
+                            network_actions=network_actions,
                             ec2_client=shell_context.aws_api.ec2_client,
                             cancellation_context=cancellation_context,
                             logger=shell_context.logger)
 
-                return self.command_result_parser.set_command_result(deploy_data)
+                return deploy_data
 
     def refresh_ip(self, command_context):
         """
@@ -386,11 +368,11 @@ class AWSShell(object):
                         shell_context.logger.info('Get VmDetails')
                         vm_details = self.vm_details_operation.get_vm_details(request.uuid,
                                                                               shell_context.aws_api.ec2_session)
-                        vm_details.app_name = request.app_name
+                        vm_details.appName = request.app_name
                         results.append(vm_details)
             except Exception as e:
-                result = VmDetails()
-                result.app_name = request.app_name
+                result = VmDetailsData()
+                result.appName = request.app_name
                 result.error = e.message
                 results.append(result)
 

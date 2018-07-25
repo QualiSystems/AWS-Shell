@@ -1,58 +1,62 @@
+from cloudshell.cp.core.models import  VmDetailsProperty,VmDetailsNetworkInterface,VmDetailsData
+
 class VmDetailsProvider(object):
     def __init__(self):
         pass
 
-    def create(self, instance):
-        vm_details = VmDetails()
+    def create(self, instance,deploy_app_name=""):
+        vm_instance_data = self._get_vm_instance_data(instance, instance.vpc_id)
+        vm_network_data = self._get_vm_network_data(instance)
 
-        vm_details.vm_instance_data = self._get_vm_instance_data(instance, instance.vpc_id)
-        vm_details.vm_network_data = self._get_vm_network_data(instance)
-        return vm_details
+        return VmDetailsData(vmInstanceData=vm_instance_data, vmNetworkData=vm_network_data , appName=deploy_app_name)
 
     def _get_vm_instance_data(self, instance, vpc_id):
         # if not windows, instance platform is empty; therefore we default to linux
         platform = instance.platform or 'linux'
         volume = self._get_volume(instance)
-        data = [AdditionalData('AMI ID', instance.image_id),
-                AdditionalData('instance type', instance.instance_type),
-                AdditionalData('platform', platform),
-                AdditionalData('Storage Name', self._get_volume_id(volume)),
-                AdditionalData('Storage Type', self._get_volume_type(volume)),
-                AdditionalData('Storage Size', self._get_volume_size(volume)),
-                AdditionalData('VPC ID', vpc_id, hidden=True),
-                AdditionalData('Availability Zone', self._get_availability_zone(instance), hidden=True)
-                ]
+        data = [VmDetailsProperty(key='AMI ID',value=instance.image_id),
+                VmDetailsProperty(key='instance type',value=instance.instance_type),
+                VmDetailsProperty(key='platform', value=platform),
+                VmDetailsProperty(key='Storage Name',value=self._get_volume_id(volume)),
+                VmDetailsProperty(key='Storage Type',value=self._get_volume_type(volume)),
+                VmDetailsProperty(key='Storage Size',value=self._get_volume_size(volume)),
+                VmDetailsProperty(key='VPC ID',value=vpc_id, hidden=True),
+                VmDetailsProperty(key='Availability Zone',value=self._get_availability_zone(instance), hidden=True)]
+
+        if instance.iam_instance_profile:
+            arn = instance.iam_instance_profile["Arn"]
+            instance_profile_name = arn.split('instance-profile/')[-1]
+            data.append(VmDetailsProperty(key='IAM Role', value=instance_profile_name))
+
         return data
 
     def _get_vm_network_data(self, instance):
-        network_interface_objects = []
+        network_interfaces_results = []
 
         instance.reload()
-        if instance.network_interfaces:
-            network_interfaces = sorted(instance.network_interfaces, key=lambda x: x.attachment.get("DeviceIndex"))
-            for network_interface in network_interfaces:
-                network_interface_object = {
-                    "interface_id": network_interface.network_interface_id,
-                    "network_id": network_interface.subnet_id,
-                    "network_data": [AdditionalData("IP", network_interface.private_ip_address)]
-                }
 
-                is_attached_to_elastic_ip = self._has_elastic_ip(network_interface)
-                is_primary = self._is_primary_interface(network_interface)
-                public_ip = self._calculate_public_ip(network_interface)
+        if not instance.network_interfaces:
+            return network_interfaces_results
 
-                if is_primary:
-                    network_interface_object["is_primary"] = is_primary
+        network_interfaces = sorted(instance.network_interfaces, key=lambda x: x.attachment.get("DeviceIndex"))
 
-                network_interface_object["network_data"].append(AdditionalData("Public IP", public_ip))
-                network_interface_object["network_data"].append(AdditionalData("Elastic IP", is_attached_to_elastic_ip))
+        for network_interface in network_interfaces:
+            is_attached_to_elastic_ip = self._has_elastic_ip(network_interface)
+            is_primary = self._is_primary_interface(network_interface)
+            public_ip = self._calculate_public_ip(network_interface)
 
-                network_interface_object["network_data"].append(AdditionalData("MAC Address", network_interface.mac_address))
-                network_interface_object["network_data"].append(AdditionalData("Device Index", network_interface.attachment.get("DeviceIndex")))
+            network_data =[VmDetailsProperty(key="IP",value= network_interface.private_ip_address),
+                           VmDetailsProperty(key="Public IP", value=public_ip),
+                           VmDetailsProperty(key="Elastic IP", value=is_attached_to_elastic_ip),
+                           VmDetailsProperty(key="MAC Address", value=network_interface.mac_address),
+                           VmDetailsProperty(key="Device Index",value=network_interface.attachment.get("DeviceIndex"))]
 
-                network_interface_objects.append(network_interface_object)
+            current_interface = VmDetailsNetworkInterface(interfaceId=network_interface.network_interface_id, networkId=network_interface.subnet_id,
+                                                                     isPrimary=is_primary, networkData=network_data,privateIpAddress=network_interface.private_ip_address,publicIpAddress=public_ip)
 
-        return network_interface_objects
+            network_interfaces_results.append(current_interface)
+
+        return network_interfaces_results
 
     def _calculate_public_ip(self, interface):
         # interface has public ip if:
@@ -87,30 +91,3 @@ class VmDetailsProvider(object):
 
     def _get_volume_id(self, volume):
         return volume.volume_id if volume else None
-
-
-class VmDetails(object):
-    def __init__(self):
-        self.vm_instance_data = {} # type: dict
-        self.vm_network_data = [] # type: list[VmNetworkData]
-
-
-class VmNetworkData(object):
-    def __init__(self):
-        self.interface_id = {} # type: str
-        self.network_id = {} # type: str
-        self.is_primary = False # type: bool
-        self.network_data = {} # type: dict
-
-
-def AdditionalData(key, value, hidden=False):
-    """
-    :type key: str
-    :type value: str
-    :type hidden: bool
-    """
-    return {
-        "key": key,
-        "value": value,
-        "hidden": hidden
-    }

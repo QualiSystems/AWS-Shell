@@ -3,16 +3,11 @@ import re
 import jsonpickle
 from cloudshell.shell.core.driver_context import ReservationContextDetails
 
-from cloudshell.cp.aws.common.converters import convert_to_bool
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
-from cloudshell.cp.aws.domain.services.parsers.network_actions import NetworkActionsParser
 from cloudshell.cp.aws.domain.services.parsers.security_group_parser import SecurityGroupParser
+from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-
-from cloudshell.cp.aws.models.app_security_groups_model import AppSecurityGroupModel, DeployedApp, VmDetails, \
-    SecurityGroupConfiguration
 
 
 class AWSModelsParser(object):
@@ -72,46 +67,6 @@ class AWSModelsParser(object):
         # aws_ec2_resource_model.reserved_ips_in_subnet = resource_context['Reserved IPs in Subnet']
 
         return aws_ec2_resource_model
-
-    @staticmethod
-    def convert_to_deployment_resource_model(deployment_request, resource):
-        """
-        :param str deployment_request: JSON string representing the deployment request
-        :param ResourceContextDetails resource: The details of the resource using the driver
-        """
-        data = jsonpickle.decode(deployment_request)
-        deployment_resource_model = DeployAWSEc2AMIInstanceResourceModel()
-
-        deployment_resource_model.cloud_provider = resource.name
-        deployment_resource_model.app_name = data["AppName"]
-
-        deployment_resource_model.aws_ami_id = data["Attributes"]['AWS AMI Id']
-        deployment_resource_model.allow_all_sandbox_traffic = convert_to_bool(
-            data["Attributes"]['Allow all Sandbox Traffic'])
-        deployment_resource_model.storage_size = data["Attributes"]['Storage Size']
-        deployment_resource_model.storage_iops = data["Attributes"]['Storage IOPS']
-        deployment_resource_model.storage_type = data["Attributes"]['Storage Type']
-        deployment_resource_model.instance_type = data["Attributes"]['Instance Type']
-        deployment_resource_model.root_volume_name = data["Attributes"]['Root Volume Name']
-        deployment_resource_model.wait_for_ip = convert_to_bool(data["Attributes"]['Wait for IP'])
-        deployment_resource_model.wait_for_status_check = convert_to_bool(
-            data["Attributes"]['Wait for Status Check'])
-        deployment_resource_model.autoload = convert_to_bool(data["Attributes"]['Autoload'])
-        deployment_resource_model.inbound_ports = data["Attributes"]['Inbound Ports']
-        deployment_resource_model.wait_for_credentials = \
-            convert_to_bool(data["Attributes"]['Wait for Credentials'])
-
-        (deployment_resource_model.add_public_ip, deployment_resource_model.allocate_elastic_ip) = \
-            AWSModelsParser.parse_public_ip_options_attribute(data["Attributes"]['Public IP Options'])
-
-        deployment_resource_model.user = \
-            AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
-                data["LogicalResourceRequestAttributes"], "User")
-
-        deployment_resource_model.network_configurations = \
-            AWSModelsParser.parse_deploy_networking_configurations(data)
-
-        return deployment_resource_model
 
     @staticmethod
     def parse_public_ip_options_attribute(attr_value):
@@ -196,17 +151,3 @@ class AWSModelsParser(object):
         :rtype: ReservationModel
         """
         return ReservationModel(reservation_context)
-
-    @staticmethod
-    def parse_deploy_networking_configurations(deployment_request):
-        """
-        :param deployment_request: request object to parse
-        :return:
-        """
-        if "NetworkConfigurationsRequest" not in deployment_request:
-            return None
-
-        actions = deployment_request["NetworkConfigurationsRequest"]["actions"]
-        # actions = deployment_request["NetworkConfigurationsRequest"]
-
-        return NetworkActionsParser.parse_network_actions_data(actions)

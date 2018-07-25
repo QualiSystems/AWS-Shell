@@ -16,12 +16,14 @@ class TestVmDetailsProvider(TestCase):
         instance.platform = 'instance_platform'
         instance.network_interfaces = []
         instance.volumes.all = lambda: []
+        instance.iam_instance_profile = {"Arn": "arn:aws:iam::admin_role"}
 
-        vm_instance_data = self.vm_details_provider.create(instance).vm_instance_data
+        vm_instance_data = self.vm_details_provider.create(instance).vmInstanceData
 
         self.assertTrue(self._get_value(vm_instance_data, 'AMI ID') == instance.image_id)
         self.assertTrue(self._get_value(vm_instance_data, 'instance type') == instance.instance_type)
         self.assertTrue(self._get_value(vm_instance_data, 'platform') == instance.platform)
+        self.assertTrue(self._get_value(vm_instance_data, 'IAM Role') == instance.iam_instance_profile['Arn'])
 
     def test_prepare_network_interface_objects_with_elastic_ip(self):
         # elastic_ip
@@ -44,10 +46,10 @@ class TestVmDetailsProvider(TestCase):
 
         nio = network_interface_objects[0]
 
-        self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['network_id'] == 'subnet_id')
-        self.assertTrue(nio['is_primary'] == True)
-        nio_data = nio['network_data']
+        self.assertTrue(nio.interfaceId == 'interface_id')
+        self.assertTrue(nio.networkId == 'subnet_id')
+        self.assertTrue(nio.isPrimary == True)
+        nio_data = nio.networkData
         self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
         self.assertTrue(self._get_value(nio_data, 'Elastic IP') == True)
         self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
@@ -73,10 +75,11 @@ class TestVmDetailsProvider(TestCase):
 
         nio = network_interface_objects[0]
 
-        self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['network_id'] == 'subnet_id')
-        self.assertTrue(nio['is_primary'] == True)
-        nio_data = nio['network_data']
+        self.assertTrue(nio.interfaceId == 'interface_id')
+        self.assertTrue(nio.networkId == 'subnet_id')
+        self.assertTrue(nio.isPrimary == True)
+        nio_data = nio.networkData
+
         self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
         self.assertTrue(self._get_value(nio_data, 'Elastic IP') == False)
         self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
@@ -101,10 +104,11 @@ class TestVmDetailsProvider(TestCase):
 
         nio = network_interface_objects[0]
 
-        self.assertTrue(nio['interface_id'] == 'interface_id')
-        self.assertTrue(nio['network_id'] == 'subnet_id')
-        self.assertTrue('is_primary' not in nio)
-        nio_data = nio['network_data']
+        self.assertTrue(nio.interfaceId == 'interface_id')
+        self.assertTrue(nio.networkId == 'subnet_id')
+        self.assertTrue(nio.isPrimary == False)
+        nio_data = nio.networkData
+
         self.assertTrue(self._get_value(nio_data, 'MAC Address') == 'mac_address')
         self.assertTrue(self._get_value(nio_data, 'Elastic IP') == False)
         self.assertTrue(self._get_value(nio_data, 'IP') == 'private_ip')
@@ -112,6 +116,6 @@ class TestVmDetailsProvider(TestCase):
 
     def _get_value(self, data, key):
         for item in data:
-            if item['key'] == key:
-                return item['value']
+            if item.key == key:
+                return item.value
         return None

@@ -4,9 +4,8 @@ from mock import Mock, call, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
-from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
-from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel, NetworkAction, \
-    SubnetConnectionParams
+from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
+from cloudshell.cp.core.models import ConnectToSubnetParams, PrepareCloudInfra, ConnectSubnet
 
 
 class TestDeployOperation(TestCase):
@@ -43,7 +42,8 @@ class TestDeployOperation(TestCase):
 
     def test_deploy_rollback_called(self):
         # arrange
-        ami_datamodel = Mock()
+        ami_deploy_action = Mock()
+        network_actions = None
         cancellation_context = Mock()
         inst_name = 'my name'
         reservation = Mock()
@@ -55,7 +55,7 @@ class TestDeployOperation(TestCase):
 
         # act & assert
         self.assertRaises(Exception, self.deploy_operation.deploy, self.ec2_session, self.s3_session, inst_name,
-                          reservation, self.ec2_datamodel, ami_datamodel, self.ec2_client, cancellation_context,
+                          reservation, self.ec2_datamodel, ami_deploy_action, network_actions, self.ec2_client, cancellation_context,
                           self.logger)
         self.deploy_operation._rollback_deploy.assert_called_once()
 
@@ -105,7 +105,10 @@ class TestDeployOperation(TestCase):
         ami_datamodel.outbound_ports = "20"
         ami_datamodel.add_public_ip = None
         ami_datamodel.allocate_elastic_ip = True
-        ami_datamodel.network_configurations = None
+        ami_deploy_action = Mock()
+        ami_deploy_action.actionParms = Mock()
+        ami_deploy_action.actionParams.deployment = Mock()
+        ami_deploy_action.actionParams.deployment.customModel = ami_datamodel
         instance = Mock()
         instance.network_interfaces = []
         instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
@@ -117,12 +120,13 @@ class TestDeployOperation(TestCase):
         inst_name = 'my name'
         reservation = Mock()
         ami_deployment_info = Mock()
+        network_actions = None
         self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_info)
         self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
         network_config_results_dto = Mock()
         network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
         self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
-        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=network_config_results_dto)
+        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=[])
 
         # act
         res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
@@ -130,7 +134,8 @@ class TestDeployOperation(TestCase):
                                            name=inst_name,
                                            reservation=reservation,
                                            aws_ec2_cp_resource_model=self.ec2_datamodel,
-                                           ami_deployment_model=ami_datamodel,
+                                           ami_deploy_action=ami_deploy_action,
+                                           network_actions=network_actions,
                                            ec2_client=self.ec2_client,
                                            cancellation_context=cancellation_context,
                                            logger=self.logger)
@@ -138,18 +143,13 @@ class TestDeployOperation(TestCase):
         ami_credentials = self.credentials_manager.get_windows_credentials()
 
         # assert
-        self.assertEqual(res.vm_name, 'my name')
-        self.assertEqual(res.cloud_provider_resource_name, ami_datamodel.cloud_provider)
-        self.assertEqual(res.auto_power_off, True)
-        self.assertEqual(res.wait_for_ip, ami_datamodel.wait_for_ip)
-        self.assertEqual(res.auto_delete, True)
-        self.assertEqual(res.autoload, ami_datamodel.autoload)
-        self.assertEqual(res.inbound_ports, ami_datamodel.inbound_ports)
-        self.assertEqual(res.vm_uuid, instance.instance_id)
-        self.assertEqual(res.deployed_app_attributes, {'Password': ami_credentials.password,
-                                                       'User': ami_credentials.user_name,
-                                                       'Public IP': instance.public_ip_address})
-        self.assertEquals(res.network_configuration_results, network_config_results_dto)
+        self.assertEqual(res[0].vmName, 'my name')
+        self.assertEqual(res[0].deployedAppAdditionalData["inbound_ports"], ami_datamodel.inbound_ports)
+        self.assertEqual(res[0].vmUuid, instance.instance_id)
+        self.assertEqual(res[0].deployedAppAttributes[0].attributeName, 'Password')
+        self.assertEqual(res[0].deployedAppAttributes[0].attributeValue, ami_credentials.password)
+        self.assertEqual(res[0].deployedAppAttributes[1].attributeName, 'User')
+        self.assertEqual(res[0].deployedAppAttributes[1].attributeValue, ami_credentials.user_name)
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
@@ -179,6 +179,7 @@ class TestDeployOperation(TestCase):
                 ec2_client=self.ec2_client,
                 instance=instance,
                 ami_deployment_model=ami_datamodel,
+                network_actions=None,
                 network_config_results=network_config_results,
                 logger=self.logger)
 
@@ -314,12 +315,14 @@ class TestDeployOperation(TestCase):
 
     def test_create_deployment_parameters_no_ami_id(self):
         ami = Mock()
+        network_actions = MagicMock()
         ami.aws_ami_id = None
         self.assertRaises(ValueError,
                           self.deploy_operation._create_deployment_parameters,
                           ec2_session=Mock(),
                           aws_ec2_resource_model=self.ec2_datamodel,
                           ami_deployment_model=ami,
+                          network_actions=network_actions,
                           vpc=Mock(),
                           security_group=None,
                           key_pair='keypair',
@@ -335,13 +338,15 @@ class TestDeployOperation(TestCase):
         ami_model = Mock()
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
-        ami_model.network_configurations = None
+        ami_model.iam_role = ""
+        network_actions = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
 
         aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
                                                                         aws_ec2_resource_model=self.ec2_datamodel,
                                                                         ami_deployment_model=ami_model,
+                                                                        network_actions=network_actions,
                                                                         vpc=vpc,
                                                                         security_group=None,
                                                                         key_pair='keypair',
@@ -355,13 +360,91 @@ class TestDeployOperation(TestCase):
         self.assertTrue(len(aws_model.security_group_ids) == 1)
         self.assertTrue(len(aws_model.network_interfaces) == 1)
 
+    def test_create_deployment_parameters_no_iam_role(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.iam_role = ""
+        network_actions = None
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        network_actions=network_actions,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger,)
+
+        # if instance doesnt have iam role, the deployment params will have an empty iam instance profile dict
+        self.assertTrue(not any(aws_model.iam_role))  # not any(some_dict) => is empty dictionary
+
+    def test_create_deployment_parameters_iam_role_not_arn(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        ami_model.iam_role = "admin_role"
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+        network_actions = None
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        network_actions=network_actions,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger,)
+
+        # if instance has iam role, but not in the form of arn, will return dict with iam role name
+        self.assertTrue(aws_model.iam_role['Name'] == ami_model.iam_role)
+
+    def test_create_deployment_parameters_iam_role_arn(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        network_actions = None
+        ami_model.iam_role = "arn:aws:iam::admin_role"
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        network_actions=network_actions,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger)
+
+        # if instance has iam role, but not in the form of arn, will return dict with iam role name
+        self.assertTrue(aws_model.iam_role['Arn'] == ami_model.iam_role)
+
     def test_prepare_network_interfaces_multi_subnets_with_public_ip(self):
         ami_model = Mock()
         ami_model.add_public_ip = True
         ami_model.network_configurations = [Mock(), Mock()]
 
+        network_actions = [Mock(spec=ConnectSubnet),Mock(spec=ConnectSubnet)]
+
         with self.assertRaisesRegexp(ValueError, "Public IP option is not supported with multiple subnets"):
             self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
+                                                              network_actions=network_actions,
                                                               vpc=Mock(),
                                                               security_group_ids=MagicMock(),
                                                               network_config_results=MagicMock(),
@@ -375,20 +458,21 @@ class TestDeployOperation(TestCase):
         vpc = Mock()
         security_group_ids = MagicMock()
 
-        action1 = NetworkAction()
-        action1.id = 'action1'
-        action1.connection_params = SubnetConnectionParams()
-        action1.connection_params.subnet_id = 'sub1'
-        action1.connection_params.device_index = "0"
+        action1 = ConnectSubnet()
+        action1.actionId = 'action1'
+        action1.actionParams = ConnectToSubnetParams()
+        action1.actionParams.subnetId= 'sub1'
+        action1.actionParams.vnicName = 0
+        action1.actionParams.isPublic = True
 
-        action2 = NetworkAction()
-        action2.id = 'action2'
-        action2.connection_params = SubnetConnectionParams()
-        action2.connection_params.subnet_id = 'sub2'
-        action2.connection_params.device_index = 1
+        action2 = ConnectSubnet()
+        action2.actionId = 'action2'
+        action2.actionParams = ConnectToSubnetParams()
+        action2.actionParams.subnetId = 'sub2'
+        action2.actionParams.vnicName = 1
 
         ami_model = Mock()
-        ami_model.network_configurations = [action1, action2]
+        network_actions = [action1, action2]
         ami_model.add_public_ip = False
 
         res_model_1 = DeployNetworkingResultModel('action1')
@@ -400,6 +484,7 @@ class TestDeployOperation(TestCase):
 
         # act
         net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
+                                                                           network_actions=network_actions,
                                                                            vpc=vpc,
                                                                            security_group_ids=security_group_ids,
                                                                            network_config_results=network_config_results,
@@ -415,11 +500,11 @@ class TestDeployOperation(TestCase):
 
     def test_prepare_network_config_results_dto_returns_empty_array_when_no_network_config(self):
         # arrange
-        aws_model = Mock()
-        aws_model.network_configurations = None
+        network_actions = None
+
 
         # act
-        dtos = self.deploy_operation._prepare_network_config_results_dto(Mock(), aws_model)
+        dtos = self.deploy_operation._prepare_network_config_results_dto(Mock(), network_actions)
 
         # assert
         self.assertTrue(isinstance(dtos, list))
@@ -443,11 +528,9 @@ class TestDeployOperation(TestCase):
 
         models = [model1, model2]
 
-        aws_model = DeployAWSEc2AMIInstanceResourceModel()
-        aws_model.network_configurations = [Mock()]
-
+        network_actions = Mock()
         # act
-        dtos = self.deploy_operation._prepare_network_config_results_dto(models, aws_model)
+        dtos = self.deploy_operation._prepare_network_config_results_dto(models, network_actions)
 
         self.assertEquals(len(dtos), 2)
         dto1 = dtos[0]
@@ -456,8 +539,8 @@ class TestDeployOperation(TestCase):
         self.assertEquals(dto2.actionId, "bbb")
         self.assertTrue(dto1.success)
         self.assertTrue(dto2.success)
-        self.assertEquals(dto1.type, "connectToSubnet")
-        self.assertEquals(dto2.type, "connectToSubnet")
+        self.assertEquals(dto1.type, "ConnectToSubnet")
+        self.assertEquals(dto2.type, "ConnectToSubnet")
         self.assertTrue('"interface_id": "interface1"' in dto1.interface)
         self.assertTrue('"Device Index": 0' in dto1.interface)
         self.assertTrue('"IP": "priv1"' in dto1.interface)
@@ -488,17 +571,18 @@ class TestDeployOperation(TestCase):
                                     name=Mock(),
                                     reservation=Mock(),
                                     aws_ec2_cp_resource_model=Mock(),
-                                    ami_deployment_model=Mock(),
+                                    ami_deploy_action=Mock(),
+                                    network_actions=Mock(),
                                     ec2_client=Mock(),
                                     cancellation_context=Mock(),
                                     logger=self.logger)
 
     def test__prepare_network_result_models_returns_empty_model_when_no_network_config(self):
         # arrange
-        ami_model = Mock(network_configurations=None)
+        network_actions = None
 
         # act
-        models = self.deploy_operation._prepare_network_result_models(ami_model)
+        models = self.deploy_operation._prepare_network_result_models(network_actions)
 
         # assert
         self.assertEquals(len(models), 1)
@@ -507,23 +591,23 @@ class TestDeployOperation(TestCase):
 
     def test__prepare_network_result_models_returns_result_model_per_action(self):
         # arrange
-        action1 = Mock(spec=NetworkAction, id=Mock(spec=str))
-        action1.connection_params = Mock(spec=SubnetConnectionParams)
+        action1 = Mock(spec=PrepareCloudInfra, actionId=Mock(spec=str))
+        action1.actionParams = Mock(spec=ConnectToSubnetParams)
 
-        action2 = Mock(spec=NetworkAction, id=Mock(spec=str))
-        action2.connection_params = Mock(spec=SubnetConnectionParams)
+        action2 = Mock(spec=PrepareCloudInfra, actionId=Mock(spec=str))
+        action2.actionParams = Mock(spec=ConnectToSubnetParams)
 
-        ami_model = Mock(network_configurations=[action1, action2])
+        network_actions = [action1, action2]
 
         # act
-        models = self.deploy_operation._prepare_network_result_models(ami_model)
+        models = self.deploy_operation._prepare_network_result_models(network_actions)
 
         # assert
         self.assertEquals(len(models), 2)
         self.assertTrue(isinstance(models[0], DeployNetworkingResultModel))
         self.assertTrue(isinstance(models[1], DeployNetworkingResultModel))
-        self.assertEquals(models[0].action_id, action1.id)
-        self.assertEquals(models[1].action_id, action2.id)
+        self.assertEquals(models[0].action_id, action1.actionId)
+        self.assertEquals(models[1].action_id, action2.actionId)
 
     def test_populate_network_config_results_with_interface_data(self):
         # arrange

@@ -128,6 +128,6 @@ class InstanceWaiter(object):
             return instance_status['InstanceStatuses'][0]
         return None
 
-    @retry(stop_max_attempt_number=3, wait_fixed=1000)
+    @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _reload_instance(self, instance):
         instance.reload()

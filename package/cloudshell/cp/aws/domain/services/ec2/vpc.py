@@ -153,7 +153,7 @@ class VPCService(object):
 
         return vpc_peer_connection.id
 
-    @retry(stop_max_attempt_number=3, wait_fixed=1000)
+    @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def accept_vpc_peering(self, vpc_peer_connection, logger):
         logger.info("Accepting VPC Peering {0}".format(vpc_peer_connection.id))
         vpc_peer_connection.accept()

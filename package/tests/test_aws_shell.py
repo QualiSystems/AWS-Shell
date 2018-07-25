@@ -1,15 +1,18 @@
 from unittest import TestCase
 
 import jsonpickle
-from mock import Mock, patch
+from cloudshell.cp.core.models import DeployApp
+from mock import Mock, patch, mock
 
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContextModel
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
-from cloudshell.cp.aws.models.deploy_result_model import DeployResult
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
+from cloudshell.cp.core import DriverRequestParser
+
+
 
 class TestAWSShell(TestCase):
     def setUp(self):
@@ -58,55 +61,30 @@ class TestAWSShell(TestCase):
 
     def test_deploying_ami_returns_deploy_result(self):
         # arrange
-        deploymock = DeployAWSEc2AMIInstanceResourceModel()
-        deploymock.auto_power_off = "True"
-        deploymock.wait_for_ip = "True"
-        deploymock.auto_delete = "True"
-        deploymock.autoload = "True"
-        deploymock.cloud_provider = "some_name"
-        deploymock.app_name = 'my instance name'
         cancellation_context = Mock()
 
-        result = DeployResult(vm_name=deploymock.app_name,
-                              vm_uuid='my instance id',
-                              cloud_provider_resource_name=deploymock.cloud_provider,
-                              autoload=deploymock.autoload,
-                              auto_delete=deploymock.auto_delete,
-                              wait_for_ip=deploymock.wait_for_ip,
-                              auto_power_off=deploymock.auto_power_off,
-                              inbound_ports='',
-                              deployed_app_attributes=dict(),
-                              deployed_app_address='',
-                              public_ip='',
-                              network_configuration_results=[],
-                              vm_details_data=dict())
+        result = Mock()
 
-        self.aws_shell.model_parser.convert_to_deployment_resource_model = Mock(return_value=deploymock)
         self.aws_shell.deploy_ami_operation.deploy = Mock(return_value=result)
-        aws_cloud_provider = AWSEc2CloudProviderResourceModel()
 
-        res = None
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
+            deploy_app = DeployApp()
+            deploy_app.actionParams = Mock()
 
             # act
-            res = self.aws_shell.deploy_ami(self.command_context, aws_cloud_provider, cancellation_context)
+            res = self.aws_shell.deploy_ami(self.command_context, [deploy_app], cancellation_context)
 
-        decoded_res = jsonpickle.decode(res)
-        self.assertEqual(decoded_res['vm_name'], deploymock.app_name)
-        self.assertEqual(decoded_res['vm_uuid'], result.vm_uuid)
-        self.assertEqual(decoded_res['auto_power_off'], deploymock.auto_power_off)
-        self.assertEqual(decoded_res['wait_for_ip'], deploymock.wait_for_ip)
-        self.assertEqual(decoded_res['auto_delete'], deploymock.auto_delete)
-        self.assertEqual(decoded_res['autoload'], deploymock.autoload)
-        self.assertEqual(decoded_res['cloud_provider_resource_name'], deploymock.cloud_provider)
+
+        self.assertEqual(res, result)
         self.aws_shell.deploy_ami_operation.deploy.assert_called_with(
                 ec2_session=self.expected_shell_context.aws_api.ec2_session,
                 s3_session=self.expected_shell_context.aws_api.s3_session,
-                name=deploymock.app_name,
+                name=deploy_app.actionParams.appName,
                 reservation=self.reservation_model,
                 aws_ec2_cp_resource_model=self.expected_shell_context.aws_ec2_resource_model,
-                ami_deployment_model=deploymock,
+                ami_deploy_action=deploy_app,
+                network_actions=[],
                 ec2_client=self.expected_shell_context.aws_api.ec2_client,
                 cancellation_context=cancellation_context,
                 logger=self.expected_shell_context.logger)
@@ -120,11 +98,9 @@ class TestAWSShell(TestCase):
 
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
-            with patch('cloudshell.cp.aws.aws_shell.NetworkActionsParser') as net_parser:
-                net_parser.parse_network_actions_data = Mock(return_value=actions_mock)
 
                 # act
-                result = self.aws_shell.cleanup_connectivity(self.command_context, req)
+            result = self.aws_shell.cleanup_connectivity(self.command_context, actions_mock)
 
         # assert
         self.aws_shell.clean_up_operation.cleanup.assert_called_with(
@@ -140,17 +116,16 @@ class TestAWSShell(TestCase):
     def test_prepare_connectivity(self):
         # Assert
         cancellation_context = Mock()
-        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareNetwork", "connectionParams": {"type": "prepareNetworkParams", "cidr": "10.0.0.0/24"}}]}}'
+        req = '{"driverRequest": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null, "type": "prepareCloudInfra", "actionParams": {"type": "prepareCloudInfraParams", "cidr": "10.0.0.0/24"}}]}}'
         self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
         res = None
         actions_mock = Mock()
+
         with patch('cloudshell.cp.aws.aws_shell.AwsShellContext') as shell_context:
             shell_context.return_value = self.mock_context
-            with patch('cloudshell.cp.aws.aws_shell.NetworkActionsParser') as net_parser:
-                net_parser.parse_network_actions_data = Mock(return_value=actions_mock)
 
-                # Act
-                res = self.aws_shell.prepare_connectivity(self.command_context, req, cancellation_context)
+            # Act
+            res = self.aws_shell.prepare_connectivity(self.command_context, actions_mock, cancellation_context)
 
             # Assert
             self.aws_shell.prepare_connectivity_operation.prepare_connectivity.assert_called_with(
@@ -162,14 +137,7 @@ class TestAWSShell(TestCase):
                     actions=actions_mock,
                     cancellation_context=cancellation_context,
                     logger=self.expected_shell_context.logger)
-            self.assertEqual(res, '{"driverResponse": {"actionResults": true}}')
-
-    def test_prepare_connectivity_invalid_req(self):
-        with patch('cloudshell.cp.aws.aws_shell.AwsShellContext'):
-            req = '{"aa": {"actions": [{"actionId": "ba7d54a5-79c3-4b55-84c2-d7d9bdc19356","actionTarget": null,"customActionAttributes": [{"attributeName": "Network","attributeValue": "10.0.0.0/24","type": "customAttribute"}],"type": "prepareNetwork"}]}}'
-            self.aws_shell.prepare_connectivity_operation.prepare_connectivity = Mock(return_value=True)
-
-            self.assertRaises(ValueError, self.aws_shell.prepare_connectivity, self.command_context, req, Mock())
+            self.assertEqual(res, True)
 
     def test_delete_instance(self):
         deployed_model = DeployDataHolder({'vmdetails': {'uid': 'id'}})

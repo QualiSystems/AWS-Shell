@@ -1,4 +1,7 @@
 from unittest import TestCase
+
+import jsonpickle
+
 from cloudshell.cp.aws.aws_shell import AWSShell
 from mock import Mock
 from jsonpickle import encode
@@ -13,6 +16,16 @@ class TestGetVmDetails(TestCase):
         shell = AWSShell()
         requests_json = encode({'items': [{'deployedAppJson': { 'name': 'something', 'vmdetails': {'uid': '514'}}}]})
         shell.get_vm_details(Mock(), Mock(), requests_json)
+
+    def test_get_vm_details_name_exist(self):
+        shell = AWSShell()
+        requests_json = encode({'items': [{'deployedAppJson': { 'name': 'something', 'vmdetails': {'uid': '514'}}}]})
+        cancellation_context = Mock()
+        cancellation_context.is_cancelled = False
+        res = shell.get_vm_details(Mock(), cancellation_context, requests_json)
+        res_list = jsonpickle.decode(res)
+
+        self.assertTrue(res_list[0][u'appName'] == 'something')
 
     def test_get_volume_when_empty(self):
         instance = Mock()
