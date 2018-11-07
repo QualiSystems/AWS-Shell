@@ -45,13 +45,13 @@ class PortGroupAttributeParser(object):
         tcp = 'tcp'
 
         from_to_protocol_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
-                                          ports_attribute)
+                                          ports_attribute, flags=re.IGNORECASE)
 
         # 80-50000:udp
         if from_to_protocol_match:
             from_port = from_to_protocol_match.group(from_port)
             to_port = from_to_protocol_match.group(to_port)
-            protocol = from_to_protocol_match.group(protocol)
+            protocol = from_to_protocol_match.group(protocol).lower()
             return PortData(from_port, to_port, protocol, destination)
 
         from_protocol_match = re.match(r"^((?P<from_port>\d+):(?P<protocol>(udp|tcp)))$", ports_attribute)
