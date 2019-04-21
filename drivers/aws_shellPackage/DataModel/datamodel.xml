@@ -36,6 +36,35 @@
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Generic Input" Type="String">
       <Rules/>
     </AttributeInfo>
+
+
+
+
+    <AttributeInfo Name="VPC Mode" DefaultValue="" Description="" IsReadOnly="false" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+    <AttributeInfo Name="VPC CIDR" DefaultValue="" Description="" IsReadOnly="false" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+    <AttributeInfo Name="Inbound Gateway" DefaultValue="" Description="" IsReadOnly="false" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+
+
+
+
     <AttributeInfo DefaultValue="" Description="If empty the role that is configured on the Execution Server instance in the Management VPC is used." IsReadOnly="false" Name="AWS Access Key ID" Type="Password">
       <Rules>
         <Rule Name="Configuration" />
@@ -196,6 +225,30 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt SG ID">
               <AllowedValues />
             </AttachedAttribute>
+
+
+
+            <AttachedAttribute Name="VPC Mode" IsLocal="true" IsOverridable="true">
+              <AllowedValues>
+                <AllowedValue>Dynamic</AllowedValue>
+                <AllowedValue>Static</AllowedValue>
+              </AllowedValues>
+            </AttachedAttribute>
+
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="VPC CIDR">
+              <AllowedValues />
+            </AttachedAttribute>
+
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Inbound Gateway">
+              <AllowedValues>
+                <AllowedValue>None</AllowedValue>
+                <AllowedValue>Network Load Balancer</AllowedValue>
+              </AllowedValues>
+            </AttachedAttribute>
+
+
+
+
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt VPC ID">
               <AllowedValues />
             </AttachedAttribute>
