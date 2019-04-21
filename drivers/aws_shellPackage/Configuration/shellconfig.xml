@@ -19,6 +19,9 @@
                 <Attribute Name="Max Storage IOPS" Value="0" />
                 <Attribute Name="Networks In Use" Value="" />
                 <Attribute Name="Instance Type" Value="" />
+                <Attribute Name="VPC Mode" Value="Dynamic" />
+                <Attribute Name="VPC CIDR" Value="" />
+                <Attribute Name="Inbound Gateway" Value="None" />
             </Attributes>
         </ResourceTemplate>
     </ResourceTemplates>
