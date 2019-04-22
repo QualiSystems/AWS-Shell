@@ -369,6 +369,7 @@ class TestDeployOperation(TestCase):
         ec2_session.Image = Mock(return_value=image)
         ami_model = Mock()
         ami_model.iam_role = ""
+        ami_model.custom_tags = ""
         network_actions = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
