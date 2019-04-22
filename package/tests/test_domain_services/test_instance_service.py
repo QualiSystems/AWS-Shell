@@ -18,6 +18,7 @@ class TestInstanceService(TestCase):
         self.instance.instance_id = 'id'
         self.default_tags = ['tag1', 'tag2']
         self.tag_service.get_default_tags = Mock(return_value=self.default_tags)
+        self.tag_service.get_custom_tags = Mock(return_value=[])
         self.ec2_session.create_instances = Mock(return_value=[self.instance])
         self.ec2_session.Instance = Mock(return_value=self.instance)
         self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
