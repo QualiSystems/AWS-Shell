@@ -2,6 +2,8 @@ import traceback
 import uuid
 from multiprocessing import TimeoutError
 
+from typing import Dict
+
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
@@ -361,7 +363,7 @@ class DeployAMIOperation(object):
         aws_model.min_count = 1
         aws_model.max_count = 1
         aws_model.instance_type = self._get_instance_item(ami_deployment_model, aws_ec2_resource_model)
-        aws_model.private_ip_address = ami_deployment_model.private_ip_address or None
+        aws_model.private_ip_address = ami_deployment_model.private_ip_address
         aws_model.block_device_mappings = self._get_block_device_mappings(image=image,
                                                                           ami_deployment_model=ami_deployment_model,
                                                                           aws_ec2_resource_model=aws_ec2_resource_model)
@@ -407,7 +409,8 @@ class DeployAMIOperation(object):
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
                 add_public_ip=ami_deployment_model.add_public_ip,
                 security_group_ids=security_group_ids,
-                vpc=vpc)]
+                vpc=vpc,
+                private_ip=ami_deployment_model.private_ip_address)]
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
 
@@ -424,6 +427,8 @@ class DeployAMIOperation(object):
                 continue
 
             device_index = net_config.actionParams.vnicName
+            private_ip = self._get_private_ip_for_subnet(ami_deployment_model,
+                                                         net_config.actionParams.subnetServiceAttributes)
 
             net_interfaces.append(
                 # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
@@ -431,7 +436,8 @@ class DeployAMIOperation(object):
                     subnet_id=net_config.actionParams.subnetId,
                     device_index=device_index,
                     groups=security_group_ids,  # todo: set groups by subnet id
-                    public_ip=public_ip_prop_value))
+                    public_ip=public_ip_prop_value,
+                    private_ip=private_ip))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.actionId)
@@ -443,11 +449,26 @@ class DeployAMIOperation(object):
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
                 add_public_ip=ami_deployment_model.add_public_ip,
                 security_group_ids=security_group_ids,
-                vpc=vpc)]
+                vpc=vpc,
+                private_ip=ami_deployment_model.private_ip_address)]
 
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
         return net_interfaces
+
+    def _get_private_ip_for_subnet(self, ami_deployment_model, subnet_service_attributes):
+        """
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model: 
+        :param Dict[str,str] subnet_service_attributes: 
+        :return: 
+        """
+        private_ip = None
+        if subnet_service_attributes and 'Requested CIDR' in subnet_service_attributes:
+            subnet_cidr = subnet_service_attributes['Requested CIDR'] or None
+            if subnet_cidr and ami_deployment_model.private_ip_addresses_dict and \
+                    subnet_cidr in ami_deployment_model.private_ip_addresses_dict:
+                private_ip = ami_deployment_model.private_ip_addresses_dict[subnet_cidr]
+        return private_ip
 
     def _validate_network_interfaces_request(self, ami_deployment_model, network_actions, logger):
         self._validate_public_ip_with_multiple_subnets(ami_deployment_model, network_actions, logger)
