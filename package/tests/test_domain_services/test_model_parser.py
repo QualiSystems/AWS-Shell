@@ -63,6 +63,11 @@ class TestModelParser(TestCase):
                                 '"type": "attribute"'\
                               '},'\
                               '{'\
+                                '"attributeName": "Custom Tags",'\
+                                '"attributeValue": "custom_tags",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
                                 '"attributeName": "Allow all Sandbox Traffic",'\
                                 '"attributeValue": "True",'\
                                 '"type": "attribute"'\

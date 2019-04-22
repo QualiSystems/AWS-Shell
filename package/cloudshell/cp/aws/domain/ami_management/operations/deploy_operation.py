@@ -172,11 +172,13 @@ class DeployAMIOperation(object):
 
         deploy_app_result = DeployAppResult(vmName=self._get_name_from_tags(instance),
                                             vmUuid=instance.instance_id,
-                                            deployedAppAttributes=convert_dict_to_attributes_list(deployed_app_attributes),
+                                            deployedAppAttributes=convert_dict_to_attributes_list(
+                                                    deployed_app_attributes),
                                             deployedAppAddress=instance.private_ip_address,
                                             vmDetailsData=vm_details_data,
-                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports,
-                                                                       'public_ip': instance.public_ip_address})
+                                            deployedAppAdditionalData={
+                                                'inbound_ports': ami_deployment_model.inbound_ports,
+                                                'public_ip': instance.public_ip_address})
         deploy_app_result.actionId = ami_deploy_action.actionId
         network_actions_results_dtos.append(deploy_app_result)
         return network_actions_results_dtos
@@ -281,7 +283,7 @@ class DeployAMIOperation(object):
                                                                           cancellation_context=cancellation_context)
             except TimeoutError:
                 logger.info(
-                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
+                        "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
         else:
             return None if ami_deploy_action.actionParams.appResource.attributes[
@@ -357,6 +359,8 @@ class DeployAMIOperation(object):
 
         image = ec2_session.Image(ami_deployment_model.aws_ami_id)
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
+
+        aws_model.custom_tags = self._get_custom_tags(custom_tags=ami_deployment_model.custom_tags)
 
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
@@ -458,9 +462,9 @@ class DeployAMIOperation(object):
 
     def _get_private_ip_for_subnet(self, ami_deployment_model, subnet_service_attributes):
         """
-        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model: 
-        :param Dict[str,str] subnet_service_attributes: 
-        :return: 
+        :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
+        :param Dict[str,str] subnet_service_attributes:
+        :return:
         """
         private_ip = None
         if subnet_service_attributes and 'Requested CIDR' in subnet_service_attributes:
@@ -636,3 +640,10 @@ class DeployAMIOperation(object):
             if "Association" in interface and "PublicIp" in interface["Association"] \
                     and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]
+
+    def _get_custom_tags(self, custom_tags):
+        res = {}
+        if custom_tags:
+            tags_list = custom_tags.split(",")
+            res = {r.split(":")[0]: r.split(":")[1] for r in tags_list }
+        return res

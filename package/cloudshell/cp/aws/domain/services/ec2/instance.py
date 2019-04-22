@@ -48,7 +48,7 @@ class InstanceService(object):
                                              cancellation_context=cancellation_context,
                                              logger=logger)
 
-        self._set_tags(instance, name, reservation)
+        self._set_tags(instance, name, reservation, ami_deployment_info.custom_tags)
 
         # Reload the instance attributes
         retry_helper.do_with_retry(lambda: instance.load())
@@ -87,10 +87,12 @@ class InstanceService(object):
             instance.terminate()
         return self.instance_waiter.multi_wait(instances, self.instance_waiter.TERMINATED)
 
-    def _set_tags(self, instance, name, reservation):
+    def _set_tags(self, instance, name, reservation, custom_tags):
         # todo create the name with a name generator
         new_name = name + ' ' + instance.instance_id
-        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation)
+        default_tags = self.tags_creator_service.get_default_tags(new_name, reservation) + \
+                       self.tags_creator_service.get_custom_tags(custom_tags)
+
         self.tags_creator_service.set_ec2_resource_tags(instance, default_tags)
 
         for volume in instance.volumes.all():
