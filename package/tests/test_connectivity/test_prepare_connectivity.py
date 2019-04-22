@@ -236,7 +236,7 @@ class TestPrepareSandboxInfra(TestCase):
                                 logger=Mock())
 
     def test_prepare_conn_command_fault_res(self):
-        self.aws_dm.is_static_vpc_mode = Mock(return_value=False)
+        self.aws_dm.is_static_vpc_mode = False
 
         action = PrepareCloudInfra()
         action.actionId="1234"
@@ -295,7 +295,7 @@ class TestPrepareSandboxInfra(TestCase):
         prepare_conn._get_or_create_sandbox_isolated_security_group = Mock(return_value=isolated_sg)
 
         res = prepare_conn._get_or_create_default_security_groups(self.ec2_session, self.reservation, vpc,
-                                                                  management_sg_id)
+                                                                  management_sg_id, True)
 
         security_group_service.get_security_group_by_name.assert_called_with(vpc=vpc,
                                                                              name=security_group_service.sandbox_default_sg_name())
@@ -309,7 +309,8 @@ class TestPrepareSandboxInfra(TestCase):
 
         security_group_service.set_shared_reservation_security_group_rules.assert_called_once_with(security_group=sg,
                                                                                                    management_sg_id=management_sg_id,
-                                                                                                   isolated_sg=isolated_sg)
+                                                                                                   isolated_sg=isolated_sg,
+                                                                                                   need_management_sg=True)
         self.assertEqual([isolated_sg, sg], res)  # create two security groups, default and isolated
 
     def test_get_or_create_default_sandbox_security_group(self):
@@ -336,7 +337,8 @@ class TestPrepareSandboxInfra(TestCase):
                                                                          management_sg_id=management_sg_id,
                                                                          reservation=self.reservation,
                                                                          vpc=vpc,
-                                                                         isolated_sg=isolated_sg)
+                                                                         isolated_sg=isolated_sg,
+                                                                         need_management_access=True)
 
         security_group_service.get_security_group_by_name.assert_called_once_with(vpc=vpc, name=sg_name)
         security_group_service.create_security_group.assert_called_once_with(ec2_session=self.ec2_session,
@@ -348,7 +350,8 @@ class TestPrepareSandboxInfra(TestCase):
 
         security_group_service.set_shared_reservation_security_group_rules.assert_called_once_with(security_group=sg,
                                                                                                    management_sg_id=management_sg_id,
-                                                                                                   isolated_sg=isolated_sg)
+                                                                                                   isolated_sg=isolated_sg,
+                                                                                                   need_management_sg=True)
         self.assertEqual(sg, res)
 
     def test_get_or_create_isolated_security_group(self):
@@ -371,7 +374,8 @@ class TestPrepareSandboxInfra(TestCase):
         res = prepare_conn._get_or_create_sandbox_isolated_security_group(ec2_session=self.ec2_session,
                                                                           management_sg_id=management_sg_id,
                                                                           reservation=self.reservation,
-                                                                          vpc=vpc)
+                                                                          vpc=vpc,
+                                                                          need_management_access=True)
         security_group_service.get_security_group_by_name.assert_called_once_with(vpc=vpc, name=isolated_sg_name)
 
         security_group_service.create_security_group.assert_called_once_with(ec2_session=self.ec2_session,

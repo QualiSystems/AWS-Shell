@@ -58,12 +58,16 @@ class PrepareSubnetExecutor(object):
         action_items = [PrepareSubnetExecutor.ActionItem(a) for a in subnet_actions]
 
         # get vpc and availability_zone
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session, reservation_id=self.reservation.reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session,
+                                                        reservation_id=self.reservation.reservation_id)
 
         if not vpc:
             vpcs_count = self.vpc_service.get_active_vpcs_count(self.ec2_client, self.logger)
-            additional_msg = "\nThere are {0} active VPCs in region \"{1}\".\nPlease make sure you haven't exceeded your region's VPC limit.".format(vpcs_count, self.aws_ec2_datamodel.region) if vpcs_count else ""
-            raise ValueError('VPC for reservation {0} not found.{1}'.format(self.reservation.reservation_id, additional_msg))
+            additional_msg = "\nThere are {0} active VPCs in region \"{1}\"." \
+                             "\nPlease make sure you haven't exceeded your region's VPC limit."\
+                             .format(vpcs_count, self.aws_ec2_datamodel.region) if vpcs_count else ""
+            raise ValueError('VPC for reservation {0} not found.{1}'.format(self.reservation.reservation_id,
+                                                                            additional_msg))
 
         availability_zone = self.vpc_service.get_or_pick_availability_zone(self.ec2_client, vpc, self.aws_ec2_datamodel)
 
@@ -111,9 +115,12 @@ class PrepareSubnetExecutor(object):
     @step_wrapper
     def _step_create_new_subnet_if_needed(self, item, vpc, availability_zone):
         if not item.subnet:
-            cidr = item.action.actionParams.cidr
+            sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger)
+            cidr = sah.cidr
+            item.cidr = sah.cidr
             alias = item.action.actionParams.alias
-            self.logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(alias, cidr, availability_zone))
+            self.logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})"
+                             .format(alias, cidr, availability_zone))
             item.subnet = self.subnet_service.create_subnet_nowait(vpc, cidr, availability_zone)
             item.is_new_subnet = True
 
@@ -158,43 +165,32 @@ class PrepareSubnetExecutor(object):
 
 
 class SubnetActionHelper(object):
-    def __init__(self, prepare_subnet_params):
+    def __init__(self, prepare_subnet_params, aws_cp_model, logger):
         """
         SubnetActionHelper decides what CIDR to use, a requested CIDR from attribute, if exists, or from Server
         and also whether to Enable Nat, & Route traffic through the NAT
 
         :param cloudshell.cp.core.models.PrepareSubnetParams prepare_subnet_params:
+        :param AWSEc2CloudProviderResourceModel aws_cp_model:
+        :param Logger logger:
         """
-        attributes = prepare_subnet_params.subnetServiceAttributes
 
-        if 'Requested CIDR' in attributes:
-            requested_cidr = attributes['Requested CIDR']
-            if requested_cidr and requested_cidr!='':
-                self._cidr = requested_cidr
-            else:
-                self._cidr = prepare_subnet_params.cidr
+        # VPC CIDR is determined as follows:
+        # if am in VPC static mode, use VPC CIDR
+        # else, use action CIDR
+        alias = prepare_subnet_params.alias if hasattr(prepare_subnet_params, 'alias') else 'Default Subnet'
 
-        self._enable_nat = False
-        if 'Enable NAT' in attributes:
-            enable_nat_str = attributes['Enable NAT']
-            if enable_nat_str.lower() == 'true':
-                self._enable_nat = True
+        if aws_cp_model.is_static_vpc_mode and aws_cp_model.vpc_cidr != '':
+            self._cidr = aws_cp_model.vpc_cidr
+            logger.info('Decided to use VPC CIDR {0} as defined on cloud provider for subnet {1}'
+                        .format(self._cidr, alias))
 
-        self._outbound_traffic_through_nat = False
-        if 'Outbound Traffic' in attributes:
-            outbound_traffic_str = attributes['Outbound Traffic']
-            if outbound_traffic_str.lower() == 'through nat':
-                self._outbound_traffic_through_nat = True
+        else:
+            self._cidr = prepare_subnet_params.cidr
+            logger.info('Decided to use VPC CIDR {0} as defined on subnet request for subnet {1}'
+                        .format(self._cidr, alias))
 
     @property
     def cidr(self):
         return self._cidr
-
-    @property
-    def enable_nat(self):
-        return self._enable_nat
-
-    @property
-    def outbound_traffic_through_nat(self):
-        return self._outbound_traffic_through_nat
 

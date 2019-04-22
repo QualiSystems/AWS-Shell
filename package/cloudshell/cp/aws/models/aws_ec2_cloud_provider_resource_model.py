@@ -14,6 +14,7 @@ class AWSEc2CloudProviderResourceModel(object):
         self.vpc_cidr               = ''  # type: str
         self.inbound_gateway        = ''  # type: str
 
+    @property
     def is_static_vpc_mode(self):
         """
         static vpc mode means that we do not try to assign CIDR from quali server, but always use the same CIDR
