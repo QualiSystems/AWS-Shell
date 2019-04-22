@@ -7,8 +7,10 @@ from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModels
 
 from cloudshell.cp.aws.common.converters import convert_to_bool
 
+
 class DeployAWSEc2AMIInstanceResourceModel(object):
     __deploymentModel__ = "AWS EC2 Instance"
+
     def __init__(self, attributes):  # todo handle the c=initialization of the object from the attributes
         self.cloud_provider = ''
         self.aws_ami_id = ''
