@@ -106,7 +106,7 @@ class TagService(object):
         :return: list[dict]
         """
         if custom_tags:
-            return [self._get_kvp(r.key, r.value) for r in custom_tags]
+            return [self._get_kvp(k,v) for k,v in custom_tags.items()]
         return []
 
     def get_name_tag(self, name):
