@@ -156,3 +156,45 @@ class PrepareSubnetExecutor(object):
             action_result.errorMessage = 'PrepareSandboxInfra ended with the error: {0}'.format(item.error)
         return action_result
 
+
+class SubnetActionHelper(object):
+    def __init__(self, prepare_subnet_params):
+        """
+        SubnetActionHelper decides what CIDR to use, a requested CIDR from attribute, if exists, or from Server
+        and also whether to Enable Nat, & Route traffic through the NAT
+
+        :param cloudshell.cp.core.models.PrepareSubnetParams prepare_subnet_params:
+        """
+        attributes = prepare_subnet_params.subnetServiceAttributes
+
+        if 'Requested CIDR' in attributes:
+            requested_cidr = attributes['Requested CIDR']
+            if requested_cidr and requested_cidr!='':
+                self._cidr = requested_cidr
+            else:
+                self._cidr = prepare_subnet_params.cidr
+
+        self._enable_nat = False
+        if 'Enable NAT' in attributes:
+            enable_nat_str = attributes['Enable NAT']
+            if enable_nat_str.lower() == 'true':
+                self._enable_nat = True
+
+        self._outbound_traffic_through_nat = False
+        if 'Outbound Traffic' in attributes:
+            outbound_traffic_str = attributes['Outbound Traffic']
+            if outbound_traffic_str.lower() == 'through nat':
+                self._outbound_traffic_through_nat = True
+
+    @property
+    def cidr(self):
+        return self._cidr
+
+    @property
+    def enable_nat(self):
+        return self._enable_nat
+
+    @property
+    def outbound_traffic_through_nat(self):
+        return self._outbound_traffic_through_nat
+

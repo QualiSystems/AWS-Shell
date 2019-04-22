@@ -155,16 +155,9 @@ class PrepareSandboxInfraOperation(object):
         internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
         # will try to peer sandbox VPC to mgmt VPC if not exist
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        logger.info("Create VPC Peering with management vpc")
-        self._peer_vpcs(ec2_client=ec2_client,
-                        ec2_session=ec2_session,
-                        management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
-                        vpc_id=vpc.id,
-                        sandbox_vpc_cidr=cidr,
-                        internet_gateway_id=internet_gateway_id,
-                        reservation_model=reservation,
-                        logger=logger)
+        # note, if vpc_mode == static, will not create peering
+        self._peer_to_mgmt_if_needed(aws_ec2_datamodel, cancellation_context, cidr, ec2_client, ec2_session,
+                                     internet_gateway_id, logger, reservation, vpc)
 
         # will get or create default Security Group
         self.cancellation_service.check_if_cancelled(cancellation_context)
@@ -174,6 +167,23 @@ class PrepareSandboxInfraOperation(object):
                                                                       vpc=vpc,
                                                                       management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
         return self._create_prepare_network_result(action, security_groups, vpc)
+
+    def _peer_to_mgmt_if_needed(self, aws_ec2_datamodel, cancellation_context, cidr, ec2_client, ec2_session,
+                                internet_gateway_id, logger, reservation, vpc):
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+
+        if not aws_ec2_datamodel.is_static_vpc_mode():
+            logger.info("Create VPC Peering with management vpc")
+            self._peer_vpcs(ec2_client=ec2_client,
+                            ec2_session=ec2_session,
+                            management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
+                            vpc_id=vpc.id,
+                            sandbox_vpc_cidr=cidr,
+                            internet_gateway_id=internet_gateway_id,
+                            reservation_model=reservation,
+                            logger=logger)
+        else:
+            logger.info("We are using static VPC mode, not creating VPC peering with management vpc")
 
     @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):

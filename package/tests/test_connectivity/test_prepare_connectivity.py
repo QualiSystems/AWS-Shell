@@ -236,6 +236,8 @@ class TestPrepareSandboxInfra(TestCase):
                                 logger=Mock())
 
     def test_prepare_conn_command_fault_res(self):
+        self.aws_dm.is_static_vpc_mode = Mock(return_value=False)
+
         action = PrepareCloudInfra()
         action.actionId="1234"
         action.actionParams = PrepareCloudInfraParams()
