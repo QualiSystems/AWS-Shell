@@ -1,3 +1,7 @@
+import json
+
+from typing import Dict
+
 import cloudshell
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 
@@ -17,7 +21,8 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.instance_type = ''  # type: str
         self.iam_role = ''  # type: str
         self.security_group_ids = None  # type: str
-        self.private_ip_address = ''  # type: str
+        self.private_ip_address = None  # type: str
+        self.private_ip_addresses_dict = None  # type: Dict
         self.root_volume_name = ''  # type: str
         self.delete_on_termination = True  # type: bool
         self.auto_power_off = False  # type: bool
@@ -48,3 +53,21 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.wait_for_credentials = convert_to_bool(attributes['Wait for Credentials'])
         (self.add_public_ip, self.allocate_elastic_ip) = \
             AWSModelsParser.parse_public_ip_options_attribute(attributes['Public IP Options'])
+
+        private_ip_att_value = attributes['Private IP']
+        self.private_ip_address = self._get_primary_private_ip_address(private_ip_att_value)
+        self.private_ip_addresses_dict = self._get_private_ip_addresses_dict(private_ip_att_value)
+
+    def _get_private_ip_addresses_dict(self, private_ip_address):
+        try:
+            # if dict of private ip address then we take the first as the primary
+            return json.loads(private_ip_address)
+        except:
+            return None
+
+    def _get_primary_private_ip_address(self, private_ip_address):
+        try:
+            # if dict of private ip address then we take the first as the primary
+            return json.loads(private_ip_address).values()[0]
+        except:
+            return private_ip_address or None

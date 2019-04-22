@@ -61,8 +61,12 @@
       </Rules>
     </AttributeInfo>
 
-
-
+    <AttributeInfo Name="Private IP" DefaultValue="" Description="When the VPC is in static mode this attribute is used to set a static private IP for the deployed app. To set static private IPs in multi subnet mode the expected value is a json string that maps the subnet request CIDR to the requested static private IP. Example: {\&quot;10.0.0.0/28\&quot;: \&quot;10.0.0.6\&quot;}" IsReadOnly="false" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
 
 
     <AttributeInfo DefaultValue="" Description="If empty the role that is configured on the Execution Server instance in the Management VPC is used." IsReadOnly="false" Name="AWS Access Key ID" Type="Password">
@@ -371,6 +375,9 @@
               </AllowedValues>
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Private IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
