@@ -126,7 +126,12 @@ class TestModelParser(TestCase):
                                 '"attributeName": "IAM Role Name",'\
                                 '"attributeValue": "top secret",'\
                                 '"type": "attribute"'\
-                              '}'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Private IP",' \
+                                '"attributeValue": "",' \
+                                '"type": "attribute"' \
+                              '}' \
                             '],'\
                             '"type": "deployAppDeploymentInfo"'\
                           '},'\
