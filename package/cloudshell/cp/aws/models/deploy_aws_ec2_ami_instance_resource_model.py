@@ -3,9 +3,12 @@ from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModels
 
 from cloudshell.cp.aws.common.converters import convert_to_bool
 
+
 class DeployAWSEc2AMIInstanceResourceModel(object):
     __deploymentModel__ = "AWS EC2 Instance"
+
     def __init__(self, attributes):  # todo handle the c=initialization of the object from the attributes
+        self.custom_tags = ''
         self.cloud_provider = ''
         self.aws_ami_id = ''
         self.storage_size = ''
@@ -48,3 +51,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.wait_for_credentials = convert_to_bool(attributes['Wait for Credentials'])
         (self.add_public_ip, self.allocate_elastic_ip) = \
             AWSModelsParser.parse_public_ip_options_attribute(attributes['Public IP Options'])
+        self.custom_tags = attributes['Custom Tags']

@@ -170,11 +170,13 @@ class DeployAMIOperation(object):
 
         deploy_app_result = DeployAppResult(vmName=self._get_name_from_tags(instance),
                                             vmUuid=instance.instance_id,
-                                            deployedAppAttributes=convert_dict_to_attributes_list(deployed_app_attributes),
+                                            deployedAppAttributes=convert_dict_to_attributes_list(
+                                                    deployed_app_attributes),
                                             deployedAppAddress=instance.private_ip_address,
                                             vmDetailsData=vm_details_data,
-                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports,
-                                                                       'public_ip': instance.public_ip_address})
+                                            deployedAppAdditionalData={
+                                                'inbound_ports': ami_deployment_model.inbound_ports,
+                                                'public_ip': instance.public_ip_address})
         deploy_app_result.actionId = ami_deploy_action.actionId
         network_actions_results_dtos.append(deploy_app_result)
         return network_actions_results_dtos
@@ -279,7 +281,7 @@ class DeployAMIOperation(object):
                                                                           cancellation_context=cancellation_context)
             except TimeoutError:
                 logger.info(
-                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
+                        "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
         else:
             return None if ami_deploy_action.actionParams.appResource.attributes[
@@ -356,6 +358,8 @@ class DeployAMIOperation(object):
         image = ec2_session.Image(ami_deployment_model.aws_ami_id)
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
+        aws_model.custom_tags = self._get_custom_tags(custom_tags=ami_deployment_model.custom_tags)
+
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
         aws_model.min_count = 1
@@ -405,9 +409,9 @@ class DeployAMIOperation(object):
             logger.info("Single subnet mode detected")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=ami_deployment_model.add_public_ip,
-                security_group_ids=security_group_ids,
-                vpc=vpc)]
+                    add_public_ip=ami_deployment_model.add_public_ip,
+                    security_group_ids=security_group_ids,
+                    vpc=vpc)]
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
 
@@ -426,12 +430,12 @@ class DeployAMIOperation(object):
             device_index = net_config.actionParams.vnicName
 
             net_interfaces.append(
-                # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
-                self.network_interface_service.build_network_interface_dto(
-                    subnet_id=net_config.actionParams.subnetId,
-                    device_index=device_index,
-                    groups=security_group_ids,  # todo: set groups by subnet id
-                    public_ip=public_ip_prop_value))
+                    # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
+                    self.network_interface_service.build_network_interface_dto(
+                            subnet_id=net_config.actionParams.subnetId,
+                            device_index=device_index,
+                            groups=security_group_ids,  # todo: set groups by subnet id
+                            public_ip=public_ip_prop_value))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.actionId)
@@ -441,9 +445,9 @@ class DeployAMIOperation(object):
             logger.info("No network interface dto was created, switching back to single subnet mode")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=ami_deployment_model.add_public_ip,
-                security_group_ids=security_group_ids,
-                vpc=vpc)]
+                    add_public_ip=ami_deployment_model.add_public_ip,
+                    security_group_ids=security_group_ids,
+                    vpc=vpc)]
 
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
@@ -615,3 +619,10 @@ class DeployAMIOperation(object):
             if "Association" in interface and "PublicIp" in interface["Association"] \
                     and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]
+
+    def _get_custom_tags(self, custom_tags):
+        res = {}
+        if custom_tags:
+            tags_list = custom_tags.split(",")
+            res = {r.split(":")[0]: r.split(":")[1] for r in tags_list }
+        return res

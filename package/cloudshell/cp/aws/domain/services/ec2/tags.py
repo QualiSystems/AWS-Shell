@@ -98,6 +98,17 @@ class TagService(object):
                 self._get_kvp(TagNames.Domain, reservation.domain),
                 self.get_reservation_tag(reservation.reservation_id)]
 
+    def get_custom_tags(self, custom_tags):
+        """
+        returns the default tags of a resource. Name,reservationId,createdBy
+        :param Dict custom_tags: the tags
+        :type name: dict
+        :return: list[dict]
+        """
+        if custom_tags:
+            return [self._get_kvp(r.key, r.value) for r in custom_tags]
+        return []
+
     def get_name_tag(self, name):
         return self._get_kvp(TagNames.Name, name)
 
