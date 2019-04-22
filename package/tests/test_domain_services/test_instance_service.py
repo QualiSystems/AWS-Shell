@@ -25,6 +25,7 @@ class TestInstanceService(TestCase):
     # @Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
     def test_create_instance(self):
         ami_dep = Mock()
+        ami_dep.custom_tags = ""
         cancellation_context = Mock()
         new_instance = Mock()
         new_instance.instance_id = 'id'
