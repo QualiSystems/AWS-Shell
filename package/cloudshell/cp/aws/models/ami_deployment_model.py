@@ -13,4 +13,5 @@ class AMIDeploymentModel(object):
         self.block_device_mappings = []  # type: list[dict]
         self.network_interfaces = []  # type: list[dict]
         self.aws_key = ''  # type: str
-        self.custom_tags = {}  # type: str
+        self.custom_tags = {}  # type: Dict
+        self.user_data = ''  # type: str

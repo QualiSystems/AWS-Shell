@@ -160,6 +160,18 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo Name="User Data URL" Type="String" DefaultValue="" Description="The URL of the user data script" IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo Name="User Data Parameters" Type="String" DefaultValue="" Description="Parameters to execute the script e.g: 'param1 param2 ' will end in running the command like this :'./file.sh param1 param2' " IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
     <AttributeInfo DefaultValue="0" Description="The max number of I/O operations per second that the volume can support. For Provisioned IOPS (SSD) volumes, you can provision up to 30 IOPS per GiB. If left empty the default in the AMI will be used. For example 240." IsReadOnly="false" Name="Max Storage IOPS" Type="Numeric">
       <Rules>
         <Rule Name="Configuration" />
@@ -334,6 +346,12 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Custom Tags" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User Data URL" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User Data Parameters" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size" UserInput="false">
