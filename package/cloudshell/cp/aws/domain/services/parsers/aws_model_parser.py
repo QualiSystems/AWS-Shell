@@ -66,7 +66,6 @@ class AWSModelsParser(object):
         aws_ec2_resource_model.instance_type = resource_context['Instance Type']
         aws_ec2_resource_model.vpc_mode = resource_context['VPC Mode']
         aws_ec2_resource_model.vpc_cidr = resource_context['VPC CIDR']
-        aws_ec2_resource_model.inbound_gateway = resource_context['Inbound Gateway']
         # aws_ec2_resource_model.reserved_ips_in_subnet = resource_context['Reserved IPs in Subnet']
 
         return aws_ec2_resource_model

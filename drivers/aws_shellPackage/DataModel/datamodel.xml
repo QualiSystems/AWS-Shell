@@ -40,26 +40,27 @@
 
 
 
-    <AttributeInfo Name="VPC Mode" DefaultValue="" Description="" IsReadOnly="false" Type="String">
+
+    <AttributeInfo Name="VPC Mode" DefaultValue="" IsReadOnly="false" Type="String"
+    Description="Every sandbox with AWS apps deploys a VPC to AWS. This setting determines how the sandbox VPC will chose a CIDR block. In Dynamic Mode, the CIDR block is chosen by Cloudshell Server. In Static Mode, the CIDR block for all sandboxes allocated will be taken from VPC CIDR attribute on AWS cloud provider."
+    >
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
 
-    <AttributeInfo Name="VPC CIDR" DefaultValue="" Description="" IsReadOnly="false" Type="String">
+    <AttributeInfo Name="VPC CIDR" DefaultValue="" IsReadOnly="false" Type="String"
+    Description="The CIDR used for sandbox VPC when VPC Mode is Static." >
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
 
-    <AttributeInfo Name="Inbound Gateway" DefaultValue="" Description="" IsReadOnly="false" Type="String">
-      <Rules>
-        <Rule Name="Configuration" />
-        <Rule Name="Setting" />
-      </Rules>
-    </AttributeInfo>
+
+
+
 
     <AttributeInfo Name="Private IP" DefaultValue="" Description="When the VPC is in static mode this attribute is used to set a static private IP for the deployed app. To set static private IPs in multi subnet mode the expected value is a json string that maps the subnet request CIDR to the requested static private IP. Example: {\&quot;10.0.0.0/28\&quot;: \&quot;10.0.0.6\&quot;}" IsReadOnly="false" Type="String">
       <Rules>
@@ -237,7 +238,6 @@
             </AttachedAttribute>
 
 
-
             <AttachedAttribute Name="VPC Mode" IsLocal="true" IsOverridable="true">
               <AllowedValues>
                 <AllowedValue>Dynamic</AllowedValue>
@@ -248,15 +248,6 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="VPC CIDR">
               <AllowedValues />
             </AttachedAttribute>
-
-            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Inbound Gateway">
-              <AllowedValues>
-                <AllowedValue>None</AllowedValue>
-                <AllowedValue>Network Load Balancer</AllowedValue>
-              </AllowedValues>
-            </AttachedAttribute>
-
-
 
 
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt VPC ID">

@@ -12,7 +12,6 @@ class AWSEc2CloudProviderResourceModel(object):
         self.reserved_ips_in_subnet = ''  # type: int
         self.vpc_mode               = ''  # type: str
         self.vpc_cidr               = ''  # type: str
-        self.inbound_gateway        = ''  # type: str
 
     @property
     def is_static_vpc_mode(self):
