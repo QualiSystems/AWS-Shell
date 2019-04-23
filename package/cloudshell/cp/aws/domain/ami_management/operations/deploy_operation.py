@@ -432,7 +432,7 @@ class DeployAMIOperation(object):
 
             device_index = net_config.actionParams.vnicName
             private_ip = self._get_private_ip_for_subnet(ami_deployment_model,
-                                                         net_config.actionParams.subnetServiceAttributes)
+                                                         net_config.actionParams.cidr)
 
             net_interfaces.append(
                 # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
@@ -460,18 +460,16 @@ class DeployAMIOperation(object):
 
         return net_interfaces
 
-    def _get_private_ip_for_subnet(self, ami_deployment_model, subnet_service_attributes):
+    def _get_private_ip_for_subnet(self, ami_deployment_model, subnet_cidr):
         """
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
-        :param Dict[str,str] subnet_service_attributes:
+        :param str subnet_cidr:
         :return:
         """
         private_ip = None
-        if subnet_service_attributes and 'Requested CIDR' in subnet_service_attributes:
-            subnet_cidr = subnet_service_attributes['Requested CIDR'] or None
-            if subnet_cidr and ami_deployment_model.private_ip_addresses_dict and \
-                    subnet_cidr in ami_deployment_model.private_ip_addresses_dict:
-                private_ip = ami_deployment_model.private_ip_addresses_dict[subnet_cidr]
+        if subnet_cidr and ami_deployment_model.private_ip_addresses_dict and \
+                subnet_cidr in ami_deployment_model.private_ip_addresses_dict:
+            private_ip = ami_deployment_model.private_ip_addresses_dict[subnet_cidr]
         return private_ip
 
     def _validate_network_interfaces_request(self, ami_deployment_model, network_actions, logger):
