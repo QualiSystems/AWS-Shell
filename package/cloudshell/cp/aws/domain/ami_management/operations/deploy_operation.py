@@ -361,6 +361,8 @@ class DeployAMIOperation(object):
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
         aws_model.custom_tags = self._get_custom_tags(custom_tags=ami_deployment_model.custom_tags)
+        aws_model.user_data = self._get_user_data(user_data_url=ami_deployment_model.user_data_url,
+                                                  user_data_run_parameters=ami_deployment_model.user_data_run_parameters)
 
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
@@ -411,10 +413,10 @@ class DeployAMIOperation(object):
             logger.info("Single subnet mode detected")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=ami_deployment_model.add_public_ip,
-                security_group_ids=security_group_ids,
-                vpc=vpc,
-                private_ip=ami_deployment_model.private_ip_address)]
+                    add_public_ip=ami_deployment_model.add_public_ip,
+                    security_group_ids=security_group_ids,
+                    vpc=vpc,
+                    private_ip=ami_deployment_model.private_ip_address)]
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
 
@@ -435,13 +437,13 @@ class DeployAMIOperation(object):
                                                          net_config.actionParams.cidr)
 
             net_interfaces.append(
-                # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
-                self.network_interface_service.build_network_interface_dto(
-                    subnet_id=net_config.actionParams.subnetId,
-                    device_index=device_index,
-                    groups=security_group_ids,  # todo: set groups by subnet id
-                    public_ip=public_ip_prop_value,
-                    private_ip=private_ip))
+                    # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
+                    self.network_interface_service.build_network_interface_dto(
+                            subnet_id=net_config.actionParams.subnetId,
+                            device_index=device_index,
+                            groups=security_group_ids,  # todo: set groups by subnet id
+                            public_ip=public_ip_prop_value,
+                            private_ip=private_ip))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.actionId)
@@ -451,10 +453,10 @@ class DeployAMIOperation(object):
             logger.info("No network interface dto was created, switching back to single subnet mode")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=ami_deployment_model.add_public_ip,
-                security_group_ids=security_group_ids,
-                vpc=vpc,
-                private_ip=ami_deployment_model.private_ip_address)]
+                    add_public_ip=ami_deployment_model.add_public_ip,
+                    security_group_ids=security_group_ids,
+                    vpc=vpc,
+                    private_ip=ami_deployment_model.private_ip_address)]
 
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
@@ -643,5 +645,11 @@ class DeployAMIOperation(object):
         res = {}
         if custom_tags:
             tags_list = custom_tags.split(",")
-            res = {r.split(":")[0]: r.split(":")[1] for r in tags_list }
+            res = {r.split(":")[0]: r.split(":")[1] for r in tags_list}
         return res
+
+    def _get_user_data(self, user_data_url, user_data_run_parameters):
+        data = "#!/bin/bash\n" + "curl --retry 10 --max-time 5 --retry-max-time 180 {0}  > cs.sh \n".format(user_data_url) \
+               + "chmod +x cs.sh \n" \
+               + "./cs.sh {0}".format(user_data_run_parameters)
+        return data

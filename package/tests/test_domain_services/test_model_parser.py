@@ -68,6 +68,16 @@ class TestModelParser(TestCase):
                                 '"type": "attribute"'\
                               '},'\
                               '{'\
+                                '"attributeName": "User Data URL",'\
+                                '"attributeValue": "user_data_url",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
+                                '"attributeName": "User Data Parameters",'\
+                                '"attributeValue": "user_data_parameters",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
                                 '"attributeName": "Allow all Sandbox Traffic",'\
                                 '"attributeValue": "True",'\
                                 '"type": "attribute"'\

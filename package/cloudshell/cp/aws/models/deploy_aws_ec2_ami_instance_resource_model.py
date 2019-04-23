@@ -12,6 +12,9 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
     __deploymentModel__ = "AWS EC2 Instance"
 
     def __init__(self, attributes):  # todo handle the c=initialization of the object from the attributes
+        self.user_data_url = ''
+        self.user_data_run_parameters = ''
+
         self.custom_tags = ''
         self.cloud_provider = ''
         self.aws_ami_id = ''
@@ -57,7 +60,8 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         (self.add_public_ip, self.allocate_elastic_ip) = \
             AWSModelsParser.parse_public_ip_options_attribute(attributes['Public IP Options'])
         self.custom_tags = attributes['Custom Tags']
-
+        self.user_data_url = attributes['User Data URL']
+        self.user_data_run_parameters = attributes['User Data Parameters']
 
         private_ip_att_value = attributes['Private IP']
         self.private_ip_address = self._get_primary_private_ip_address(private_ip_att_value)
