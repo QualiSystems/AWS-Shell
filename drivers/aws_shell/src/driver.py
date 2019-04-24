@@ -77,7 +77,7 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.get_application_ports(context)
 
     def get_inventory(self, context):
-        return AutoLoadDetails([], [])
+        return self.aws_shell.get_inventory(command_context=context)
 
     def GetAccessKey(self, context, ports):
         return self.aws_shell.get_access_key(context)
