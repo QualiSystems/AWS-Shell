@@ -87,3 +87,6 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def GetVmDetails(self, context, cancellation_context, requests):
         return self.aws_shell.get_vm_details(context, cancellation_context, requests)
+
+    def AddCustomTags(self, context, request, ports):
+        return self.aws_shell.add_custom_tags(context, request)
