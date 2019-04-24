@@ -1,3 +1,5 @@
+import json
+
 import jsonpickle
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
@@ -377,6 +379,30 @@ class AWSShell(object):
                 results.append(result)
 
         return self.command_result_parser.set_command_result(results)
+
+    def add_custom_tags(self, context, request):
+        """
+        :param ResourceCommandContext context:
+        :param str request:
+        :return:
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Add custom tags')
+
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(context)
+
+                # Expected request syntax:
+                # [{
+                #     'Key': 'string',
+                #     'Value': 'string'
+                # }]
+                tags = json.loads(request)
+
+                instance = self.instance_service.get_instance_by_id(shell_context.aws_api.ec2_session,
+                                                                    deployed_instance_id)
+                instance.create_tags(Tags=tags)
 
     @staticmethod
     def _get_reservation_id(context):
