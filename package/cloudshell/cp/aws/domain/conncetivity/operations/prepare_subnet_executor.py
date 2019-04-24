@@ -108,7 +108,8 @@ class PrepareSubnetExecutor(object):
 
     @step_wrapper
     def _step_get_existing_subnet(self, item, vpc):
-        cidr = item.action.actionParams.cidr
+        sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger)
+        cidr = sah.cidr
         self.logger.info("Check if subnet (cidr={0}) already exists".format(cidr))
         item.subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc=vpc, cidr=cidr)
 
