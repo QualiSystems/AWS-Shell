@@ -58,7 +58,7 @@ class VPCService(object):
 
     def get_or_create_subnet_for_vpc(self, reservation, cidr, alias, vpc, ec2_client, aws_ec2_datamodel, logger):
 
-        logger.info("Check if subnet (cidr={0}) already exists".format(cidr));
+        logger.info("Check if subnet (cidr={0}) already exists".format(cidr))
         subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc=vpc, cidr=cidr)
         if subnet:
             return subnet

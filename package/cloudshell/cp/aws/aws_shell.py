@@ -1,6 +1,7 @@
 import json
 
 import jsonpickle
+from botocore.exceptions import NoCredentialsError
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
@@ -11,6 +12,7 @@ from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
+from cloudshell.cp.aws.domain.operations.autoload_operation import AutoloadOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
@@ -47,7 +49,7 @@ from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups im
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
-from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
+from cloudshell.cp.core.models import RequestActionBase, ActionResultBase, DeployApp, ConnectSubnet
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.core.models import VmDetailsData
 
@@ -137,6 +139,8 @@ class AWSShell(object):
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
 
+        self.autoload_operation = AutoloadOperation()
+
     def cleanup_connectivity(self, command_context, actions):
         """
         Will delete the reservation vpc and all related resources including all remaining instances
@@ -185,6 +189,43 @@ class AWSShell(object):
                     logger=shell_context.logger)
 
                 return results
+
+    def get_inventory(self, command_context):
+        """Validate Cloud Provider
+
+        :param command_context: ResourceCommandContext
+        """
+        from botocore.exceptions import ClientError
+        try:
+            with AwsShellContext(context=command_context,
+                                 aws_session_manager=self.aws_session_manager) as shell_context:
+                with ErrorHandlingContext(shell_context.logger):
+                    shell_context.logger.info("Starting Autoload Operation...")
+                    result = self.autoload_operation.get_inventory(
+                        cloud_provider_model=shell_context.aws_ec2_resource_model,
+                        logger=shell_context.logger,
+                        ec2_client=shell_context.aws_api.ec2_client,
+                        ec2_session=shell_context.aws_api.ec2_session,
+                        s3_session=shell_context.aws_api.s3_session)
+                    shell_context.logger.info("End Autoload Operation...")
+                    return result
+
+        except ClientError as ce:
+            if 'AuthorizationHeaderMalformed' in ce.message:
+                raise Exception(self.CredentialsErrorMessage())
+            raise ce
+
+        except NoCredentialsError:
+            raise Exception(self.CredentialsErrorMessage())
+
+        except ValueError as ve:
+            if 'Invalid endpoint' in ve.message:
+                raise Exception('Oops, like you didnt configure Region correctly. Please select Region and try again ')
+            else:
+                raise ve
+
+    def CredentialsErrorMessage(self):
+        return 'Oops, looks like there was a problem with your cloud provider credentials. Please check AWS Secret Access Key and AWS Access Key ID'
 
     def power_on_ami(self, command_context):
         """
