@@ -71,13 +71,15 @@ class PrepareSubnetExecutor(object):
 
         availability_zone = self.vpc_service.get_or_pick_availability_zone(self.ec2_client, vpc, self.aws_ec2_datamodel)
 
+        is_multi_subnet_mode = len(action_items) > 1  # type: bool
+
         # get existing subnet bt their cidr
         for item in action_items:
-            self._step_get_existing_subnet(item, vpc)
+            self._step_get_existing_subnet(item, vpc, is_multi_subnet_mode)
 
         # create new subnet for the non-existing ones
         for item in action_items:
-            self._step_create_new_subnet_if_needed(item, vpc, availability_zone)
+            self._step_create_new_subnet_if_needed(item, vpc, availability_zone, is_multi_subnet_mode)
 
         # wait for the new ones to be available
         for item in action_items:
@@ -107,16 +109,16 @@ class PrepareSubnetExecutor(object):
         return wrapper
 
     @step_wrapper
-    def _step_get_existing_subnet(self, item, vpc):
-        sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger)
+    def _step_get_existing_subnet(self, item, vpc, is_multi_subnet_mode):
+        sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger, is_multi_subnet_mode)
         cidr = sah.cidr
         self.logger.info("Check if subnet (cidr={0}) already exists".format(cidr))
         item.subnet = self.subnet_service.get_first_or_none_subnet_from_vpc(vpc=vpc, cidr=cidr)
 
     @step_wrapper
-    def _step_create_new_subnet_if_needed(self, item, vpc, availability_zone):
+    def _step_create_new_subnet_if_needed(self, item, vpc, availability_zone, is_multi_subnet_mode):
         if not item.subnet:
-            sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger)
+            sah = SubnetActionHelper(item.action.actionParams, self.aws_ec2_datamodel, self.logger, is_multi_subnet_mode)
             cidr = sah.cidr
             item.cidr = sah.cidr
             alias = item.action.actionParams.alias
@@ -166,7 +168,7 @@ class PrepareSubnetExecutor(object):
 
 
 class SubnetActionHelper(object):
-    def __init__(self, prepare_subnet_params, aws_cp_model, logger):
+    def __init__(self, prepare_subnet_params, aws_cp_model, logger, is_multi_subnet_mode):
         """
         SubnetActionHelper decides what CIDR to use, a requested CIDR from attribute, if exists, or from Server
         and also whether to Enable Nat, & Route traffic through the NAT
@@ -177,11 +179,12 @@ class SubnetActionHelper(object):
         """
 
         # VPC CIDR is determined as follows:
-        # if am in VPC static mode, use VPC CIDR
+        # if in VPC static mode and its a single subnet mode, use VPC CIDR
+        # if in VPC static mode and its multi subnet mode, we must assume its manual subnets and use action CIDR
         # else, use action CIDR
         alias = prepare_subnet_params.alias if hasattr(prepare_subnet_params, 'alias') else 'Default Subnet'
 
-        if aws_cp_model.is_static_vpc_mode and aws_cp_model.vpc_cidr != '':
+        if aws_cp_model.is_static_vpc_mode and aws_cp_model.vpc_cidr != '' and not is_multi_subnet_mode:
             self._cidr = aws_cp_model.vpc_cidr
             logger.info('Decided to use VPC CIDR {0} as defined on cloud provider for subnet {1}'
                         .format(self._cidr, alias))

@@ -78,6 +78,7 @@ class PrepareSandboxInfraOperation(object):
             raise ValueError("Actions list must contain a PrepareCloudInfraAction.")
         if not create_keys_action:
             raise ValueError("Actions list must contain a CreateKeys.")
+
         try:
             result = self._prepare_network(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
                                            network_action, cancellation_context, logger)
@@ -141,8 +142,7 @@ class PrepareSandboxInfraOperation(object):
 
         # will get cidr form action params
 
-        cidr = SubnetActionHelper(action.actionParams, aws_ec2_datamodel, logger).cidr
-        logger.info("Received CIDR {0} from server".format(cidr))
+        cidr = self._get_vpc_cidr(action, aws_ec2_datamodel, logger)
 
         # will get or create a vpc for the reservation
         self.cancellation_service.check_if_cancelled(cancellation_context)
@@ -174,6 +174,16 @@ class PrepareSandboxInfraOperation(object):
                                                         management_sg_id=aws_ec2_datamodel.aws_management_sg_id,
                                                         need_management_access=not aws_ec2_datamodel.is_static_vpc_mode)
         return self._create_prepare_network_result(action, security_groups, vpc)
+
+    def _get_vpc_cidr(self, action, aws_ec2_datamodel, logger):
+        if aws_ec2_datamodel.is_static_vpc_mode and aws_ec2_datamodel.vpc_cidr != '':
+            cidr = aws_ec2_datamodel.vpc_cidr
+            logger.info('Decided to use VPC CIDR {} as defined on cloud provider for sandbox VPC'
+                        .format(cidr))
+        else:
+            cidr = action.actionParams.cidr
+            logger.info("Received CIDR {0} from server".format(cidr))
+        return cidr
 
     def _peer_to_mgmt_if_needed(self, aws_ec2_datamodel, cancellation_context, cidr, ec2_client, ec2_session,
                                 internet_gateway_id, logger, reservation, vpc):
