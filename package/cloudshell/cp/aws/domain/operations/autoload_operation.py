@@ -15,7 +15,8 @@ class AutoloadOperation(object):
 
         self._validate_management_security_group(cloud_provider_model, ec2_client, logger)
 
-        self._validate_keypair_location_in_s3(cloud_provider_model, logger, s3_session)
+        # removed for now
+        # self._validate_keypair_location_in_s3(cloud_provider_model, logger, s3_session)
 
         self._validate_vpc_cidr(vpc_cidr=cloud_provider_model.vpc_cidr, logger=logger)
 

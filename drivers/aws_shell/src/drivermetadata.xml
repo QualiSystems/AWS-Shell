@@ -1,4 +1,4 @@
-<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.999">
+<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.91">
     <Layout>
         <Category Name="Deployment">
             <Command Description="" DisplayName="Deploy From AMI" EnableCancellation="true" Name="deploy_ami" Tags="allow_unreserved" />
@@ -22,6 +22,15 @@
         <Category Name="Power">
             <Command Description="" DisplayName="Power On" Name="PowerOn" Tags="power" />
             <Command Description="" DisplayName="Power Off" Name="PowerOff" Tags="power" />
+        </Category>
+
+        <Category Name="Snapshot">
+            <Command Description="" DisplayName="Save Snapshot" EnableCancellation="true" Name="remote_save_snapshot" Tags="remote_connectivity,allow_unreserved">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="Please enter the VM snapshot prefix, for example 'V1-'" DisplayName="Snapshot Prefix" Mandatory="False" Name="snapshot_prefix" Type="String" />
+                </Parameters>
+            </Command>
+            <Command Description="" DisplayName="Get Snapshots" EnableCancellation="false" Name="remote_get_snapshots" Tags="remote_connectivity,allow_unreserved" />
         </Category>
     </Layout>
 </Driver>
