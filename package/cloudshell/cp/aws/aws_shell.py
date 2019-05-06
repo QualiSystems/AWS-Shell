@@ -4,6 +4,7 @@ import jsonpickle
 from botocore.exceptions import NoCredentialsError
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
+from cloudshell.cp.aws.domain.ami_management.operations.snapshot_operation import SnapshotOperation
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
@@ -80,7 +81,7 @@ class AWSShell(object):
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
-
+        self.image_waiter = SubnetWaiter()
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
                                       instance_service=self.instance_service,
@@ -88,6 +89,7 @@ class AWSShell(object):
                                       vpc_peering_waiter=self.vpc_peering_waiter,
                                       sg_service=self.security_group_service,
                                       route_table_service=self.route_tables_service)
+
         self.prepare_connectivity_operation = \
             PrepareSandboxInfraOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
@@ -140,6 +142,8 @@ class AWSShell(object):
                                                        vm_details_provider=self.vm_details_provider)
 
         self.autoload_operation = AutoloadOperation()
+
+        self.snapshot_operation = SnapshotOperation(self.instance_service, self.image_waiter)
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -420,6 +424,44 @@ class AWSShell(object):
                 results.append(result)
 
         return self.command_result_parser.set_command_result(results)
+
+    def remote_get_snapshots(self, context):
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get Snapshots')
+
+                resource = context.remote_endpoints[0]
+                resource_fullname = self.model_parser.get_connectd_resource_fullname(context)
+                reservation_id = self._get_reservation_id(context)
+
+                return self.snapshot_operation.get(shell_context.aws_api.ec2_client,
+                                                   reservation_id, resource_fullname)
+
+    def remote_save_snapshot(self, context, cancellation_context, snapshot_prefix):
+        """
+        :param context:
+        :param cancellation_context:
+        :param snapshot_prefix:
+        :return:
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Save Snapshot')
+
+                resource = context.remote_endpoints[0]
+
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                resource_fullname = self.model_parser.get_connectd_resource_fullname(context)
+
+                image_name, image_id = self.snapshot_operation.save(logger=shell_context.logger,
+                                                                    ec2_session=shell_context.aws_api.ec2_session,
+                                                                    instance_id=data_holder.vmdetails.uid,
+                                                                    deployed_app_name=resource_fullname,
+                                                                    snapshot_prefix=snapshot_prefix,
+                                                                    no_reboot=True)
+
+                return "Created image '{0}' with id '{1}' from app '{2}'" \
+                    .format(image_name, image_id, data_holder.name)
 
     def add_custom_tags(self, context, request):
         """

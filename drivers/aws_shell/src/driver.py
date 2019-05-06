@@ -90,3 +90,9 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def AddCustomTags(self, context, request, ports):
         return self.aws_shell.add_custom_tags(context, request)
+
+    def remote_save_snapshot(self, context, cancellation_context, snapshot_prefix, ports):
+        return self.aws_shell.remote_save_snapshot(context, cancellation_context, snapshot_prefix)
+
+    def remote_get_snapshots(self, context, ports):
+        return self.aws_shell.remote_get_snapshots(context)
