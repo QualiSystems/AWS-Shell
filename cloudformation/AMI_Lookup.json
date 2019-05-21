@@ -160,7 +160,7 @@
           }
         },
         "Handler": "index.handler",
-        "Runtime": "nodejs6.10",
+        "Runtime": "nodejs10.x",
         "Timeout": "180",
         "Role": {
           "Fn::GetAtt": [
