@@ -46,7 +46,10 @@ class SetAppSecurityGroupsOperation(object):
 
                 for security_group_configuration in security_group_configurations:
                     subnet_id = security_group_configuration.subnet_id
-                    network_interfaces = filter(lambda x: x.subnet_id == subnet_id, instance.network_interfaces)
+
+                    network_interfaces = filter(lambda x: x.subnet_id == subnet_id or x.vpc.cidr_block == subnet_id,
+                                                instance.network_interfaces)
+
                     for network_interface in network_interfaces:
                         custom_security_group = self.security_group_service.get_or_create_custom_security_group(
                             ec2_session=ec2_session,
