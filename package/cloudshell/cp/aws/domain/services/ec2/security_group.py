@@ -184,7 +184,7 @@ class SecurityGroupService(object):
                 }
             ]}
 
-    def get_inbound_ports_security_group(self, ec2_session,  network_interface):
+    def get_inbound_ports_security_group(self, ec2_session, network_interface):
         """
         Returns an inbound ports security group for the nic
         Inbound ports security group is defined by the following attributes and their values:
