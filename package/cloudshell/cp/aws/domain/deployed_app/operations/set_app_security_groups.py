@@ -32,6 +32,12 @@ class SetAppSecurityGroupsOperation(object):
         :return:
         """
 
+        # security groups are associated with network interfaces;
+        # we identify the security groups that need to be created or updated, by finding the interfaces
+        # interfaces are identified by comparing the subnet id of the interface, with the requested subnet
+        # however, when working with "Default Subnet" mode, which is when no subnet was specified in sandbox
+        # we instead provide the server will send a subnet id in the form of the vpc CIDR block.
+
         result = []
 
         for app_security_group_model in app_security_group_models:
