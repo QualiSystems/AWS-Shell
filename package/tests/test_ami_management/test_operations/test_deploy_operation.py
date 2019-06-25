@@ -99,36 +99,24 @@ class TestDeployOperation(TestCase):
 
     def test_deploy(self):
         # prepare
-        ami_datamodel = Mock()
-        ami_datamodel.storage_size = 30
-        ami_datamodel.inbound_ports = "80"
-        ami_datamodel.outbound_ports = "20"
-        ami_datamodel.add_public_ip = None
-        ami_datamodel.allocate_elastic_ip = True
-        ami_deploy_action = Mock()
-        ami_deploy_action.actionParms = Mock()
-        ami_deploy_action.actionParams.deployment = Mock()
-        ami_deploy_action.actionParams.deployment.customModel = ami_datamodel
-        instance = Mock()
-        instance.network_interfaces = []
-        instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
+        ami_datamodel = self._create_ami_datamodel()
+        ami_deploy_action = self._create_ami_deploy_action(ami_datamodel)
+        ami_deployment_info = Mock()
+        instance = self._create_instance()
+        network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
         self.instance_service.create_instance = Mock(return_value=instance)
         sg = Mock()
         self.security_group_service.create_security_group = Mock(return_value=sg)
-        self.deploy_operation._get_block_device_mappings = Mock()
+
+        self._mock_deploy_operation(ami_deployment_info, network_config_results)
+
         cancellation_context = Mock()
         inst_name = 'my name'
         reservation = Mock()
-        ami_deployment_info = Mock()
         network_actions = None
-        self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_info)
-        self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
-        network_config_results_dto = Mock()
-        network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
-        self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
-        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=[])
 
         # act
+
         res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
                                            s3_session=self.s3_session,
                                            name=inst_name,
@@ -182,6 +170,107 @@ class TestDeployOperation(TestCase):
                 network_actions=None,
                 network_config_results=network_config_results,
                 logger=self.logger)
+
+    def test_2ndGen_deployed_app_with_namespaced_user(self):
+        # prepare
+        ami_datamodel = self._create_ami_datamodel()
+        ami_deploy_action = self._create_ami_deploy_action(ami_datamodel)
+        ami_deployment_info = Mock()
+        instance = self._create_instance()
+        instance.platform = None
+        network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
+        self.instance_service.create_instance = Mock(return_value=instance)
+        sg = Mock()
+        self.security_group_service.create_security_group = Mock(return_value=sg)
+
+        self._mock_deploy_operation(ami_deployment_info, network_config_results)
+
+        cancellation_context = Mock()
+        inst_name = 'my name'
+        reservation = Mock()
+        network_actions = None
+
+        # act
+
+        res = self.deploy_operation.deploy(ec2_session=self.ec2_session,
+                                           s3_session=self.s3_session,
+                                           name=inst_name,
+                                           reservation=reservation,
+                                           aws_ec2_cp_resource_model=self.ec2_datamodel,
+                                           ami_deploy_action=ami_deploy_action,
+                                           network_actions=network_actions,
+                                           ec2_client=self.ec2_client,
+                                           cancellation_context=cancellation_context,
+                                           logger=self.logger)
+
+        ami_credentials = self.credentials_manager.get_windows_credentials()
+
+        # assert
+        self.assertEqual(res[0].vmName, 'my name')
+        self.assertEqual(res[0].deployedAppAdditionalData["inbound_ports"], ami_datamodel.inbound_ports)
+        self.assertEqual(res[0].vmUuid, instance.instance_id)
+        self.assertTrue(self.tag_service.get_security_group_tags.called)
+        self.assertTrue(self.security_group_service.create_security_group.called)
+        self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
+                self.security_group_service.create_security_group()),
+                self.tag_service.get_security_group_tags())
+
+        self.assertTrue(self.key_pair.load.called_with(self.ec2_datamodel.key_pair_location,
+                                                       instance.key_pair.key_name,
+                                                       self.key_pair.FILE_SYSTEM))
+
+        self.assertTrue(self.security_group_service.set_security_group_rules.called_with(
+                ami_datamodel, self.security_group_service.create_security_group()))
+
+        self.security_group_service.remove_allow_all_outbound_rule.assert_called_with(security_group=sg)
+
+        self.instance_service.create_instance.assert_called_once_with(ec2_session=self.ec2_session,
+                                                                      name=inst_name,
+                                                                      reservation=reservation,
+                                                                      ami_deployment_info=ami_deployment_info,
+                                                                      ec2_client=self.ec2_client,
+                                                                      wait_for_status_check=ami_datamodel.wait_for_status_check,
+                                                                      cancellation_context=cancellation_context,
+                                                                      logger=self.logger)
+
+        self.deploy_operation.elastic_ip_service.set_elastic_ips.assert_called_once_with(
+                ec2_session=self.ec2_session,
+                ec2_client=self.ec2_client,
+                instance=instance,
+                ami_deployment_model=ami_datamodel,
+                network_actions=None,
+                network_config_results=network_config_results,
+                logger=self.logger)
+
+    def _mock_deploy_operation(self, ami_deployment_info, network_config_results):
+        self.deploy_operation._get_block_device_mappings = Mock()
+        self.deploy_operation._create_deployment_parameters = Mock(return_value=ami_deployment_info)
+        self.deploy_operation._populate_network_config_results_with_interface_data = Mock()
+        self.deploy_operation._prepare_network_result_models = Mock(return_value=network_config_results)
+        self.deploy_operation._prepare_network_config_results_dto = Mock(return_value=[])
+
+    def _create_instance(self):
+        instance = Mock()
+        instance.network_interfaces = []
+        instance.tags = [{'Key': 'Name', 'Value': 'my name'}]
+        return instance
+
+    def _create_ami_deploy_action(self, ami_datamodel):
+        ami_deploy_action = Mock()
+        ami_deploy_action.actionParms = Mock()
+        ami_deploy_action.actionParams.deployment = Mock()
+        ami_deploy_action.actionParams.deployment.customModel = ami_datamodel
+        ami_deploy_action.actionParams.appResource.attributes = {"gen2.User": "lala"}
+        return ami_deploy_action
+
+    def _create_ami_datamodel(self):
+        ami_datamodel = Mock()
+        ami_datamodel.storage_size = 30
+        ami_datamodel.inbound_ports = "80"
+        ami_datamodel.outbound_ports = "20"
+        ami_datamodel.add_public_ip = None
+        ami_datamodel.allocate_elastic_ip = True
+        return ami_datamodel
 
     def test_get_block_device_mappings_throws_max_storage_error(self):
         ec_model = Mock()
