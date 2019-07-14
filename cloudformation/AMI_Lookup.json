@@ -68,7 +68,7 @@
                 "var osNameToFilterData = {",
                 "  'Windows Server 2012 R2 English 64-bit': {",
                 "                                            'owner': 'amazon', ",
-                "                                            'filterValue': '801119661308' // amazon web services",
+                "                                            'filterValue': '801119661308', // amazon web services",
                 "                                            'filterName': 'owner-id' // amazon web services",
                 "                                            },",
                 "  'CentOS 7.4 Latest': {",
