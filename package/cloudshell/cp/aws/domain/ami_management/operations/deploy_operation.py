@@ -282,10 +282,23 @@ class DeployAMIOperation(object):
                     "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
         else:
-            return None if ami_deploy_action.actionParams.appResource.attributes[
-                "User"] else self.credentials_service.get_default_linux_credentials()
+            return None if self._get_deployed_app_resource_user_attribute(ami_deploy_action) else \
+                self.credentials_service.get_default_linux_credentials()
 
         return result
+
+    @staticmethod
+    def _get_deployed_app_resource_user_attribute(ami_deploy_action):
+        """
+        check if deployed app resource has a user attribute, while respecting 2nd gen shell namespaces.
+        2nd gen shells are a kind of resource whose attributes are namespaced,
+        i.e. User is namespace.User in 2nd gen shells
+
+        :param ami_deploy_action: cloudshell.cp.core.models.DeployApp
+        :return:
+        """
+        attribute_names_in_deployed_resource = ami_deploy_action.actionParams.appResource.attributes.keys()
+        return next((attr for attr in attribute_names_in_deployed_resource if attr.split('.')[-1]=='User'))
 
     @staticmethod
     def _get_name_from_tags(result):
