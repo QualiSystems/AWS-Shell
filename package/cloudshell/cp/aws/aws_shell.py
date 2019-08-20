@@ -398,10 +398,10 @@ class AWSShell(object):
             "routes": [{
                             "name":                 "myRoute2",
                             "address_prefix":       "0.0.0.0/0",
-                            "next_hop_type":        "Gateway",
+                            "next_hop_type":        "InternetGateway",
             }]},
             {"name": "myRouteTable3",
-            "subnets": ["subnetId4", "subnetId5"],
+            "subnets": ["subnetId4"],
             "routes": [{
                             "name":                 "myRoute3",
                             "address_prefix":       "0.0.0.0/0",
