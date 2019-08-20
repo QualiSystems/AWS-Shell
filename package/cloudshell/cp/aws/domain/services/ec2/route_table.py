@@ -47,6 +47,24 @@ class RouteTablesService(object):
         """
         route_table.create_route(GatewayId=target_internet_gateway_id, DestinationCidrBlock='0.0.0.0/0')
 
+    def add_route_to_nat_gateway(self, route_table, target_nat_gateway_id, target_cidr):
+        """
+        :param route_table: RouteTable ec2 object
+        :param str target_nat_gateway_id: Id for the route target
+        :param str target_cidr: CIDR block for the route destination
+        :return:
+        """
+        return route_table.create_route(NatGatewayId=target_nat_gateway_id, DestinationCidrBlock=target_cidr)
+
+    def add_route_to_interface(self, route_table, target_interface_id, target_cidr):
+        """
+        :param route_table: RouteTable ec2 object
+        :param target_interface_id: Id for the route target
+        :param target_cidr: CIDR block for the route destination
+        :return:
+        """
+        return route_table.create_route(NetworkInterfaceId=target_interface_id, DestinationCidrBlock=target_cidr)
+
     def find_first_route(self, route_table, filters):
         """
         :param route_table:
@@ -57,11 +75,11 @@ class RouteTablesService(object):
             all_filter_ok = True
             for key in filters:
                 if type(route) is dict:
-                    if not(key in route and route[key] == filters[key]):
+                    if not (key in route and route[key] == filters[key]):
                         all_filter_ok = False
                         break
                 else:
-                    if not(hasattr(route, key) and getattr(route, key) == filters[key]):
+                    if not (hasattr(route, key) and getattr(route, key) == filters[key]):
                         all_filter_ok = False
                         break
             if all_filter_ok:
@@ -86,7 +104,6 @@ class RouteTablesService(object):
                                      VpcPeeringConnectionId=peer_connection_id)
         else:
             route.replace(VpcPeeringConnectionId=peer_connection_id)
-
 
     def get_custom_route_tables(self, ec2_session, vpc_id):
         """

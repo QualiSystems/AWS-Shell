@@ -1,9 +1,9 @@
 import jsonpickle
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
-from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
+from cloudshell.cp.aws.common.model_parser import AWSModelParser
 from cloudshell.cp.aws.domain.ami_management.operations.access_key_operation import GetAccessKeyOperation
 from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import DeleteAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
@@ -13,6 +13,7 @@ from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancella
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.route_table import RouteTableOperations
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
@@ -45,7 +46,7 @@ from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups im
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
-from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
+from cloudshell.cp.core.models import RequestActionBase, ActionResultBase, DeployApp, ConnectSubnet
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.core.models import VmDetailsData
 
@@ -377,6 +378,70 @@ class AWSShell(object):
                 results.append(result)
 
         return self.command_result_parser.set_command_result(results)
+
+    def create_route_tables(self, command_context, route_table_request):
+        """
+        Creates a route table, as well as routes and associates it with whatever subnets are relevant
+        Add Peering gateway
+        Example route table request:
+        {"route_tables": [
+            {"name": "myRouteTable1",
+            "subnets": ["subnetId1"],
+            "routes": [{
+                            "name":                 "myRoute1",
+                            "address_prefix":       "10.0.1.0/28",
+                            "next_hop_type":        "Interface",
+                            "next_hop_address":     "10.0.1.15",
+            }]},
+            {"name": "myRouteTable2",
+            "subnets": ["subnetId2", "subnetId3"],
+            "routes": [{
+                            "name":                 "myRoute2",
+                            "address_prefix":       "0.0.0.0/0",
+                            "next_hop_type":        "Gateway",
+            }]},
+            {"name": "myRouteTable3",
+            "subnets": ["subnetId4", "subnetId5"],
+            "routes": [{
+                            "name":                 "myRoute3",
+                            "address_prefix":       "0.0.0.0/0",
+                            "next_hop_type":        "NatGateway",
+                            "next_hop_address":     "10.0.2.15",
+            }]}
+        ]}
+
+        :param route_table_request:
+        :param ResourceCommandContext command_context:
+        :param str route_table_request: JSON string
+        """
+        with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Adding route table')
+
+                route_table_request_models = AWSModelParser.convert_to_route_table_model(route_table_request)
+                route_table_operations = RouteTableOperations(logger=shell_context.logger,
+                                                     aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                                                     ec2_session=shell_context.aws_api.ec2_session,
+                                                     ec2_client=shell_context.aws_api.ec2_client,
+                                                     reservation=self.model_parser.convert_to_reservation_model(
+                                                         command_context.reservation),
+                                                     vpc_service=self.vpc_service,
+                                                     route_table_service=self.route_tables_service,
+                                                     subnet_service=self.subnet_service,
+                                                     network_interface_service=self.network_interface_service)
+
+                exceptions = []
+                try:
+                    for route_table_request in route_table_request_models:
+                        route_table_operations.operate_create_table_request(route_table_request)
+                except Exception as e:
+                    shell_context.logger.exception()
+                    exceptions.append(e)
+
+                if exceptions:
+                    raise Exception('CreateRouteTables command finished with errors, see logs for more details')
+
+
 
     @staticmethod
     def _get_reservation_id(context):

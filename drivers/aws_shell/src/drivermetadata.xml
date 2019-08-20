@@ -16,6 +16,7 @@
             <Command Description="" DisplayName="Deploy" Name="Deploy" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Set App Security Groups" Name="SetAppSecurityGroups" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Get VmDetails" Name="GetVmDetails" Tags="allow_unreserved" />
+            <Command Description="" DisplayName="Create Route Tables" EnableCancellation="false" Name="CreateRouteTables" Tags="allow_unreserved" />
         </Category>
 
         <Category Name="Power">

@@ -29,3 +29,22 @@ class SetAppSecurityGroupActionResult(object):
 
         return json.dumps([r.__dict__ for r in results])
 
+
+class RouteResourceModel(object):
+    class NEXT_HOPE_TYPE:
+        INTERFACE = 'Interface'
+        INTERNET_GATEWAY = 'InternetGateway'
+        NAT_GATEWAY = 'NatGateway'
+
+    def __init__(self):
+        self.name = ''
+        self.address_prefix = ''
+        self.next_hop_type = ''
+        self.next_hope_address = ''
+
+
+class RouteTableRequestResourceModel(object):
+    def __init__(self):
+        self.name = None  # type: str
+        self.routes = []  # type: List[RouteResourceModel]
+        self.subnets = []
