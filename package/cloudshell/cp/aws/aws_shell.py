@@ -435,7 +435,7 @@ class AWSShell(object):
                     for route_table_request in route_table_request_models:
                         route_table_operations.operate_create_table_request(route_table_request)
                 except Exception as e:
-                    shell_context.logger.exception()
+                    shell_context.logger.exception("Error ocurred ")
                     exceptions.append(e)
 
                 if exceptions:

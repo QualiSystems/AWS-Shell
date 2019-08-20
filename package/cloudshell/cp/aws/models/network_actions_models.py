@@ -40,7 +40,7 @@ class RouteResourceModel(object):
         self.name = ''
         self.address_prefix = ''
         self.next_hop_type = ''
-        self.next_hope_address = ''
+        self.next_hop_address = ''
 
 
 class RouteTableRequestResourceModel(object):

@@ -71,11 +71,11 @@ class RouteTableOperations(object):
         :return:
         """
         if route_model.next_hop_type == route_model.NEXT_HOPE_TYPE.INTERFACE:
-            self._add_route_interface(route_table, route_model.next_hope_address, route_model.address_prefix)
+            self._add_route_interface(route_table, route_model.next_hop_address, route_model.address_prefix)
         elif route_model.next_hop_type == route_model.NEXT_HOPE_TYPE.INTERNET_GATEWAY:
             self._add_route_internet_gateway(route_table)
         elif route_model.next_hop_type == route_model.NEXT_HOPE_TYPE.NAT_GATEWAY:
-            self._add_route_nat_gateway(route_table, subnets[0], route_model.next_hope_address,
+            self._add_route_nat_gateway(route_table, subnets[0], route_model.next_hop_address,
                                         route_model.address_prefix)
         else:
             raise AddRouteTableException('Cannot determine requested next_hope_type')
@@ -87,6 +87,7 @@ class RouteTableOperations(object):
         :return:
         """
         table_name = "{} Reservation: ".format(route_table_request_model.name, self.reservation.reservation_id)
+        table_name = route_table_request_model.name
         route_table = self.route_table_service.create_route_table(self.ec2_session, self.reservation, self._vpc.id,
                                                                   table_name)
 

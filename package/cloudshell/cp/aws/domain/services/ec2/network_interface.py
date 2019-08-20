@@ -32,6 +32,6 @@ class NetworkInterfaceService(object):
         return net_if
 
     def find_network_interface(self, vpc, private_ip):
-        result = vpc.network_interfaces.find(Filters=[{'Name': 'private-ip-address', 'Values': [private_ip]}])
+        result = vpc.network_interfaces.filter(Filters=[{'Name': 'private-ip-address', 'Values': [private_ip]}])
         return result[0] if result else None
 
