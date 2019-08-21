@@ -96,7 +96,7 @@ class CreateRouteTableOperation(object):
         :return:
         """
         # table_name = "{} Reservation: ".format(route_table_request_model.name, self.reservation.reservation_id)
-        logger.debug("Create route table {}".format(str(route_table_request_model)))
+        logger.info("Create route table {}".format(str(route_table_request_model)))
         vpc = self._vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
                                                          reservation_id=reservation.reservation_id)
         table_name = route_table_request_model.name
@@ -105,11 +105,12 @@ class CreateRouteTableOperation(object):
 
         try:
             for route_model in route_table_request_model.routes:
-                self._add_route(route_table, vpc, route_model, route_table_request_model.subnets, ec2_client)
+                self._add_route(route_table, vpc, route_model, route_table_request_model.subnets, ec2_client, logger)
 
             self._add_peering_connection_route(route_table, ec2_session, reservation)
             self._assign_subnets(route_table.id, route_table_request_model.subnets, ec2_client)
         except:
+            logger.error("Create route table unsuccessful, removing route table")
             self._route_table_service.delete_table(route_table)
             raise
 
