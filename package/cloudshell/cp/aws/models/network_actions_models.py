@@ -42,9 +42,16 @@ class RouteResourceModel(object):
         self.next_hop_type = ''
         self.next_hop_address = ''
 
+    def __str__(self):
+        return "Route({})".format(",".join([self.name, self.next_hop_type, self.address_prefix, self.next_hop_address]))
+
 
 class RouteTableRequestResourceModel(object):
     def __init__(self):
         self.name = None  # type: str
         self.routes = []  # type: List[RouteResourceModel]
         self.subnets = []
+
+    def __str__(self):
+        return "RouteTable({name},{subnets},[{routes}])".format(name=self.name, subnets=str(self.subnets),
+                                                                routes=",".join(map(str, self.routes)))

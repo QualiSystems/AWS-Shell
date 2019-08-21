@@ -79,7 +79,8 @@ class SubnetService(object):
         if route_tables:
             for association in route_tables[0].get('Associations'):
                 if association.get('SubnetId') == subnet_id:
-                    return ec2_client.disassociate_route_table(AssociationId=association.get('RouteTableAssociationId'))
+                    ec2_client.disassociate_route_table(AssociationId=association.get('RouteTableAssociationId'))
+                    return association.get('RouteTableId')
 
     def get_nat_gateway_id_with_int_ip(self, ec2_client, subnet_id, int_ip):
         result = ec2_client.describe_nat_gateways(Filters=[{'Name': 'subnet-id', 'Values': [subnet_id]}])

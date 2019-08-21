@@ -17,9 +17,9 @@ class AWSModelParser(object):
         route_table_models = []
         for route_table in data.get('route_tables', []):
             route_table_model = RouteTableRequestResourceModel()
-            route_table_model.name = route_table.get('name')
+            route_table_model.name = route_table.get('name', route_table_model.name)
             route_table_model.subnets = route_table.get('subnets', [])
-            for route in route_table['routes']:
+            for route in route_table.get('routes', []):
                 route_model = RouteResourceModel()
                 for attr, value in vars(route_model).items():
                     setattr(route_model, attr, route.get(attr, value))

@@ -11,3 +11,7 @@ class CancellationException(Exception):
         super(CancellationException, self).__init__(message)
 
         self.data = data if data else {}
+
+
+class AddRouteTableException(Exception):
+    pass

@@ -13,7 +13,7 @@ from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancella
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
-from cloudshell.cp.aws.domain.conncetivity.operations.route_table import RouteTableOperations
+from cloudshell.cp.aws.domain.conncetivity.operations.create_route_table import CreateRouteTableOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
@@ -135,6 +135,12 @@ class AWSShell(object):
 
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
+
+        self.create_route_table_operation = CreateRouteTableOperation(
+            vpc_service=self.vpc_service,
+            subnet_service=self.subnet_service,
+            route_table_service=self.route_tables_service,
+            network_interface_service=self.network_interface_service)
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -419,29 +425,13 @@ class AWSShell(object):
                 shell_context.logger.info('Adding route table')
 
                 route_table_request_models = AWSModelParser.convert_to_route_table_model(route_table_request)
-                route_table_operations = RouteTableOperations(logger=shell_context.logger,
-                                                     aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
-                                                     ec2_session=shell_context.aws_api.ec2_session,
-                                                     ec2_client=shell_context.aws_api.ec2_client,
-                                                     reservation=self.model_parser.convert_to_reservation_model(
-                                                         command_context.reservation),
-                                                     vpc_service=self.vpc_service,
-                                                     route_table_service=self.route_tables_service,
-                                                     subnet_service=self.subnet_service,
-                                                     network_interface_service=self.network_interface_service)
 
-                exceptions = []
-                try:
-                    for route_table_request in route_table_request_models:
-                        route_table_operations.operate_create_table_request(route_table_request)
-                except Exception as e:
-                    shell_context.logger.exception("Error ocurred ")
-                    exceptions.append(e)
-
-                if exceptions:
-                    raise Exception('CreateRouteTables command finished with errors, see logs for more details')
-
-
+                self.create_route_table_operation.operate_create_tables_request(
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    reservation=self.model_parser.convert_to_reservation_model(command_context.reservation),
+                    route_table_request_models=route_table_request_models,
+                    logger=shell_context.logger)
 
     @staticmethod
     def _get_reservation_id(context):
