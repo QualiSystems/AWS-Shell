@@ -35,7 +35,7 @@ class CreateRouteTableOperation(object):
                 subnets_backup[subnet_id] = self._subnet_service.unset_subnet_route_table(ec2_client, subnet_id)
                 self._subnet_service.set_subnet_route_table(ec2_client, subnet_id, route_table_id)
         except:
-            for subnet_id, table_id in subnets_backup:
+            for subnet_id, table_id in subnets_backup.items():
                 if table_id:
                     self._subnet_service.unset_subnet_route_table(ec2_client, subnet_id)
                     self._subnet_service.set_subnet_route_table(ec2_client, subnet_id, table_id)
