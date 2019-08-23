@@ -57,13 +57,22 @@ class TestNetworkInterfaceService(TestCase):
 
         # act
         result = self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=add_public_ip,
-                security_group_ids=security_group_ids,
-                vpc=vpc)
+            add_public_ip=add_public_ip,
+            security_group_ids=security_group_ids,
+            vpc=vpc)
 
         # assert
         self.network_interface_service.build_network_interface_dto.assert_called_once_with(
-                subnet_id=subnet_id_mock,
-                device_index=0,
-                groups=security_group_ids,
-                public_ip=add_public_ip)
+            subnet_id=subnet_id_mock,
+            device_index=0,
+            groups=security_group_ids,
+            public_ip=add_public_ip)
+
+    def test_find_network_interface(self):
+        vpc = Mock()
+        private_ip = Mock()
+        result = Mock()
+        vpc.network_interfaces.filter.return_value = [result]
+        self.assertEquals(self.network_interface_service.find_network_interface(vpc, private_ip), result)
+        vpc.network_interfaces.filter.assert_called_once_with(
+            Filters=[{'Name': 'private-ip-address', 'Values': [private_ip]}])

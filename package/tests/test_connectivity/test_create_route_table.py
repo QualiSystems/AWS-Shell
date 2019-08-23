@@ -188,8 +188,8 @@ class TestCreateRouteTableOperation(TestCase):
         "cloudshell.cp.aws.domain.conncetivity.operations.create_route_table.CreateRouteTableOperation._add_route_internet_gateway")
     @patch(
         "cloudshell.cp.aws.domain.conncetivity.operations.create_route_table.CreateRouteTableOperation._add_route_nat_gateway")
-    def test_add_route_for__add_route_internet_gateway(self, add_route_nat_gateway, add_route_internet_gateway,
-                                                       add_route_interface):
+    def test_add_route_for_internet_gateway(self, add_route_nat_gateway, add_route_internet_gateway,
+                                            add_route_interface):
         route_table = Mock()
         vpc = Mock()
         route_model = Mock()
@@ -214,8 +214,8 @@ class TestCreateRouteTableOperation(TestCase):
         "cloudshell.cp.aws.domain.conncetivity.operations.create_route_table.CreateRouteTableOperation._add_route_internet_gateway")
     @patch(
         "cloudshell.cp.aws.domain.conncetivity.operations.create_route_table.CreateRouteTableOperation._add_route_nat_gateway")
-    def test_add_route_for__add_route_internet_gateway(self, add_route_nat_gateway, add_route_internet_gateway,
-                                                       add_route_interface):
+    def test_add_route_for_nat_gateway(self, add_route_nat_gateway, add_route_internet_gateway,
+                                       add_route_interface):
         route_table = Mock()
         vpc = Mock()
         route_model = Mock()
@@ -271,21 +271,19 @@ class TestCreateRouteTableOperation(TestCase):
     def test_create_table(self, assign_subnets, add_peering_connection_route, add_route):
         ec2_session = Mock()
         ec2_client = Mock()
-        reservation = Mock()
         reservation_id = Mock()
-        reservation.reservation_id = reservation_id
-        route_table_request_model = Mock()
+        reservation = Mock(reservation_id=reservation_id)
         logger = Mock()
-        vpc = Mock()
         vpc_id = Mock()
-        vpc.id = vpc_id
+        vpc = Mock(id=vpc_id)
         self._vpc_service.find_vpc_for_reservation.return_value = vpc
+        route_table_request_model = Mock()
         table_name = Mock()
-        route_table_request_model.name = table_name
         route1 = Mock()
         route2 = Mock()
-        route_table_request_model.routes = [route1, route2]
         subnets = Mock()
+        route_table_request_model.name = table_name
+        route_table_request_model.routes = [route1, route2]
         route_table_request_model.subnets = subnets
         route_table = Mock()
         self._route_table_service.create_route_table.return_value = route_table
@@ -293,11 +291,11 @@ class TestCreateRouteTableOperation(TestCase):
                                                          route_table_request_model, logger)
         self._vpc_service.find_vpc_for_reservation.assert_called_once_with(ec2_session=ec2_session,
                                                                            reservation_id=reservation_id)
-        self._route_table_service.create_route_table.assert_called_once_with(ec2_session, reservation, vpc.id,
+        self._route_table_service.create_route_table.assert_called_once_with(ec2_session, reservation, vpc_id,
                                                                              table_name)
         add_route.assert_has_calls(
-            [call(route_table, vpc, route1, route_table_request_model.subnets, ec2_client, logger),
-             call(route_table, vpc, route2, route_table_request_model.subnets, ec2_client, logger)])
+            [call(route_table, vpc, route1, subnets, ec2_client, logger),
+             call(route_table, vpc, route2, subnets, ec2_client, logger)])
         add_peering_connection_route.assert_called_once_with(route_table, ec2_session, reservation)
         assign_subnets.assert_called_once_with(route_table.id, route_table_request_model.subnets, ec2_client)
 
@@ -316,8 +314,6 @@ class TestCreateRouteTableOperation(TestCase):
         route_table_request_model = Mock()
         logger = Mock()
         vpc = Mock()
-        vpc_id = Mock()
-        vpc.id = vpc_id
         self._vpc_service.find_vpc_for_reservation.return_value = vpc
         table_name = Mock()
         route_table_request_model.name = table_name

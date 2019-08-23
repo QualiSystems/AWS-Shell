@@ -73,6 +73,22 @@ class TestRouteTableService(TestCase):
         route_table.create_route.assert_called_with(GatewayId=target_internet_gateway_id,
                                                     DestinationCidrBlock='0.0.0.0/0')
 
+    def test_add_route_to_nat_gateway(self):
+        route_table = Mock()
+        target_nat_gateway_id = Mock()
+        target_cidr = Mock()
+        self.route_table_service.add_route_to_nat_gateway(route_table, target_nat_gateway_id, target_cidr)
+        route_table.create_route.assert_called_once_with(NatGatewayId=target_nat_gateway_id,
+                                                         DestinationCidrBlock=target_cidr)
+
+    def test_add_route_to_interface(self, ):
+        route_table = Mock()
+        target_interface_id = Mock()
+        target_cidr = Mock()
+        self.route_table_service.add_route_to_interface(route_table, target_interface_id, target_cidr)
+        route_table.create_route.assert_called_once_with(NetworkInterfaceId=target_interface_id,
+                                                         DestinationCidrBlock=target_cidr)
+
     def test_delete_blackhole_routes(self):
         # prepare
         active_route = Mock()
@@ -149,11 +165,13 @@ class TestRouteTableService(TestCase):
     def test_get_route_table(self):
         # Arrange
         table = Mock()
-        table.tags = [{"Key":"Name", "Value":"Table1"}]
+        table.tags = [{"Key": "Name", "Value": "Table1"}]
         self.route_table_service.get_all_route_tables = Mock(return_value=[table])
         # Act
-        table1 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id, table_name="Table1")
-        table2 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id, table_name="Table2")
+        table1 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id,
+                                                          table_name="Table1")
+        table2 = self.route_table_service.get_route_table(ec2_session=self.ec2_session, vpc_id=self.vpc_id,
+                                                          table_name="Table2")
         # Assert
         self.assertEqual(table1, table)
         self.assertEqual(table2, None)

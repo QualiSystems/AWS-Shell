@@ -7,7 +7,6 @@ from cloudshell.cp.aws.domain.services.ec2.subnet import SubnetService
 
 class TestSubnetService(TestCase):
     def setUp(self):
-
         self.vpc = Mock()
         self.cidr = '10.0.0.0/24'
         self.availability_zone = "a1"
@@ -20,11 +19,12 @@ class TestSubnetService(TestCase):
     def test_create_subnet_for_vpc(self):
         subnet = Mock()
         self.vpc.create_subnet = Mock(return_value=subnet)
-        self.subnet_srv._get_subnet_name=Mock(return_value=self.vpc_name)
+        self.subnet_srv._get_subnet_name = Mock(return_value=self.vpc_name)
 
-        self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.availability_zone, self.reservation_id)
+        self.subnet_srv.create_subnet_for_vpc(self.vpc, self.cidr, self.vpc_name, self.availability_zone,
+                                              self.reservation_id)
 
-        self.vpc.create_subnet.assert_called_with(CidrBlock=self.cidr,AvailabilityZone='a1')
+        self.vpc.create_subnet.assert_called_with(CidrBlock=self.cidr, AvailabilityZone='a1')
         self.subnet_waiter.wait.assert_called_with(subnet, self.subnet_waiter.AVAILABLE)
         self.tag_srv.get_default_tags.assert_called_with(self.vpc_name, self.reservation_id)
         self.assertEqual(subnet, self.vpc.create_subnet())
@@ -112,3 +112,49 @@ class TestSubnetService(TestCase):
         subnet = self.subnet_srv.get_first_or_none_subnet_from_vpc(self.vpc, "1.2.3.4/24")
         # Assert
         self.assertEqual(subnet, s)
+
+    def test_unset_subnet_route_table(self):
+        ec2_client = Mock()
+        subnet_id = Mock()
+        association_id = Mock()
+        table_id = Mock()
+        result = {'RouteTables': [
+            {'Associations': [
+                {'SubnetId': Mock(),
+                 'RouteTableAssociationId': Mock(),
+                 'RouteTableId': Mock()
+                 },
+                {'SubnetId': subnet_id,
+                 'RouteTableAssociationId': association_id,
+                 'RouteTableId': table_id
+                 }
+            ]}
+        ]}
+        ec2_client.describe_route_tables.return_value = result
+
+        self.assertEquals(self.subnet_srv.unset_subnet_route_table(ec2_client, subnet_id), table_id)
+        ec2_client.describe_route_tables.assert_called_once_with(
+            Filters=[{'Name': 'association.subnet-id', 'Values': [subnet_id, ]}, ])
+        ec2_client.disassociate_route_table.assert_called_once_with(AssociationId=association_id)
+
+    def test_get_nat_gateway_id_with_int_ip(self):
+        ec2_client = Mock()
+        subnet_id = Mock()
+        int_ip = Mock()
+        gateway_id = Mock()
+        result = {'NatGateways': [
+            {'NatGatewayAddresses': [
+                {'PrivateIp': Mock()},
+                {'PrivateIp': Mock()}
+            ],
+                'NatGatewayId': Mock()},
+            {'NatGatewayAddresses': [
+                {'PrivateIp': Mock()},
+                {'PrivateIp': int_ip}
+            ],
+                'NatGatewayId': gateway_id}
+        ]}
+
+        ec2_client.describe_nat_gateways.return_value = result
+        self.assertEquals(self.subnet_srv.get_nat_gateway_id_with_int_ip(ec2_client, subnet_id, int_ip), gateway_id)
+        ec2_client.describe_nat_gateways.assert_called_once_with(Filters=[{'Name': 'subnet-id', 'Values': [subnet_id]}])
