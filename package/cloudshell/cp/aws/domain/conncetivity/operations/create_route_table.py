@@ -56,13 +56,13 @@ class CreateRouteTableOperation(object):
         else:
             raise AddRouteTableException('Cannot find Internet Gateway')
 
-    def _add_route_nat_gateway(self, route_table, subnet_id, nat_gw_int_ip, target_cidr, ec2_client):
-        nat_gateway_id = self._subnet_service.get_nat_gateway_id_with_int_ip(ec2_client, subnet_id, nat_gw_int_ip)
-        if nat_gateway_id:
-            self._route_table_service.add_route_to_nat_gateway(route_table, nat_gateway_id, target_cidr)
-        else:
-            raise AddRouteTableException(
-                "Cannot find Nat Gateway with IP {} for subnet {}".format(nat_gw_int_ip, subnet_id))
+    def _add_route_nat_gateway(self, route_table, subnets, nat_gw_int_ip, target_cidr, ec2_client):
+        for subnet_id in subnets:
+            nat_gateway_id = self._subnet_service.get_nat_gateway_id_with_int_ip(ec2_client, subnet_id, nat_gw_int_ip)
+            if nat_gateway_id:
+                return self._route_table_service.add_route_to_nat_gateway(route_table, nat_gateway_id, target_cidr)
+
+        raise AddRouteTableException("Cannot find Nat Gateway with IP {}".format(nat_gw_int_ip))
 
     def _add_route(self, route_table, vpc, route_model, subnets, ec2_client, logger):
         """
@@ -79,7 +79,7 @@ class CreateRouteTableOperation(object):
         elif route_model.next_hop_type == route_model.NEXT_HOPE_TYPE.INTERNET_GATEWAY:
             self._add_route_internet_gateway(route_table, vpc)
         elif route_model.next_hop_type == route_model.NEXT_HOPE_TYPE.NAT_GATEWAY:
-            self._add_route_nat_gateway(route_table, subnets[0], route_model.next_hop_address,
+            self._add_route_nat_gateway(route_table, subnets, route_model.next_hop_address,
                                         route_model.address_prefix, ec2_client)
         else:
             raise AddRouteTableException(

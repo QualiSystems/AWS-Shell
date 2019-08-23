@@ -126,35 +126,38 @@ class TestCreateRouteTableOperation(TestCase):
 
     def test_add_route_nat_gateway_no_exception(self):
         route_table = Mock()
-        subnet_id = Mock()
+        subnet_id1 = Mock()
+        subnet_id2 = Mock()
+        subnets = [subnet_id1, subnet_id2]
         nat_gw_int_ip = Mock()
         target_cidr = Mock()
         ec2_client = Mock()
         nat_gateway_id = Mock()
-        self._subnet_service.get_nat_gateway_id_with_int_ip.return_value = nat_gateway_id
-        self._create_route_table_operation._add_route_nat_gateway(route_table, subnet_id, nat_gw_int_ip, target_cidr,
+        self._subnet_service.get_nat_gateway_id_with_int_ip.side_effect = [None, nat_gateway_id]
+        self._create_route_table_operation._add_route_nat_gateway(route_table, subnets, nat_gw_int_ip, target_cidr,
                                                                   ec2_client)
-        self._subnet_service.get_nat_gateway_id_with_int_ip.assert_called_once_with(ec2_client, subnet_id,
-                                                                                    nat_gw_int_ip)
+        self._subnet_service.get_nat_gateway_id_with_int_ip.assert_has_calls(
+            [call(ec2_client, subnet_id1, nat_gw_int_ip), call(ec2_client, subnet_id2, nat_gw_int_ip)])
         self._route_table_service.add_route_to_nat_gateway.assert_called_once_with(route_table, nat_gateway_id,
                                                                                    target_cidr)
 
     def test_add_route_nat_gateway_exception(self):
         route_table = Mock()
-        subnet_id = 'subnet-1'
+        subnet_id1 = 'subnet-1'
+        subnet_id2 = 'subnet-1'
+        subnets = subnet_id1, subnet_id2
         nat_gw_int_ip = '10.0.1.1'
         target_cidr = Mock()
         ec2_client = Mock()
         nat_gateway_id = None
-        self._subnet_service.get_nat_gateway_id_with_int_ip.return_value = nat_gateway_id
+        self._subnet_service.get_nat_gateway_id_with_int_ip.side_effect = [None, nat_gateway_id]
         with self.assertRaisesRegex(AddRouteTableException,
-                                    "Cannot find Nat Gateway with IP {} for subnet {}".format(nat_gw_int_ip,
-                                                                                              subnet_id)):
-            self._create_route_table_operation._add_route_nat_gateway(route_table, subnet_id, nat_gw_int_ip,
+                                    "Cannot find Nat Gateway with IP {}".format(nat_gw_int_ip)):
+            self._create_route_table_operation._add_route_nat_gateway(route_table, subnets, nat_gw_int_ip,
                                                                       target_cidr,
                                                                       ec2_client)
-        self._subnet_service.get_nat_gateway_id_with_int_ip.assert_called_once_with(ec2_client, subnet_id,
-                                                                                    nat_gw_int_ip)
+        self._subnet_service.get_nat_gateway_id_with_int_ip.assert_has_calls(
+            [call(ec2_client, subnet_id1, nat_gw_int_ip), call(ec2_client, subnet_id2, nat_gw_int_ip)])
         self._route_table_service.add_route_to_nat_gateway.assert_not_called()
 
     @patch(
@@ -231,7 +234,7 @@ class TestCreateRouteTableOperation(TestCase):
         route_model.NEXT_HOPE_TYPE.NAT_GATEWAY = hop_type
         self._create_route_table_operation._add_route(route_table, vpc, route_model, subnets, ec2_client, logger)
         add_route_interface.assert_not_called()
-        add_route_nat_gateway.assert_called_once_with(route_table, subnets[0], route_model.next_hop_address,
+        add_route_nat_gateway.assert_called_once_with(route_table, subnets, route_model.next_hop_address,
                                                       route_model.address_prefix, ec2_client)
         add_route_internet_gateway.assert_not_called()
 
