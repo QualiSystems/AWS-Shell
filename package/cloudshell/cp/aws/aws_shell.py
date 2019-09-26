@@ -12,6 +12,8 @@ from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation imp
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
+    CreateTrafficMirroringOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
@@ -134,6 +136,8 @@ class AWSShell(object):
 
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
+
+        self.create_traffic_mirroring_operation = CreateTrafficMirroringOperation()
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -378,6 +382,32 @@ class AWSShell(object):
 
         return self.command_result_parser.set_command_result(results)
 
+    def create_traffic_mirroring(self, context, cancellation_context, actions):
+        """
+        Will create a vpc for the reservation and will peer it with the management vpc
+        :param ResourceCommandContext context:
+        :param list[RequestActionBase] actions:
+        :return: json string response
+        :param CancellationContext cancellation_context:
+        :rtype: list[ActionResultBase]
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Create traffic mirroring')
+
+                results = self.create_traffic_mirroring_operation.create(
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    ec2_session=shell_context.aws_api.ec2_session,
+                    s3_session=shell_context.aws_api.s3_session,
+                    reservation=self.model_parser.convert_to_reservation_model(context.reservation),
+                    aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
+                    actions=actions,
+                    cancellation_context=cancellation_context,
+                    logger=shell_context.logger)
+
+                return results
+
+
     @staticmethod
     def _get_reservation_id(context):
         reservation_id = None
@@ -385,3 +415,5 @@ class AWSShell(object):
         if reservation:
             reservation_id = reservation.reservation_id
         return reservation_id
+
+

@@ -89,3 +89,8 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def GetVmDetails(self, context, cancellation_context, requests):
         return self.aws_shell.get_vm_details(context, cancellation_context, requests)
+
+    def CreateTrafficMirroring(self, context, request):
+        actions = self.request_parser.convert_driver_request_to_actions(request)
+        action_results = self.aws_shell.create_traffic_mirroring(context, request)
+        return DriverResponse(action_results).to_driver_response_json()
