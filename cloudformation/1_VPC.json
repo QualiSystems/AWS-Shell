@@ -205,6 +205,17 @@
 				}
 			}
 		},
+		"VPNConnectionStaticRoute" : {
+		   "Type" : "AWS::EC2::VPNConnectionRoute",
+			"Properties" : {
+				"DestinationCidrBlock" : {
+					"Ref": "OnPremiseCIDR"
+				},
+				"VpnConnectionId" : {
+					"Ref" : "VPNConnection"
+				}
+			}
+		},
 		"ManagementVPNGwAttachement": {
 			"Type": "AWS::EC2::VPCGatewayAttachment",
 			"Properties": {
