@@ -1,4 +1,5 @@
 from collections import defaultdict
+import socket
 import itertools
 
 from jsonpickle import json
@@ -39,60 +40,54 @@ class CreateTrafficMirroringOperation(object):
         :return:
         """
 
+        # concern - cancellation context & rollback
+
         logger.info('Received request to deploy traffic mirroring. Here are the params:\n' + '\n'
                     .join(str(x) for x in actions))
 
-        # for each action, provide a target, a filter and a session
-        # get or create; but I want to take advantage of bulk
-
-        # order: 1. targets, 2. filters 3. rules 4. sessions
-
-        # validations
-        self._validate_actions(actions)
+        self._validate_actions(actions, logger)
         self._checkout_session_numbers(actions, cloudshell, logger, reservation)
 
-        # targets
         target_nics_to_fulfillments = self._convert_traffic_requests_to_fulfillments(actions, reservation)
         target_nics = target_nics_to_fulfillments.keys()
-        targets_found_nics_to_target_id = self._find_traffic_targets_associated_with_nics(ec2_client, target_nics)
-        # self._get_or_create_targets(ec2_client,
-        #                             target_nics_to_fulfillments,
-        #                             targets_found_nics_to_target_id,
-        #                             self._tag_service,
-        #                             reservation)
-
-        # sessions
         fulfillments = flatten(target_nics_to_fulfillments.values())
-        session_name_to_fulfillment = {f.session_name: f for f in fulfillments}
-        session_name_to_found_session = self._find_sessions(ec2_client, session_name_to_fulfillment.keys())
 
-        for s in session_name_to_fulfillment.keys():
-            fulfillment = session_name_to_fulfillment[s]
-            if s not in session_name_to_found_session.keys():
-                session = self._create_session(ec2_client, fulfillment)
-                # assign session to fulfillment
-            else:
-                found_session = session_name_to_found_session[s]
-                fulfillment.mirror_session_id = found_session['TrafficMirrorSessionId']
+        # targets
+        # concern - try to create a target for a nic which is already associated as a target!
+        self._get_or_create_targets(ec2_client, reservation, target_nics, target_nics_to_fulfillments)
 
-        # assign found sessions to fulfilmments - create session will be handled later, along with filters and rules
-
-        # self._create_filter(ec2_client, default_tags)
-
-        # create or get rules, or invalidate request
-
-        # create or get filter, or invalidate request
-
-        # create or get session, or invalidate request
+        # concern - try to associate a source / target to a session, when already associated
+        # sessions
+        self._get_or_create_sessions(ec2_client, fulfillments)  # self._create_filter(ec2_client, default_tags)
 
         result = CreateResult(False)
         return result
 
-    def _get_or_create_targets(self, ec2_client,
-                               target_nics_to_fulfillments,
-                               nics_to_found_target_ids,
-                               tag_service,
-                               reservation):
+    def _get_or_create_targets(self, ec2_client, reservation, target_nics, target_nics_to_fulfillments):
+        targets_found_nics_to_target_id = self._find_traffic_targets_associated_with_nics(ec2_client, target_nics)
+        self._create_targets_or_assign_existing_targets(ec2_client,
+                                                        target_nics_to_fulfillments,
+                                                        targets_found_nics_to_target_id,
+                                                        self._tag_service,
+                                                        reservation)
+
+    def _get_or_create_sessions(self, ec2_client, fulfillments):
+        session_name_to_fulfillment = {f.session_name: f for f in fulfillments}
+        session_name_to_found_session = self._find_sessions(ec2_client, session_name_to_fulfillment.keys())
+        for s in session_name_to_fulfillment.keys():
+            fulfillment = session_name_to_fulfillment[s]
+            if s not in session_name_to_found_session.keys():
+                session = self._create_session(ec2_client, fulfillment)
+                fulfillment.mirror_session_id = session['TrafficMirrorSessionId']
+            else:
+                found_session = session_name_to_found_session[s]
+                fulfillment.mirror_session_id = found_session['TrafficMirrorSessionId']
+
+    def _create_targets_or_assign_existing_targets(self, ec2_client,
+                                                   target_nics_to_fulfillments,
+                                                   nics_to_found_target_ids,
+                                                   tag_service,
+                                                   reservation):
         """
         :param cloudshell.cp.aws.domain.services.ec2.tags.TagService tag_service:
         """
@@ -114,6 +109,7 @@ class CreateTrafficMirroringOperation(object):
 
     @staticmethod
     def _create_target_from_nic(ec2_client, target_nic, tags):
+        # todo improve error handling
         description = str(tags[0])  # description follows the same scheme as name tag
         response = ec2_client.create_traffic_mirror_target(NetworkInterfaceId=target_nic,
                                                            Description=description,
@@ -123,26 +119,7 @@ class CreateTrafficMirroringOperation(object):
                                                                    'Tags': tags
                                                                }
                                                            ])
-        """ response -
-            {
-                'TrafficMirrorTarget': {
-                    'TrafficMirrorTargetId': 'string',
-                    'NetworkInterfaceId': 'string',
-                    'NetworkLoadBalancerArn': 'string',
-                    'Type': 'network-interface',
-                    'Description': 'string',
-                    'OwnerId': 'string',
-                    'Tags': [
-                        {
-                            'Key': 'string',
-                            'Value': 'string'
-                        },
-                    ]
-                },
-                'ClientToken': 'string'
-            }
-            """
-        return response
+        return response['TrafficMirrorTarget']['TrafficMirrorTargetId']
 
     @staticmethod
     def _find_sessions(ec2_client, session_names):
@@ -151,33 +128,11 @@ class CreateTrafficMirroringOperation(object):
         """
         # todo we want to get traffic mirror sessions based on the naming scheme
 
-        # expected response
-        """
-        {'TrafficMirrorSessions': [{
-                                    'Description': 'eni-0fedfb8d7795f2713_eni-0fedfb8d7795f2713',
-                                    'Tags': [{'Value': 'eni-0fedfb8d7795f2713_eni-0fedfb8d7795f2713',  'Key': 'Name'}],
-                                    'NetworkInterfaceId': 'eni-0fedfb8d7795f2713',
-                                    'TrafficMirrorTargetId': 'tmt-09d168e2bbc92cfe6',
-                                    'SessionNumber': 1,
-                                    'OwnerId': '851646629437',
-                                    'TrafficMirrorFilterId': 'tmf-0e6d65039d92a6aa1',
-                                    'TrafficMirrorSessionId': 'tms-0d079edf9ab1e3fde',
-                                    'VirtualNetworkId': 2120640}],
-         'ResponseMetadata': {'RetryAttempts': 0,
-         'HTTPStatusCode': 200,
-         'RequestId': 'd18dcaa3-0bb9-41ba-93fe-aaf9289195c0',
-         'HTTPHeaders': {'transfer-encoding': 'chunked',
-         'content-type': 'text/xml;charset=UTF-8',
-         'vary': 'accept-encoding',
-         'date': 'Wed,
-         25 Sep 2019 11:26:06 GMT',
-         'server': 'AmazonEC2'}}}
-        """
         traffic_mirror_sessions = []
         response = ec2_client.describe_traffic_mirror_sessions(
             Filters=[
                 {
-                    'Name': 'Name',
+                    'Name': 'description',
                     'Values': session_names
                 },
             ],
@@ -219,7 +174,7 @@ class CreateTrafficMirroringOperation(object):
     @staticmethod
     def _create_filter(ec2_client, tags):
         # todo determine a scheme for mirror descriptions
-        description = 'string'
+        description = str(tags[0])   # description follows the same scheme as name tag
         response = ec2_client.create_traffic_mirror_filter(
             Description=description,
             TagSpecifications=[
@@ -235,53 +190,32 @@ class CreateTrafficMirroringOperation(object):
         """
         :param TrafficMirroringFulfillment fulfillment:
         """
-        """
-        response = client.create_traffic_mirror_session(
-        NetworkInterfaceId='string',
-        TrafficMirrorTargetId='string',
-        TrafficMirrorFilterId='string',
-        PacketLength=123,
-        SessionNumber=123,
-        VirtualNetworkId=123,
-        Description='string',
-        TagSpecifications=[
-            {
-                'ResourceType': 'client-vpn-endpoint'|'customer-gateway'|'dedicated-host'|'dhcp-options'|'elastic-ip'|'fleet'|'fpga-image'|'host-reservation'|'image'|'instance'|'internet-gateway'|'launch-template'|'natgateway'|'network-acl'|'network-interface'|'reserved-instances'|'route-table'|'security-group'|'snapshot'|'spot-instances-request'|'subnet'|'traffic-mirror-filter'|'traffic-mirror-session'|'traffic-mirror-target'|'transit-gateway'|'transit-gateway-attachment'|'transit-gateway-route-table'|'volume'|'vpc'|'vpc-peering-connection'|'vpn-connection'|'vpn-gateway',
-                'Tags': [
-                    {
-                        'Key': 'string',
-                        'Value': 'string'
-                    },
-                ]
-            },
-        ],
-        DryRun=True|False,
-        ClientToken='string'
-        )
-        """
+        response = self._create_filter(ec2_client,
+                                       self._tag_service.get_default_tags('filter-' + fulfillment.session_name,
+                                                                          fulfillment.reservation))
 
-        # create filter
-        # create session number, safely
-        # session number is the priority sessions from the same source interface are handled
-        # therefore session number must be unique per source nic?
+        fulfillment.traffic_mirror_filter_id = response['TrafficMirrorFilter']['TrafficMirrorFilterId']
 
-        ec2_client.create_traffic_mirror_session(
+        self._create_filter_rules(ec2_client, fulfillment)
+
+        response = ec2_client.create_traffic_mirror_session(
             NetworkInterfaceId=fulfillment.source_nic_id,
             TrafficMirrorTargetId=fulfillment.traffic_mirror_target_id,
             TrafficMirrorFilterId=fulfillment.traffic_mirror_filter_id,
-            SessionNumber=fulfillment.session_number,
+            SessionNumber=int(fulfillment.session_number),
             Description=fulfillment.session_name,
             TagSpecifications=[
                 {
                     'ResourceType': 'traffic-mirror-session',
-                    'Tags': self._tag_service.get_default_tags(fulfillment.session_name,
+                    'Tags': self._tag_service.get_default_tags('session-' + fulfillment.session_name,
                                                                fulfillment.reservation)
                 }
             ]
         )
+        return response['TrafficMirrorSession']
 
-    def _validate_actions(self, actions):
-        self._session_numbers_are_valid(actions)  # must be 1-32766 or NONE
+    def _validate_actions(self, actions, logger):
+        self._session_numbers_are_valid(actions, logger)  # must be 1-32766 or NONE
 
     def _checkout_session_numbers(self, actions, cloudshell, logger, reservation):
         """
@@ -295,32 +229,74 @@ class CreateTrafficMirroringOperation(object):
         source_nic_to_traffic_action = defaultdict(list)
         [source_nic_to_traffic_action[a.actionParams.sourceNicId].append(a) for a in actions]
         for source in source_nic_to_traffic_action.keys():
-            # todo assign session number to action params; make sure empty string is treated as none
-            [self._session_number_service.checkout(
-                cloudshell=cloudshell,
-                logger=logger,
-                reservation=reservation,
-                source_nic=source,
-                specific_number=action.actionParams.sessionNumber)
-             for action in source_nic_to_traffic_action[source]]
-        pass
+            self.get_unique_session_number_and_assign_to_mirror_session_request(cloudshell, logger, reservation, source,
+                                                                                source_nic_to_traffic_action)
 
-    def _session_numbers_are_valid(self, actions):
+    def get_unique_session_number_and_assign_to_mirror_session_request(self, cloudshell, logger, reservation, source,
+                                                                       source_nic_to_traffic_action):
+        for action in source_nic_to_traffic_action[source]:
+            session_number = action.actionParams.sessionNumber
+            action.actionParams.sessionNumber = self._session_number_service.checkout(cloudshell,
+                                                                                      logger,
+                                                                                      reservation,
+                                                                                      source,
+                                                                                      session_number)
+
+    @staticmethod
+    def _session_numbers_are_valid(actions, logger):
         """
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
+        :param logging.Logger logger:
         """
         error_msg = 'Session number must be either empty or an integer in the range 1-32766'
 
         # must be 1-32766 or NONE
         for a in actions:
-            session_number = a.actionParams.sessionNumber
-            if session_number == '':
+            try:
+                session_number = int(a.actionParams.sessionNumber)
+                if session_number and \
+                    not isinstance(session_number, (int, long)) \
+                    or session_number > 32766 \
+                    or session_number < 1:
+                    logger.error(error_msg + '\nSession number is {0}'.format(session_number))
+                    raise Exception(error_msg)
+            except ValueError:
                 a.actionParams.sessionNumber = None
-            if session_number and not int(session_number)==session_number:
-                raise Exception(error_msg)
-            if session_number and (session_number > 32766 or session_number < 1):
-                raise Exception(error_msg)
 
+    def _create_filter_rules(self, ec2_client, fulfillment):
+        """
+        creates filter rules requested for a particular session
+        :param TrafficMirroringFulfillment fulfillment:
+        """
+        i = 0
+        for rule in fulfillment.filter_rules:
+            i+=1
+            description = 'filter_rule_{0}_{1}'.format(i, fulfillment.traffic_mirror_filter_id)
+            kwargs={
+                'TrafficMirrorFilterId': fulfillment.traffic_mirror_filter_id,
+                'RuleAction': 'accept',
+                'Description': description
+            }
+
+            if rule.sourcePortRange:
+                kwargs['SourcePortRange'] = rule.sourcePortRange
+
+            if rule.destinationPortRange:
+                kwargs['DestinationPortRange'] = rule.destinationPortRange
+
+            kwargs['TrafficDirection'] = rule.direction
+            kwargs['RuleNumber'] = i
+            kwargs['Protocol'] = rule.protocol if isinstance(rule.protocol, int) else socket.getprotobyname(rule.protocol)
+            kwargs['DestinationCidrBlock'] = rule.destinationCidr or self._get_destination_cidr()
+            kwargs['SourceCidrBlock'] = rule.sourceCidr or self._get_source_cidr()
+
+            ec2_client.create_traffic_mirror_filter_rule(**kwargs)
+
+    def _get_source_cidr(self):
+        return '0.0.0.0/0'
+
+    def _get_destination_cidr(self):
+        return '0.0.0.0/0'
 
 
 class CreateResult(object):
@@ -343,6 +319,7 @@ class TrafficMirroringFulfillment(object):
         self.session_number = action.actionParams.sessionNumber  # todo handle empty session number, get next available, etc
         self.session_name = self._get_mirror_session_name()
         self.mirror_session_id = None
+        self.filter_rules = action.actionParams.filterRules
 
     def _get_mirror_session_name(self):
         """
@@ -359,14 +336,14 @@ class SessionNumberService(object):
         :param logging.Logger logger:
         :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
         :param str source_nic:
-        :param int specific_number:
+        :param str specific_number:
         :return:
         """
         selection_criteria = self._get_selection_criteria(source_nic, reservation.reservation_id, specific_number)
 
         try:
             result = cloudshell.CheckoutFromPool(selection_criteria)
-            return result
+            return result.Items[0]
         except Exception as e:
             logger.error(unavailable_msg(source_nic, reservation.reservation_id))
             logger.error(e.message)
@@ -379,16 +356,16 @@ class SessionNumberService(object):
     def _get_selection_criteria(source_nic, reservation_id, specific_number=None):
         request = {
             'isolation': 'Exclusive',
-            'reservation_id': reservation_id,
-            'pool_id': source_nic,
-            'owner_id': 'admin'
+            'reservationId': reservation_id,
+            'poolId': source_nic,  # The session number determines the order that traffic mirror sessions are evaluated when an interface is used by multiple sessions that have the same interface, but have different traffic mirror targets and traffic mirror filters. Traffic is only mirrored one time.
+            'ownerId': 'admin'
         }
 
         if not specific_number:
             request['type'] = 'NextAvailableNumericFromRange'
             request['requestedRange'] = {'Start': 1, 'End': 32766}
         else:
-            request['type'] = 'SelectSpecificNumericRequest',
+            request['type'] = 'SpecificNumeric'
             request['requestedItem'] = {'Value': specific_number}
 
         selection_criteria = json.dumps(request)
