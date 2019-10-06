@@ -13,7 +13,7 @@ from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancella
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
-    CreateTrafficMirroringOperation
+    CreateTrafficMirrorOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
@@ -137,7 +137,7 @@ class AWSShell(object):
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
 
-        self.create_traffic_mirroring_operation = CreateTrafficMirroringOperation()
+        self.create_traffic_mirroring_operation = CreateTrafficMirrorOperation()
 
     def cleanup_connectivity(self, command_context, actions):
         """

@@ -6,7 +6,9 @@ from cloudshell.api.cloudshell_api import CloudShellAPISession
 from mock import Mock
 import logging
 from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
-    CreateTrafficMirroringOperation, SessionNumberService
+    CreateTrafficMirrorOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
+from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
 from cloudshell.cp.core import DriverRequestParser
@@ -14,18 +16,23 @@ from cloudshell.cp.core import DriverRequestParser
 
 class TestCreateTrafficMirroring(TestCase):
     def setUp(self):
-        self.cloudshell = CloudShellAPISession(host='localhost', username='admin', password='admin', domain='Global')
+        self.ec2_client = boto3.client('ec2')
+        try:
+            self.cloudshell = CloudShellAPISession(host='localhost', username='admin', password='admin', domain='Global')
+        except:
+            raise Exception('failed to connect to Quali Server')
         self.res = self.cloudshell.CreateImmediateReservation('test', 'admin', 120).Reservation
+        self.fulfillments = []
 
     def tearDown(self):
         self.cloudshell.EndReservation(self.res.Id)
+        TrafficMirrorCleaner.rollback(self.ec2_client, self.fulfillments)
 
     def test_create_traffic_mirroring(self):
         tag_service = TagService(Mock())
         session_number_service = SessionNumberService()
-        op = CreateTrafficMirroringOperation(tag_service, session_number_service)
+        op = CreateTrafficMirrorOperation(tag_service, session_number_service)
 
-        ec2_client = boto3.client('ec2')
         ec2_session = Mock()
         s3_session = Mock()
         reservation_context = Mock()
@@ -63,7 +70,7 @@ class TestCreateTrafficMirroring(TestCase):
         logging.disable(logging.DEBUG)
 
         result = op.create(
-            ec2_client=ec2_client,
+            ec2_client=self.ec2_client,
             ec2_session=ec2_session,
             s3_session=s3_session,
             reservation=reservation,
@@ -74,3 +81,4 @@ class TestCreateTrafficMirroring(TestCase):
             cloudshell=self.cloudshell)
 
         self.assertTrue(result.Success, 'Was not able to create traffic mirroring')
+        self.fulfillments = result.Fulfillments
