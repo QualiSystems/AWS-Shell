@@ -99,3 +99,4 @@ cloudformation/deploy_execution_server_by_selected_version
 cloudformation/deploy_execution_server_by_selected_version/*
 */.aws/*
 .aws/*
+/local/
