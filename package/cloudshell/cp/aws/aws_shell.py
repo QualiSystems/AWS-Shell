@@ -146,7 +146,8 @@ class AWSShell(object):
         self.create_traffic_mirroring_operation = \
             CreateTrafficMirrorOperation(tag_service=self.tag_service,
                                          session_number_service=self.session_number_service,
-                                         traffic_mirror_service=self.traffic_mirror_service)
+                                         traffic_mirror_service=self.traffic_mirror_service,
+                                         cancellation_service=self.cancellation_service)
 
     def cleanup_connectivity(self, command_context, actions):
         """

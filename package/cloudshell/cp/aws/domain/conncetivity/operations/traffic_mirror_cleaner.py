@@ -142,23 +142,23 @@ class TrafficMirrorCleaner(object):
             delete_session_waiter = TrafficMirrorCleaner._create_delete_traffic_session_waiter(ec2_client)
             for id in mirror_session_ids:
                 ec2_client.delete_traffic_mirror_session(TrafficMirrorSessionId=id)
-            delete_session_waiter.wait(TrafficMirrorSessionIds=[mirror_session_ids])
+            delete_session_waiter.wait(TrafficMirrorSessionIds=mirror_session_ids)
 
     @staticmethod
     def delete_mirror_filters(ec2_client, mirror_filter_ids=None):
         if mirror_filter_ids:
             delete_filter_waiter = TrafficMirrorCleaner._create_traffic_mirror_filter_delete_waiter(ec2_client)
             for id in mirror_filter_ids:
-                ec2_client.delete_traffic_mirror_filter(TrafficMirrorFilterIds=id)
-            delete_filter_waiter.wait(TrafficMirrorFilterIds=[mirror_filter_ids])
+                ec2_client.delete_traffic_mirror_filter(TrafficMirrorFilterId=id)
+            delete_filter_waiter.wait(TrafficMirrorFilterIds=mirror_filter_ids)
 
     @staticmethod
     def delete_mirror_targets(ec2_client, mirror_target_ids=None):
         if mirror_target_ids:
             delete_target_waiter = TrafficMirrorCleaner._create_traffic_mirror_target_delete_waiter(ec2_client)
             for id in mirror_target_ids:
-                ec2_client.delete_traffic_mirror_target(TrafficMirrorSessionId=id)
-            delete_target_waiter.wait(TrafficMirrorSessionIds=[mirror_target_ids])
+                ec2_client.delete_traffic_mirror_target(TrafficMirrorTargetId=id)
+            delete_target_waiter.wait(TrafficMirrorTargetIds=mirror_target_ids)
 
     @staticmethod
     def try_delete_mirror_filter(ec2_client, traffic_mirror_filter_id):

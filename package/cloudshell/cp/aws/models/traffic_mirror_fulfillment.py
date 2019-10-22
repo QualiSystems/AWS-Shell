@@ -10,7 +10,7 @@ class TrafficMirrorFulfillment(object):
         self.target_nic_id = action.actionParams.targetNicId
         self.traffic_mirror_target_id = None
         self.source_nic_id = action.actionParams.sourceNicId
-        self.session_number = action.actionParams.sessionNumber  # todo handle empty session number, get next available, etc
+        self.session_number = action.actionParams.sessionNumber
         self.session_name = self._get_mirror_session_name()
         self.mirror_session_id = None
         self.filter_rules = action.actionParams.filterRules

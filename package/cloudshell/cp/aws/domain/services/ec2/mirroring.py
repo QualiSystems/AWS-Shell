@@ -94,15 +94,14 @@ class TrafficMirrorService(object):
                     ]
                 },
             ],
-            MaxResults=123,
-            NextToken='string'
-        )
+            MaxResults=123)
+
         traffic_mirror_filters.extend(response['TrafficMirrorFilters'])
         while 'NextToken' in response:
             response = ec2_client.describe_traffic_mirror_filters(NextToken=response['NextToken'])
             traffic_mirror_filters.extend(response['TrafficMirrorFilters'])
 
-        return [filter['TrafficMirrorFilterId'] for filter in traffic_mirror_filters]
+        return [traffic_filter['TrafficMirrorFilterId'] for traffic_filter in traffic_mirror_filters]
 
     # region traffic mirror rules
     def create_filter_rules(self, ec2_client, fulfillment):
@@ -152,7 +151,6 @@ class TrafficMirrorService(object):
 
     @staticmethod
     def create_traffic_mirror_target_from_nic(ec2_client, target_nic, tags):
-        # todo re-implement with waiter and error handling
         description = str(tags[0]['Value'])
         response = ec2_client.create_traffic_mirror_target(NetworkInterfaceId=target_nic,
                                                            Description=description,
@@ -184,9 +182,7 @@ class TrafficMirrorService(object):
                     ]
                 },
             ],
-            MaxResults=123,
-            NextToken='string'
-        )
+            MaxResults=123)
         traffic_mirror_targets.extend(response['TrafficMirrorTargets'])
         while 'NextToken' in response:
             response = ec2_client.describe_traffic_mirror_filters(NextToken=response['NextToken'])
