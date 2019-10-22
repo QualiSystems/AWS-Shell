@@ -12,16 +12,20 @@ from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation imp
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
+    CreateTrafficMirrorOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
+from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.ec2.instance_credentials import InstanceCredentialsService
 from cloudshell.cp.aws.domain.services.ec2.keypair import KeyPairService
+from cloudshell.cp.aws.domain.services.ec2.mirroring import TrafficMirrorService
 from cloudshell.cp.aws.domain.services.ec2.network_interface import NetworkInterfaceService
 from cloudshell.cp.aws.domain.services.ec2.route_table import RouteTablesService
 from cloudshell.cp.aws.domain.services.ec2.security_group import SecurityGroupService
@@ -45,7 +49,7 @@ from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups im
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
-from cloudshell.cp.core.models import RequestActionBase, ActionResultBase,DeployApp,ConnectSubnet
+from cloudshell.cp.core.models import RequestActionBase, ActionResultBase, DeployApp, ConnectSubnet
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.core.models import VmDetailsData
 
@@ -76,6 +80,8 @@ class AWSShell(object):
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
+        self.session_number_service = SessionNumberService()
+        self.traffic_mirror_service = TrafficMirrorService()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -83,7 +89,8 @@ class AWSShell(object):
                                       vpc_waiter=self.vpc_waiter,
                                       vpc_peering_waiter=self.vpc_peering_waiter,
                                       sg_service=self.security_group_service,
-                                      route_table_service=self.route_tables_service)
+                                      route_table_service=self.route_tables_service,
+                                      traffic_mirror_service=self.traffic_mirror_service)
         self.prepare_connectivity_operation = \
             PrepareSandboxInfraOperation(vpc_service=self.vpc_service,
                                          security_group_service=self.security_group_service,
@@ -120,7 +127,8 @@ class AWSShell(object):
 
         self.clean_up_operation = CleanupSandboxInfraOperation(vpc_service=self.vpc_service,
                                                                key_pair_service=self.key_pair_service,
-                                                               route_table_service=self.route_tables_service)
+                                                               route_table_service=self.route_tables_service,
+                                                               traffic_mirror_service=self.traffic_mirror_service)
 
         self.deployed_app_ports_operation = DeployedAppPortsOperation(self.vm_custom_params_extractor,
                                                                       security_group_service=self.security_group_service,
@@ -134,6 +142,12 @@ class AWSShell(object):
 
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
+
+        self.create_traffic_mirroring_operation = \
+            CreateTrafficMirrorOperation(tag_service=self.tag_service,
+                                         session_number_service=self.session_number_service,
+                                         traffic_mirror_service=self.traffic_mirror_service,
+                                         cancellation_service=self.cancellation_service)
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -377,6 +391,28 @@ class AWSShell(object):
                 results.append(result)
 
         return self.command_result_parser.set_command_result(results)
+
+    def create_traffic_mirroring(self, context, cancellation_context, actions):
+        """
+        Will create a vpc for the reservation and will peer it with the management vpc
+        :param ResourceCommandContext context:
+        :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
+        :return: json string response
+        :param CancellationContext cancellation_context:
+        :rtype: list[ActionResultBase]
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Create traffic mirroring')
+
+                results = self.create_traffic_mirroring_operation.create(
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    reservation=self.model_parser.convert_to_reservation_model(context.reservation),
+                    actions=actions,
+                    cancellation_context=cancellation_context,
+                    logger=shell_context.logger)
+
+                return results
 
     @staticmethod
     def _get_reservation_id(context):
