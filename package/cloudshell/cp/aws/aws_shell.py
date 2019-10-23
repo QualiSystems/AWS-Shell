@@ -410,7 +410,8 @@ class AWSShell(object):
                     reservation=self.model_parser.convert_to_reservation_model(context.reservation),
                     actions=actions,
                     cancellation_context=cancellation_context,
-                    logger=shell_context.logger)
+                    logger=shell_context.logger,
+                    cloudshell=shell_context.cloudshell_session)
 
                 return results
 
