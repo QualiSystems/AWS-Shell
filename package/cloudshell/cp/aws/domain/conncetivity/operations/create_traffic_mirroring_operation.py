@@ -1,11 +1,36 @@
 import itertools
-import socket
+import threading
 from collections import defaultdict
+
+import time
 
 from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
 from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, CreateResult
 
 flatten = itertools.chain.from_iterable
+
+
+class CheckCancellationThread(threading.Thread):
+    def __init__(self, cancellation_context, cancellation_service):
+        super(CheckCancellationThread, self).__init__()
+        self._stop = threading.Event()
+        self.cancellation_context = cancellation_context
+        self.cancellation_service = cancellation_service
+
+    def run(self):
+        while True:
+            if self.stopped():
+                return
+            time.sleep(1)
+            cancelled = self.cancellation_service.check_if_cancelled(self.cancellation_context)
+            if cancelled:
+                raise Exception('User cancelled traffic mirroring')
+
+    def stop(self):
+        self._stop.set()
+
+    def stopped(self):
+        return self._stop.isSet()
 
 
 class CreateTrafficMirrorOperation(object):
@@ -20,6 +45,13 @@ class CreateTrafficMirrorOperation(object):
         self._traffic_mirror_service = traffic_mirror_service
         self._cancellation_service = cancellation_service
 
+    def _handle_cancellation(self, cancellation_context):
+        while True:
+            time.sleep(1)
+            cancelled = self._cancellation_service.check_if_cancelled(cancellation_context)
+            if cancelled:
+                raise Exception('User cancelled traffic mirroring')
+
     def create(self,
                ec2_client,
                reservation,
@@ -28,6 +60,7 @@ class CreateTrafficMirrorOperation(object):
                logger,
                cloudshell):
         """
+        :param cloudshell.shell.core.driver_context.CancellationContext cancellation_context:
         :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
         :param EC2.Client ec2_client:
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
@@ -47,15 +80,19 @@ class CreateTrafficMirrorOperation(object):
         target_nics = target_nics_to_fulfillments.keys()
         fulfillments = list(flatten(target_nics_to_fulfillments.values()))
 
+        success = False
+
         try:
+            cancel_checker = CheckCancellationThread(cancellation_context, self._cancellation_service)
+            cancel_checker.start()
             self._get_or_create_targets(ec2_client, reservation, target_nics, target_nics_to_fulfillments)
             self._get_or_create_sessions(ec2_client, fulfillments)
+            cancel_checker.stop()
 
             success = True
             message = 'Success'
 
         except Exception as e:
-            success = False
             message = e.message
             TrafficMirrorCleaner.rollback(ec2_client, fulfillments, logger)
 
