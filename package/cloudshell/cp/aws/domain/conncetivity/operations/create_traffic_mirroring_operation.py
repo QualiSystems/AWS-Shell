@@ -5,7 +5,7 @@ from collections import defaultdict
 import time
 
 from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
-from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, CreateResult
+from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, create_results
 
 flatten = itertools.chain.from_iterable
 
@@ -70,6 +70,8 @@ class CreateTrafficMirrorOperation(object):
         :return:
         """
 
+        success = False
+
         logger.info('Received request to deploy traffic mirroring. Here are the params:\n' + '\n'
                     .join(str(x) for x in actions))
 
@@ -80,7 +82,6 @@ class CreateTrafficMirrorOperation(object):
         target_nics = target_nics_to_fulfillments.keys()
         fulfillments = list(flatten(target_nics_to_fulfillments.values()))
 
-        success = False
 
         try:
             cancel_checker = CheckCancellationThread(cancellation_context, self._cancellation_service)
@@ -96,8 +97,8 @@ class CreateTrafficMirrorOperation(object):
             message = e.message
             TrafficMirrorCleaner.rollback(ec2_client, fulfillments, logger)
 
-        result = CreateResult(success, fulfillments, message)
-        return result
+        results = create_results(success, fulfillments, message)
+        return results
 
     def _get_or_create_targets(self, ec2_client, reservation, target_nics, target_nics_to_fulfillments):
         targets_found_nics_to_target_id = self._traffic_mirror_service.find_traffic_targets_by_nics(ec2_client,
@@ -166,7 +167,12 @@ class CreateTrafficMirrorOperation(object):
         return self._traffic_mirror_service.create_traffic_mirror_session(ec2_client, fulfillment, mirror_session_tags)
 
     def _validate_actions(self, actions, logger):
+        self._there_are_actions(actions)
         self._session_numbers_are_valid(actions, logger)  # must be 1-32766 or NONE
+
+    def _there_are_actions(self, actions):
+        if len(actions) == 0:
+            raise Exception('Invalid request')
 
     def _checkout_session_numbers(self, actions, cloudshell, logger, reservation):
         """

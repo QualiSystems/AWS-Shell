@@ -1,3 +1,6 @@
+from cloudshell.cp.core.models import TrafficMirroringResult
+
+
 class TrafficMirrorFulfillment(object):
     def __init__(self, action, reservation):
         """
@@ -23,8 +26,12 @@ class TrafficMirrorFulfillment(object):
         return '{2}_{0}_{1}'.format(self.source_nic_id, self.target_nic_id, self.session_number)
 
 
-class CreateResult(object):
-    def __init__(self, success, fulfillments, message):
-        self.Success = success
-        self.Fulfillments = fulfillments
-        self.Message = message
+def create_results(success, fulfillments, message):
+        return [
+            TrafficMirroringResult(
+                actionId=f.action_id,
+                success=success,
+                infoMessage=message,
+                errorMessage=message,
+                sessionId=f.mirror_session_id or '')
+            for f in fulfillments]
