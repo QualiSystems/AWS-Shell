@@ -17,6 +17,12 @@ class CheckCancellationThread(threading.Thread):
         self.cancellation_context = cancellation_context
         self.cancellation_service = cancellation_service
 
+    def __enter__(self):
+        self.start()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.stop()
+
     def run(self):
         while True:
             if self.stopped():
@@ -82,13 +88,14 @@ class CreateTrafficMirrorOperation(object):
         target_nics = target_nics_to_fulfillments.keys()
         fulfillments = list(flatten(target_nics_to_fulfillments.values()))
 
-
         try:
-            cancel_checker = CheckCancellationThread(cancellation_context, self._cancellation_service)
-            cancel_checker.start()
-            self._get_or_create_targets(ec2_client, reservation, target_nics, target_nics_to_fulfillments)
-            self._get_or_create_sessions(ec2_client, fulfillments)
-            cancel_checker.stop()
+            with CheckCancellationThread(cancellation_context, self._cancellation_service):
+                self._get_or_create_targets(ec2_client,
+                                            reservation,
+                                            target_nics,
+                                            target_nics_to_fulfillments)
+                self._get_or_create_sessions(ec2_client,
+                                             fulfillments)
 
             success = True
             message = 'Success'

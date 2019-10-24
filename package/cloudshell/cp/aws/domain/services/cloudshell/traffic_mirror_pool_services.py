@@ -16,10 +16,14 @@ class SessionNumberService(object):
         try:
             result = cloudshell.CheckoutFromPool(selection_criteria)
             return result.Items[0]
+
         except Exception as e:
-            logger.error(unavailable_msg(source_nic, reservation.reservation_id))
-            logger.error(e.message)
-            raise Exception(unavailable_msg(source_nic, reservation.reservation_id))
+            if 'reservation has ended' in e.message:
+                raise Exception('Tried to checkout a session number for traffic mirroring, but reservation has already ended')
+            else:
+                logger.error(unavailable_msg(source_nic, reservation.reservation_id))
+                logger.error(e.message)
+                raise Exception(unavailable_msg(source_nic, reservation.reservation_id))
 
     def release(self, source_nic, specific_number=None):
         pass
