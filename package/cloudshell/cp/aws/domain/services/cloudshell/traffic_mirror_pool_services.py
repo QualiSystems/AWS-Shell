@@ -2,15 +2,20 @@ from jsonpickle import json
 
 
 class SessionNumberService(object):
-    def release(self, cloudshell, logger, reservation, session_numbers):
+    OWNER_ID = 'trafficmirrorsessionnumber'
+
+    def release(self, cloudshell, logger, reservation, session_numbers, pool_id):
         """
+        :param str pool_id:
         :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
         :param logging.Logger logger:
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
-        :param list(int) session_numbers:
+        :param list(str) session_numbers:
         """
         try:
             cloudshell.ReleaseFromPool(values=session_numbers,
+                                       poolId=pool_id,
+                                       ownerId=self.OWNER_ID,
                                        reservationId=reservation.reservation_id)
         except Exception as e:
             logger.exception('Could not release session number: ' + e.message)
@@ -44,7 +49,7 @@ class SessionNumberService(object):
             'isolation': 'Exclusive',
             'reservationId': reservation_id,
             'poolId': source_nic,  # The session number determines the order that traffic mirror sessions are evaluated when an interface is used by multiple sessions that have the same interface, but have different traffic mirror targets and traffic mirror filters. Traffic is only mirrored one time.
-            'ownerId': 'admin'
+            'ownerId': SessionNumberService.OWNER_ID
         }
 
         if not specific_number:

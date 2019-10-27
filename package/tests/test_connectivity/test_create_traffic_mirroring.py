@@ -1,5 +1,6 @@
 # import logging
 # from unittest import TestCase
+# from uuid import uuid4
 #
 # import boto3
 # from cloudshell.api.cloudshell_api import CloudShellAPISession
@@ -15,6 +16,7 @@
 # from cloudshell.cp.aws.domain.services.ec2.tags import TagService
 # from cloudshell.cp.aws.models.reservation_model import ReservationModel
 # from cloudshell.cp.core import DriverRequestParser
+# from cloudshell.cp.core.models import CreateTrafficMirroring, CreateTrafficMirroringParams
 #
 #
 # class TestCreateTrafficMirroring(TestCase):
@@ -36,7 +38,7 @@
 #         #         break
 #         #     time.sleep(10)
 #
-#         self.res = self.cloudshell.GetReservationDetails('408ae027-5efe-4e33-86c8-469aa0622bfb').ReservationDescription
+#         self.res = self.cloudshell.GetReservationDetails('c2092b50-b233-4eb4-bfe7-505139d98b62').ReservationDescription
 #
 #     def tearDown(self):
 #         # self.cloudshell.EndReservation(self.res.Id)
@@ -74,7 +76,7 @@
 #                                                     "actionParams": {"type": "CreateTrafficMirroringParams",
 #                                                                      "sourceNicId": "eni-0bf9b403bd8d36a79",
 #                                                                      "targetNicId": "eni-060613fdccd935b67",
-#                                                                      "sessionNumber": "3",
+#                                                                      "sessionNumber": "24",
 #                                                                      "filterRules": [
 #                                                                         {
 #                                                                             "type": "TrafficFilterRule",
@@ -84,7 +86,7 @@
 #                                                                                 "fromPort": "123",
 #                                                                                 "toPort": "123"
 #                                                                             },
-#                                                                             "protocol": "tcp"
+#                                                                             "protocol": "udp"
 #                                                                         }
 #                                                                      ]
 #                                                                      }
@@ -93,6 +95,7 @@
 #                               }
 #         }
 #         '''
+#
 #
 #         request_parser = DriverRequestParser()
 #         actions = request_parser.convert_driver_request_to_actions(request)
@@ -112,12 +115,43 @@
 #             cancellation_context=cancellation_context,
 #             logger=logger,
 #             cloudshell=self.cloudshell)
-#
+#     #
 #         self.assertTrue(next(r.success for r in results)==True,
 #                         'Was not able to create traffic mirroring')
 #
 #
-# #  def test_manual_tests(self):
-# #     res = self.cloudshell.GetResourceDetails('AWS_APP i-02181554cd72946cf')
-# #     print res
+#         def test_valid_create_returns_success_actions(self):
+#             tag_service = TagService(Mock())
+#             session_number_service = SessionNumberService()
+#             traffic_mirror_service = TrafficMirrorService()
+#             cancellation_service = CommandCancellationService()
+#             reservation_context = Mock()
+#             reservation_context.reservation_id = uuid4()
+#             reservation = ReservationModel(reservation_context)
+#             reservation.blueprint = 'lalala'
+#             reservation.owner = 'admin'
+#             reservation.domain = 'global'
+#             ec2_client = Mock()
+#             cancellation_context = Mock()
+#             cancellation_context.is_cancelled = False
+#             logger = Mock()
+#             cloudshell = Mock()
 #
+#             action = CreateTrafficMirroring()
+#             action.actionParams = CreateTrafficMirroringParams()
+#             action.actionParams.sessionNumber = '5'
+#             actions = [action]
+#
+#             op = CreateTrafficMirrorOperation(tag_service,
+#                                               session_number_service,
+#                                               traffic_mirror_service,
+#                                               cancellation_service)
+#
+#             results = op.create(ec2_client=ec2_client,
+#                                 reservation=reservation,
+#                                 actions=actions,
+#                                 cancellation_context=cancellation_context,
+#                                 logger=logger,
+#                                 cloudshell=cloudshell)
+#
+#             self.assertTrue([x for x in results if x.success])

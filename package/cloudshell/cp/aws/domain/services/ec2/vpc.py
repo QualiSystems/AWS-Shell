@@ -241,16 +241,9 @@ class VPCService(object):
         """
         security_groups = list(vpc.security_groups.all())
 
-        # its possible that a group is dependent on an isolated group so we must delete the isolated group LAST
-        isolated_sg_name = self.sg_service.sandbox_isolated_sg_name(reservation_id)
-
-        # trying to find isolated group index
-        isolated_ix = index_of(security_groups, lambda sg: sg.group_name == isolated_sg_name)
-
-        # if there is one
-        if (isolated_ix != None):
-            # move isolated group to the end
-            security_groups.insert(len(security_groups), security_groups.pop(isolated_ix))
+        for sg in security_groups:
+            # delete security rules, so delete doesnt fail on dependendent security groups
+            sg.revoke_ingress(IpPermissions=sg.ip_permissions)
 
         for sg in security_groups:
             self.sg_service.delete_security_group(sg)
