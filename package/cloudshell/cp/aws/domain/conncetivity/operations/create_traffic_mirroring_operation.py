@@ -64,6 +64,8 @@ class CreateTrafficMirrorOperation(object):
 
         fulfillments = [TrafficMirrorFulfillment(x, reservation) for x in actions]
 
+        success = False
+
         try:
             with CheckCancellationThread(cancellation_context, self._cancellation_service):
                 self._get_or_create_targets(ec2_client,
