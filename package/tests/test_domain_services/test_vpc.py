@@ -144,24 +144,6 @@ class TestVPCService(TestCase):
         self.assertIsNotNone(res)
         self.sg_service.delete_security_group.assert_called_once_with(sg)
 
-    # When a trying to delete security group(isolated) and it is referenced in another's group rule.
-    # we get resource sg-XXXXXX has a dependent object, so to fix that , isolated group shall be deleted last.
-    def test_remove_all_sgs_isolated_group_removed_last(self):
-        sg = Mock()
-        sg.group_name = 'dummy'
-        isolated_sg = Mock()
-        isolated_sg.group_name = self.sg_service.sandbox_isolated_sg_name(self.reservation.reservation_id)
-        isolated_at_start_sgs = [isolated_sg, sg]
-        isolated_at_end_sgs_calls = [call(sg), call(isolated_sg)]
-
-        self.vpc.security_groups = Mock()
-        self.vpc.security_groups.all = Mock(return_value=isolated_at_start_sgs)
-
-        res = self.vpc_service.remove_all_security_groups(self.vpc, self.reservation.reservation_id )
-
-        self.assertIsNotNone(res)
-        self.sg_service.delete_security_group.assert_has_calls(isolated_at_end_sgs_calls, any_order=False)
-
     def test_remove_subnets(self):
         subnet = Mock()
         self.vpc.subnets = Mock()
