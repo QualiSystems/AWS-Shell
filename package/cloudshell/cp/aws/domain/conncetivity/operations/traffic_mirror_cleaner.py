@@ -3,8 +3,11 @@ from botocore.waiter import WaiterModel, create_waiter_with_client
 
 class TrafficMirrorCleaner(object):
     @staticmethod
-    def rollback(ec2_client, fulfillments, logger):
+    def rollback(ec2_client, fulfillments, logger, cloudshell, reservation, session_number_service):
         """
+        :param cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services.SessionNumberService session_number_service:
+        :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
+        :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
         :param Logging.Logger logger:
         :type ec2_client: ec2 client
         :param list[cloudshell.cp.aws.models.traffic_mirror_fulfillment.TrafficMirrorFulfillment] fulfillments:
@@ -16,6 +19,8 @@ class TrafficMirrorCleaner(object):
         mirror_session_ids = [f.mirror_session_id for f in fulfillments if f.mirror_session_id]
         mirror_filter_ids = [f.traffic_mirror_filter_id for f in fulfillments if f.traffic_mirror_filter_id]
         mirror_target_ids = [f.traffic_mirror_target_id for f in fulfillments if f.traffic_mirror_target_id]
+        session_numbers = [f.session_number for f in fulfillments if f.session_number]
+        session_number_service.release(cloudshell, logger, reservation, session_numbers)
 
         for f in fulfillments:
             logger.warning('Initiating rollback for traffic mirror request: {0}\n'
