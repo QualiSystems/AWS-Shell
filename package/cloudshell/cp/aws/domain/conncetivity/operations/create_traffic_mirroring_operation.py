@@ -102,7 +102,8 @@ class CreateTrafficMirrorOperation(object):
 
         except Exception as e:
             message = e.message
-            TrafficMirrorCleaner.rollback(ec2_client, fulfillments, logger)
+            TrafficMirrorCleaner.rollback(ec2_client, fulfillments, logger, cloudshell, reservation,
+                                          self._session_number_service)
 
         results = create_results(success, fulfillments, message)
         return results

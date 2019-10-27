@@ -1,4 +1,5 @@
 from botocore.waiter import WaiterModel, create_waiter_with_client
+import itertools as it
 
 
 class TrafficMirrorCleaner(object):
@@ -19,8 +20,6 @@ class TrafficMirrorCleaner(object):
         mirror_session_ids = [f.mirror_session_id for f in fulfillments if f.mirror_session_id]
         mirror_filter_ids = [f.traffic_mirror_filter_id for f in fulfillments if f.traffic_mirror_filter_id]
         mirror_target_ids = [f.traffic_mirror_target_id for f in fulfillments if f.traffic_mirror_target_id]
-        session_numbers = [f.session_number for f in fulfillments if f.session_number]
-        session_number_service.release(cloudshell, logger, reservation, session_numbers)
 
         for f in fulfillments:
             logger.warning('Initiating rollback for traffic mirror request: {0}\n'
@@ -30,9 +29,20 @@ class TrafficMirrorCleaner(object):
                 f.action_id, f.mirror_session_id, f.traffic_mirror_filter_id, f.traffic_mirror_target_id))
 
         try:
+            TrafficMirrorCleaner._release_session_numbers_from_pool(cloudshell, logger, reservation, session_number_service,
+                                                                    fulfillments)
             TrafficMirrorCleaner.cleanup(ec2_client, mirror_session_ids, mirror_filter_ids, mirror_target_ids)
-        except:
-            logger.exception('Rollback failed')
+
+        except Exception as e:
+            logger.exception('Traffic Mirror Cleanup failed: \n' + e.message)
+
+    @staticmethod
+    def _release_session_numbers_from_pool(cloudshell, logger, reservation, session_number_service,
+                                           fulfillments):
+        source_nic_to_fulfillments = it.groupby((f for f in fulfillments if f.session_number), lambda x: x.source_nic_id)
+        for source_nic, fulfillments in source_nic_to_fulfillments:
+            session_numbers = [f.session_number for f in fulfillments]
+            session_number_service.release(cloudshell, logger, reservation, list(session_numbers), source_nic)
 
     @staticmethod
     def cleanup(ec2_client, traffic_mirror_session_ids=None, traffic_mirror_filter_ids=None,

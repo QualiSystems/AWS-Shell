@@ -34,7 +34,7 @@
 #         #         break
 #         #     time.sleep(10)
 #
-#         self.res = self.cloudshell.GetReservationDetails('408ae027-5efe-4e33-86c8-469aa0622bfb').ReservationDescription
+#         self.res = self.cloudshell.GetReservationDetails('bba4f622-6751-4e69-844b-eb606e7c8062').ReservationDescription
 #
 #     def tearDown(self):
 #         # self.cloudshell.EndReservation(self.res.Id)
@@ -72,7 +72,7 @@
 #                                                     "actionParams": {"type": "CreateTrafficMirroringParams",
 #                                                                      "sourceNicId": "eni-0bf9b403bd8d36a79",
 #                                                                      "targetNicId": "eni-060613fdccd935b67",
-#                                                                      "sessionNumber": "3",
+#                                                                      "sessionNumber": "23",
 #                                                                      "filterRules": [
 #                                                                         {
 #                                                                             "type": "TrafficFilterRule",
@@ -82,7 +82,7 @@
 #                                                                                 "fromPort": "123",
 #                                                                                 "toPort": "123"
 #                                                                             },
-#                                                                             "protocol": "tcp"
+#                                                                             "protocol": "xdp"
 #                                                                         }
 #                                                                      ]
 #                                                                      }
