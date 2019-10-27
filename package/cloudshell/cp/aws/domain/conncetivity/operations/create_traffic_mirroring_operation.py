@@ -17,6 +17,7 @@ class CheckCancellationThread(threading.Thread):
         self.cancellation_context = cancellation_context
         self.cancellation_service = cancellation_service
 
+
     def __enter__(self):
         self.start()
 
@@ -87,6 +88,8 @@ class CreateTrafficMirrorOperation(object):
         target_nics_to_fulfillments = self._convert_traffic_requests_to_fulfillments(actions, reservation)
         target_nics = target_nics_to_fulfillments.keys()
         fulfillments = list(flatten(target_nics_to_fulfillments.values()))
+
+        success = False
 
         try:
             with CheckCancellationThread(cancellation_context, self._cancellation_service):
