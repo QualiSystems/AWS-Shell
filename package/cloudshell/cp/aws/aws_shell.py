@@ -49,6 +49,7 @@ from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups im
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
+from cloudshell.cp.core import DriverRequestParser
 from cloudshell.cp.core.models import RequestActionBase, ActionResultBase, DeployApp, ConnectSubnet
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.core.models import VmDetailsData
@@ -82,6 +83,7 @@ class AWSShell(object):
         self.vm_details_provider = VmDetailsProvider()
         self.session_number_service = SessionNumberService()
         self.traffic_mirror_service = TrafficMirrorService()
+        self.request_parser = DriverRequestParser()
 
         self.vpc_service = VPCService(tag_service=self.tag_service,
                                       subnet_service=self.subnet_service,
@@ -392,11 +394,11 @@ class AWSShell(object):
 
         return self.command_result_parser.set_command_result(results)
 
-    def create_traffic_mirroring(self, context, cancellation_context, actions):
+    def create_traffic_mirroring(self, context, cancellation_context, request):
         """
         Will create a vpc for the reservation and will peer it with the management vpc
+        :param request:
         :param ResourceCommandContext context:
-        :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
         :return: json string response
         :param CancellationContext cancellation_context:
         :rtype: list[ActionResultBase]
@@ -404,7 +406,7 @@ class AWSShell(object):
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Create traffic mirroring')
-
+                actions = self._parse_request(request, shell_context)
                 results = self.create_traffic_mirroring_operation.create(
                     ec2_client=shell_context.aws_api.ec2_client,
                     reservation=self.model_parser.convert_to_reservation_model(context.reservation),
@@ -414,6 +416,16 @@ class AWSShell(object):
                     cloudshell=shell_context.cloudshell_session)
 
                 return results
+
+    def _parse_request(self, request, shell_context):
+        try:
+            actions = self.request_parser.convert_driver_request_to_actions(request)
+            if not actions:
+                raise Exception("Invalid request: " + request)
+        except Exception as e:
+            shell_context.logger.exception("Invalid request " + request)
+            raise e
+        return actions
 
     @staticmethod
     def _get_reservation_id(context):

@@ -2,6 +2,19 @@ from jsonpickle import json
 
 
 class SessionNumberService(object):
+    def release(self, cloudshell, logger, reservation, session_numbers):
+        """
+        :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
+        :param logging.Logger logger:
+        :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
+        :param list(int) session_numbers:
+        """
+        try:
+            cloudshell.ReleaseFromPool(values=session_numbers,
+                                       reservationId=reservation.reservation_id)
+        except Exception as e:
+            logger.exception('Could not release session number: ' + e.message)
+
     def checkout(self, cloudshell, logger, reservation, source_nic, specific_number=None):
         """
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
@@ -16,13 +29,14 @@ class SessionNumberService(object):
         try:
             result = cloudshell.CheckoutFromPool(selection_criteria)
             return result.Items[0]
-        except Exception as e:
-            logger.error(unavailable_msg(source_nic, reservation.reservation_id))
-            logger.error(e.message)
-            raise Exception(unavailable_msg(source_nic, reservation.reservation_id))
 
-    def release(self, source_nic, specific_number=None):
-        pass
+        except Exception as e:
+            if 'reservation has ended' in e.message:
+                raise Exception('Tried to checkout a session number for traffic mirroring, but reservation has already ended')
+            else:
+                logger.error(unavailable_msg(source_nic, reservation.reservation_id))
+                logger.error(e.message)
+                raise Exception(unavailable_msg(source_nic, reservation.reservation_id))
 
     @staticmethod
     def _get_selection_criteria(source_nic, reservation_id, specific_number=None):

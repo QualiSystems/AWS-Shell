@@ -3,9 +3,11 @@
 #
 # import boto3
 # from cloudshell.api.cloudshell_api import CloudShellAPISession
-# from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
+
 # from mock import Mock
 #
+# from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
+
 # from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
 #     CreateTrafficMirrorOperation
 # from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
@@ -26,8 +28,15 @@
 #         except:
 #             raise Exception('failed to connect to Quali Server')
 #         # self.res = self.cloudshell.CreateImmediateReservation('test', 'admin', 120).Reservation
-#         self.res = self.cloudshell.GetReservationDetails('6ceeeeaa-f674-4472-ba68-031ba087ac22').ReservationDescription
-#         self.fulfillments = []
+#         # reservation = self.cloudshell.CreateImmediateTopologyReservation('trafficMirrorTest', 'admin', 120,
+#         #                                                    topologyFullPath='AWS-eu-west-1')
+#         # while True:
+#         #     self.res = self.cloudshell.GetReservationDetails(reservation.Reservation.Id).ReservationDescription
+#         #     if self.res.ProvisioningStatus.lower() == 'active':
+#         #         break
+#         #     time.sleep(10)
+#
+#         self.res = self.cloudshell.GetReservationDetails('408ae027-5efe-4e33-86c8-469aa0622bfb').ReservationDescription
 #
 #     def tearDown(self):
 #         # self.cloudshell.EndReservation(self.res.Id)
@@ -65,8 +74,19 @@
 #                                                     "actionParams": {"type": "CreateTrafficMirroringParams",
 #                                                                      "sourceNicId": "eni-0bf9b403bd8d36a79",
 #                                                                      "targetNicId": "eni-060613fdccd935b67",
-#                                                                      "sessionNumber": "",
-#                                                                      "filterRules": []
+#                                                                      "sessionNumber": "3",
+#                                                                      "filterRules": [
+#                                                                         {
+#                                                                             "type": "TrafficFilterRule",
+#                                                                             "direction": "ingress",
+#                                                                             "sourcePortRange": {
+#                                                                                 "type": "PortRange",
+#                                                                                 "fromPort": "123",
+#                                                                                 "toPort": "123"
+#                                                                             },
+#                                                                             "protocol": "tcp"
+#                                                                         }
+#                                                                      ]
 #                                                                      }
 #                                                 }
 #                                             ]
@@ -85,7 +105,7 @@
 #         cancellation_context = Mock()
 #         cancellation_context.is_cancelled = False
 #
-#         result = op.create(
+#         results = op.create(
 #             ec2_client=self.ec2_client,
 #             reservation=reservation,
 #             actions=actions,
@@ -93,9 +113,11 @@
 #             logger=logger,
 #             cloudshell=self.cloudshell)
 #
-#         self.assertTrue(result.Success, 'Was not able to create traffic mirroring')
-#         self.fulfillments = result.Fulfillments
+#         self.assertTrue(next(r.success for r in results)==True,
+#                         'Was not able to create traffic mirroring')
 #
-#     # def test_manual_tests(self):
-#     #     res = self.cloudshell.GetResourceDetails('AWS_APP i-02181554cd72946cf')
-#     #     print res
+#
+# #  def test_manual_tests(self):
+# #     res = self.cloudshell.GetResourceDetails('AWS_APP i-02181554cd72946cf')
+# #     print res
+#

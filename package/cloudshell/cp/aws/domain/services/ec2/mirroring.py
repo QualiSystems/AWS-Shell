@@ -120,10 +120,12 @@ class TrafficMirrorService(object):
             }
 
             if rule.sourcePortRange:
-                kwargs['SourcePortRange'] = rule.sourcePortRange
+                sourcePortRange = self._convert_port_range_to_aws_port_range(rule.sourcePortRange)
+                kwargs['SourcePortRange'] = sourcePortRange
 
             if rule.destinationPortRange:
-                kwargs['DestinationPortRange'] = rule.destinationPortRange
+                destinationPortRange = self._convert_port_range_to_aws_port_range(rule.destinationPortRange)
+                kwargs['DestinationPortRange'] = destinationPortRange
 
             kwargs['TrafficDirection'] = rule.direction
             kwargs['RuleNumber'] = i
@@ -133,6 +135,17 @@ class TrafficMirrorService(object):
             kwargs['SourceCidrBlock'] = rule.sourceCidr or self._get_source_cidr()
 
             ec2_client.create_traffic_mirror_filter_rule(**kwargs)
+
+    def _convert_port_range_to_aws_port_range(self, port_range):
+        """
+        :param cloudshell.cp.core.models.PortRange port_range:
+        """
+        aws_port_range = dict()
+        if port_range.fromPort:
+            aws_port_range['FromPort'] = int(port_range.fromPort)
+        if port_range.toPort:
+            aws_port_range['ToPort'] = int(port_range.toPort)
+        return aws_port_range
 
     @staticmethod
     def _get_source_cidr():
