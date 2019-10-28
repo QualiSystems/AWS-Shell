@@ -13,6 +13,9 @@ class SessionNumberService(object):
         :param list(str) session_numbers:
         """
         try:
+            logger.info('Releasing from poolId {0} in reservationId {1} session numbers {2}'.format(pool_id,
+                                                                                                    reservation.reservation_id,
+                                                                                                    ', '.join(session_numbers)))
             cloudshell.ReleaseFromPool(values=session_numbers,
                                        poolId=pool_id,
                                        ownerId=self.OWNER_ID,

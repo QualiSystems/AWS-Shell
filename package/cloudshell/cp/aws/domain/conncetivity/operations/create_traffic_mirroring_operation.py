@@ -42,7 +42,7 @@ class CreateTrafficMirrorOperation(object):
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions: what traffic mirroring sessions,
                targets and filters to apply
-        :param logger:
+        :param logging.Logger logger:
         :return:
         """
 
@@ -64,21 +64,31 @@ class CreateTrafficMirrorOperation(object):
 
         fulfillments = [TrafficMirrorFulfillment(x, reservation) for x in actions]
 
+        logger.info('Determined session numbers: ' + ', '.join(str(f.session_number) for f in fulfillments))
+
         success = False
 
         try:
             with CheckCancellationThread(cancellation_context, self._cancellation_service):
+                logger.info('Getting or creating traffic mirror targets...')
                 self._get_or_create_targets(ec2_client,
                                             reservation,
                                             fulfillments)
-                self._get_or_create_sessions(ec2_client,
-                                             fulfillments)
+
+                logger.info('Creating traffic mirror filters and sessions...')
+                self._create_traffic_filters_and_sessions(ec2_client,
+                                                          fulfillments)
+                # self._get_or_create_sessions(ec2_client,
+                #                              fulfillments)
 
             success = True
             message = 'Success'
+            logger.info('Successfully fulfilled traffic mirror request')
 
         except Exception as e:
+            logger.exception('Failed to fulfill traffic mirror request: ' + e.message)
             message = e.message
+            logger.error('Rolling back partial traffic mirror request...')
             TrafficMirrorCleaner.rollback(ec2_client, fulfillments, logger, cloudshell, reservation,
                                           self._session_number_service)
 
@@ -104,13 +114,28 @@ class CreateTrafficMirrorOperation(object):
                                                         reservation,
                                                         fulfillments)
 
+    def _create_traffic_filters_and_sessions(self, ec2_client, fulfillments):
+        """
+        :param list[cloudshell.cp.aws.models.traffic_mirror_fulfillment.TrafficMirrorFulfillment] fulfillments:
+        """
+        for fulfillment in fulfillments:
+            self._create_filter(ec2_client, fulfillment)
+            fulfillment.mirror_session_id = self._create_session(ec2_client, fulfillment)
+
     def _get_or_create_sessions(self, ec2_client, fulfillments):
-        session_name_to_fulfillment = {f.session_name: f for f in fulfillments}
+        """
+        :param list[cloudshell.cp.aws.models.traffic_mirror_fulfillment.TrafficMirrorFulfillment] fulfillments:
+        """
+        session_names = [f.session_name for f in fulfillments]
         session_name_to_found_session = self._traffic_mirror_service.find_sessions_by_session_names(ec2_client,
-                                                                                                    session_name_to_fulfillment.keys())
-        for s in session_name_to_fulfillment.keys():
-            fulfillment = session_name_to_fulfillment[s]
-            if s not in session_name_to_found_session.keys():
+                                                                                                    session_names)
+        found_session_names = session_name_to_found_session.keys()
+
+        for s in session_names:
+            fulfillment = next((f for f in fulfillments if f.session_name==s))
+
+            if s not in found_session_names:
+                self._create_filter(ec2_client, fulfillment)
                 fulfillment.mirror_session_id = self._create_session(ec2_client, fulfillment)
             else:
                 fulfillment.mirror_session_id = session_name_to_found_session[s]['TrafficMirrorSessionId']
@@ -138,13 +163,6 @@ class CreateTrafficMirrorOperation(object):
                                                     nics_to_found_target_ids[target_nic])
 
     @staticmethod
-    def _convert_traffic_requests_to_fulfillments(actions, reservation):
-        target_nics_to_fulfillments = defaultdict(list)
-        [target_nics_to_fulfillments[x.actionParams.targetNicId].append(TrafficMirrorFulfillment(x, reservation))
-         for x in actions]
-        return target_nics_to_fulfillments
-
-    @staticmethod
     def _assign_target_to_fulfillments(fulfillments, traffic_target_id):
         for fulfillment in fulfillments:
             fulfillment.traffic_mirror_target_id = traffic_target_id
@@ -153,22 +171,32 @@ class CreateTrafficMirrorOperation(object):
         """
         :param cloudshell.cp.aws.models.traffic_mirror_fulfillment.TrafficMirrorFulfillment fulfillment:
         """
-        traffic_filter_tags = self._tag_service.get_default_tags('filter-' + fulfillment.session_name,
-                                                                 fulfillment.reservation)
-
         mirror_session_tags = self._tag_service.get_default_tags('session-' + fulfillment.session_name,
                                                                  fulfillment.reservation)
 
-        fulfillment.traffic_mirror_filter_id = \
-            self._traffic_mirror_service.create_filter(ec2_client, traffic_filter_tags)
-
-        self._traffic_mirror_service.create_filter_rules(ec2_client, fulfillment)
-
         return self._traffic_mirror_service.create_traffic_mirror_session(ec2_client, fulfillment, mirror_session_tags)
 
+    def _create_filter(self, ec2_client, fulfillment):
+        traffic_filter_tags = self._tag_service.get_default_tags('filter-' + fulfillment.session_name,
+                                                                 fulfillment.reservation)
+        fulfillment.traffic_mirror_filter_id = \
+            self._traffic_mirror_service.create_filter(ec2_client, traffic_filter_tags)
+        self._traffic_mirror_service.create_filter_rules(ec2_client, fulfillment)
+
     def _validate_actions(self, actions, logger):
+        """
+        :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
+        """
         self._there_are_actions(actions)
+        self._there_are_source_and_target_nics(actions)
         self._session_numbers_are_valid(actions, logger)  # must be 1-32766 or NONE
+
+    def _there_are_source_and_target_nics(self, actions):
+        for a in actions:
+            if not a.actionParams.sourceNicId:
+                raise Exception('Missing a source nic on actionId {0}'.format(a.actionId))
+            if not a.actionParams.targetNicId:
+                raise Exception('Missing a target nic on actionId {0}'.format(a.actionId))
 
     def _there_are_actions(self, actions):
         if len(actions) == 0:
