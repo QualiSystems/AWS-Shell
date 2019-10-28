@@ -57,10 +57,13 @@ class CleanupSandboxInfraOperation(object):
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
             self.vpc_service.remove_custom_route_tables(ec2_session, vpc)
 
-            self.vpc_service.delete_vpc(vpc)
-
+            logger.info('Deleting traffic mirror elements')
             self.vpc_service.delete_traffic_mirror_elements(ec2_client, self.traffic_mirror_service, reservation_id,
                                                             logger)
+
+            self.vpc_service.delete_vpc(vpc)
+
+
             
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))

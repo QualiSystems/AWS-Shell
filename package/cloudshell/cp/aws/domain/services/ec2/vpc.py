@@ -361,7 +361,8 @@ class VPCService(object):
         target_ids = traffic_mirror_service.find_traffic_mirror_targets_by_reservation_id(ec2_client,
                                                                                           reservation_id)
         try:
-            TrafficMirrorCleaner.cleanup(ec2_client,
+            TrafficMirrorCleaner.cleanup(logger,
+                                         ec2_client,
                                          session_ids,
                                          filter_ids,
                                          target_ids)

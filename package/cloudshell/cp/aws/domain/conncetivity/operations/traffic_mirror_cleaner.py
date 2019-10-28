@@ -29,9 +29,12 @@ class TrafficMirrorCleaner(object):
                 f.action_id, f.mirror_session_id, f.traffic_mirror_filter_id, f.traffic_mirror_target_id))
 
         try:
-            TrafficMirrorCleaner._release_session_numbers_from_pool(cloudshell, logger, reservation, session_number_service,
+            TrafficMirrorCleaner._release_session_numbers_from_pool(cloudshell, logger, reservation,
+                                                                    session_number_service,
                                                                     fulfillments)
-            TrafficMirrorCleaner.cleanup(ec2_client, mirror_session_ids, mirror_filter_ids, mirror_target_ids)
+            TrafficMirrorCleaner.cleanup(logger, ec2_client, mirror_session_ids, mirror_filter_ids, mirror_target_ids)
+
+            logger.info('Completed rollback of traffic mirror request')
 
         except Exception as e:
             logger.exception('Traffic Mirror Cleanup failed: \n' + e.message)
@@ -39,22 +42,29 @@ class TrafficMirrorCleaner(object):
     @staticmethod
     def _release_session_numbers_from_pool(cloudshell, logger, reservation, session_number_service,
                                            fulfillments):
-        source_nic_to_fulfillments = it.groupby((f for f in fulfillments if f.session_number), lambda x: x.source_nic_id)
+        source_nic_to_fulfillments = it.groupby((f for f in fulfillments if f.session_number),
+                                                lambda x: x.source_nic_id)
         for source_nic, fulfillments in source_nic_to_fulfillments:
             session_numbers = [f.session_number for f in fulfillments]
             session_number_service.release(cloudshell, logger, reservation, list(session_numbers), source_nic)
 
     @staticmethod
-    def cleanup(ec2_client, traffic_mirror_session_ids=None, traffic_mirror_filter_ids=None,
+    def cleanup(logger, ec2_client, traffic_mirror_session_ids=None, traffic_mirror_filter_ids=None,
                 traffic_mirror_target_ids=None):
         """
+        :param logging.Logger logger:
         :param list[str] traffic_mirror_session_ids:
         :param list[str] traffic_mirror_filter_ids:
         :param list[str] traffic_mirror_target_ids:
         """
         TrafficMirrorCleaner.delete_mirror_sessions(ec2_client, traffic_mirror_session_ids)
+        logger.info('Deleted mirror sessions ' + ', '.join(traffic_mirror_session_ids))
+
         TrafficMirrorCleaner.delete_mirror_filters(ec2_client, traffic_mirror_filter_ids)
+        logger.info('Deleted mirror filters ' + ', '.join(traffic_mirror_filter_ids))
+
         TrafficMirrorCleaner.delete_mirror_targets(ec2_client, traffic_mirror_target_ids)
+        logger.info('Deleted mirror targets ' + ', '.join(traffic_mirror_target_ids))
 
     @staticmethod
     def _create_delete_traffic_session_waiter(ec2_client):
