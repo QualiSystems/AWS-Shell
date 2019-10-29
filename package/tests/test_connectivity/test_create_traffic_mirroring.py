@@ -38,7 +38,7 @@ class TestCreateTrafficMirroring(TestCase):
     #     #         break
     #     #     time.sleep(10)
     #
-    #     self.res = self.cloudshell.GetReservationDetails('b9818bde-fc86-49f2-beae-74e238a3ad07').ReservationDescription
+    #     self.res = self.cloudshell.GetReservationDetails('8fa6039e-f155-42d0-87f8-6b56f0bb04f2').ReservationDescription
     #
     # def tearDown(self):
     #     # self.cloudshell.EndReservation(self.res.Id)
@@ -76,7 +76,7 @@ class TestCreateTrafficMirroring(TestCase):
     #                                                 "actionParams": {"type": "CreateTrafficMirroringParams",
     #                                                                  "sourceNicId": "eni-0bf9b403bd8d36a79",
     #                                                                  "targetNicId": "eni-060613fdccd935b67",
-    #                                                                  "sessionNumber": "116",
+    #                                                                  "sessionNumber": "",
     #                                                                  "filterRules": [
     #                                                                     {
     #                                                                         "type": "TrafficFilterRule",

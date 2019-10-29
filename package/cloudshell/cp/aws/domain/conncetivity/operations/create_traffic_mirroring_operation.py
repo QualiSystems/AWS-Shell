@@ -246,4 +246,8 @@ class CreateTrafficMirrorOperation(object):
                     logger.error(error_msg + '\nSession number is {0}'.format(session_number))
                     raise Exception(error_msg)
             except ValueError:
-                a.actionParams.sessionNumber = None
+                if a.actionParams.sessionNumber.strip() == '':
+                    a.actionParams.sessionNumber = None
+                else:
+                    raise ValueError('Session number must be an integer, or an empty string! Passed an invalid session number {0} in action {1}'
+                                     .format(a.actionParams.sessionNumber, a.actionId))
