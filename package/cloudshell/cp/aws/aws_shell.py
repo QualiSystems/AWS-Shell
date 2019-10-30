@@ -12,8 +12,8 @@ from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation imp
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
-from cloudshell.cp.aws.domain.conncetivity.operations.create_traffic_mirroring_operation import \
-    CreateTrafficMirrorOperation
+from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirroring_operation import \
+    TrafficMirrorOperation
 from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSandboxInfraOperation
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
@@ -145,11 +145,11 @@ class AWSShell(object):
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
 
-        self.create_traffic_mirroring_operation = \
-            CreateTrafficMirrorOperation(tag_service=self.tag_service,
-                                         session_number_service=self.session_number_service,
-                                         traffic_mirror_service=self.traffic_mirror_service,
-                                         cancellation_service=self.cancellation_service)
+        self.traffic_mirroring_operation = \
+            TrafficMirrorOperation(tag_service=self.tag_service,
+                                   session_number_service=self.session_number_service,
+                                   traffic_mirror_service=self.traffic_mirror_service,
+                                   cancellation_service=self.cancellation_service)
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -399,6 +399,7 @@ class AWSShell(object):
         Will create a vpc for the reservation and will peer it with the management vpc
         :param request:
         :param ResourceCommandContext context:
+
         :return: json string response
         :param CancellationContext cancellation_context:
         :rtype: list[ActionResultBase]
@@ -407,7 +408,7 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Create traffic mirroring')
                 actions = self._parse_request(request, shell_context)
-                results = self.create_traffic_mirroring_operation.create(
+                results = self.traffic_mirroring_operation.create(
                     ec2_client=shell_context.aws_api.ec2_client,
                     reservation=self.model_parser.convert_to_reservation_model(context.reservation),
                     actions=actions,
@@ -434,3 +435,26 @@ class AWSShell(object):
         if reservation:
             reservation_id = reservation.reservation_id
         return reservation_id
+
+    def remove_traffic_mirroring(self, context, request):
+        """
+        Can remove traffic mirroring sessions by session id, or all sessions associated with a traffic mirror target (by target nic id)
+        :param str request:
+        :param ResourceCommandContext context:
+        :param ResourceCommandContext context:
+
+        :return: json string response
+        :rtype: list[ActionResultBase]
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Create traffic mirroring')
+                actions = self._parse_request(request, shell_context)
+                results = self.traffic_mirroring_operation.remove(
+                    ec2_client=shell_context.aws_api.ec2_client,
+                    reservation=self.model_parser.convert_to_reservation_model(context.reservation),
+                    actions=actions,
+                    logger=shell_context.logger,
+                    cloudshell=shell_context.cloudshell_session)
+
+                return results

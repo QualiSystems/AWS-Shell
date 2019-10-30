@@ -16,12 +16,17 @@
             <Command Description="" DisplayName="Deploy" Name="Deploy" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Set App Security Groups" Name="SetAppSecurityGroups" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Get VmDetails" Name="GetVmDetails" Tags="allow_unreserved" />
-            <Command Description="Traffic mirroring allows one nic to tap into network traffic from another nic" DisplayName="Create Traffic Mirroring" Name="CreateTrafficMirroring" Tags="allow_unreserved">
+            <Command Description="Traffic mirroring allows one nic to tap into network traffic from another nic" DisplayName="Create Traffic Mirroring" Name="CreateTrafficMirroring" Tags="allow_unreserved" EnableCancellation="true" >
                 <Parameters>
                     <Parameter DefaultValue="" Description="A well formed request to create traffic mirroring between source and target NICs" DisplayName="Request" Mandatory="True" Name="request" Type="String" />
                 </Parameters>
             </Command>
 
+            <Command Name="RemoveTrafficMirroring" DisplayName="Remove Traffic Mirroring" Description="Remove traffic mirroring sessions by sessionid or by targetid" Tags="allow_unreserved">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="A well formed request to remove traffic mirroring; Parameters are ActionId, SessionId (optional), Target NIC Id(optional)" DisplayName="Request" Mandatory="True" Name="request" Type="String" />
+                </Parameters>
+            </Command>
         </Category>
 
         <Category Name="Power">

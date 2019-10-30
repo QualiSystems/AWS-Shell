@@ -5,20 +5,22 @@ from collections import defaultdict
 from cloudshell.cp.aws.domain.common.CheckCancellationThread import CheckCancellationThread
 from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
 from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, create_results
-
+from cloudshell.cp.core.models import RemoveTrafficMirroringResult
+from cloudshell.cp.aws.domain.services.ec2.mirroring import TrafficMirrorService
 flatten = itertools.chain.from_iterable
 
 
-class CreateTrafficMirrorOperation(object):
+class TrafficMirrorOperation(object):
     def __init__(self, tag_service, session_number_service, traffic_mirror_service, cancellation_service):
         """
+        :type cloudshell.cp.aws.domain.services.ec2.mirroring.TrafficMirrorService traffic_mirror_service:
         :param cloudshell.cp.aws.domain.common.cancellation_service.CommandCancellationService cancellation_service: object
         :param cloudshell.cp.aws.domain.services.ec2.tags.TagService tag_service:
         :param cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services.SessionNumberService session_number_service:
         """
         self._tag_service = tag_service
         self._session_number_service = session_number_service
-        self._traffic_mirror_service = traffic_mirror_service
+        self._traffic_mirror_service = traffic_mirror_service  # type: TrafficMirrorService
         self._cancellation_service = cancellation_service
 
     def _handle_cancellation(self, cancellation_context):
@@ -50,7 +52,7 @@ class CreateTrafficMirrorOperation(object):
 
         logger.info('Received request to deploy traffic mirroring. ')
 
-        self._validate_actions(actions, logger)
+        self._validate_create_actions(actions, logger)
 
         action_parameters_string = self._get_action_parameters_string(actions)
         logger.info(action_parameters_string)
@@ -183,7 +185,7 @@ class CreateTrafficMirrorOperation(object):
             self._traffic_mirror_service.create_filter(ec2_client, traffic_filter_tags)
         self._traffic_mirror_service.create_filter_rules(ec2_client, fulfillment)
 
-    def _validate_actions(self, actions, logger):
+    def _validate_create_actions(self, actions, logger):
         """
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
         """
@@ -246,4 +248,111 @@ class CreateTrafficMirrorOperation(object):
                     logger.error(error_msg + '\nSession number is {0}'.format(session_number))
                     raise Exception(error_msg)
             except ValueError:
-                a.actionParams.sessionNumber = None
+                if a.actionParams.sessionNumber.strip() == '':
+                    a.actionParams.sessionNumber = None
+                else:
+                    raise ValueError('Session number must be an integer, or an empty string! Passed an invalid session number {0} in action {1}'
+                                     .format(a.actionParams.sessionNumber, a.actionId))
+
+    def remove(self, ec2_client, reservation, actions, logger, cloudshell):
+        """
+        :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
+        :param EC2.Client ec2_client:
+        :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
+        :param list[cloudshell.cp.core.models.RemoveTrafficMirroring] actions: what sessions to remove
+        :param logging.Logger logger:
+        :return:
+        """
+        logger.info('Received request to remove traffic mirroring. ')
+
+        self._validate_remove_actions(actions, logger)
+
+        remove_results = [RemoveTrafficMirroringResult(
+            actionId=a.actionId,
+            success=False
+        ) for a in actions]
+
+        try:
+            logger.info('Finding sessions to remove...')
+
+            sessions = self._find_sessions_to_remove(ec2_client, actions)
+
+            if not len(sessions)>0:
+                raise Exception('No sessions found to remove!')
+
+            logger.info('Removing sessions and release...')
+
+            session_ids = [s['TrafficMirrorSessionId'] for s in sessions]
+
+            TrafficMirrorCleaner.delete_mirror_sessions(
+                ec2_client,
+                session_ids
+            )
+
+            self._releasing_session_numbers(cloudshell, reservation, ec2_client, logger, sessions)
+
+            traffic_mirror_filter_ids = [s['TrafficMirrorFilterId'] for s in sessions]
+            if len(traffic_mirror_filter_ids)>0:
+                logger.info('Removing filters...')
+                TrafficMirrorCleaner.delete_mirror_filters(ec2_client, traffic_mirror_filter_ids)
+
+            logger.info('Successfully removed traffic mirroring')
+            for res in remove_results:
+                res.success = True
+                res.infoMessage = 'Found sessions: {0}.'.format(', '.join(session_ids))
+
+        except Exception as e:
+            logger.exception('Failed to remove traffic mirroring: ' + e.message)
+            for res in remove_results:
+                res.errorMessage = 'Failed to remove traffic mirroring: ' + e.message
+
+        return remove_results
+
+    def _releasing_session_numbers(self, cloudshell, reservation, ec2_client, logger, sessions):
+        session_numbers = [str(s['SessionNumber']) for s in sessions]
+        traffic_mirror_session_network_interface_id = next((s['NetworkInterfaceId'] for s in sessions))
+        TrafficMirrorCleaner.release_session_numbers_from_pool_by_session_ids_and_network_interface_id(
+            cloudshell,
+            self._session_number_service,
+            logger,
+            reservation,
+            session_numbers,
+            traffic_mirror_session_network_interface_id
+        )
+
+    def _find_sessions_to_remove(self, ec2_client, actions):
+        sessions = []
+        session_ids_from_request = [a.sessionId for a in actions if a.sessionId]
+        sessions.extend(
+            self._traffic_mirror_service.find_sessions_by_session_ids(ec2_client, session_ids_from_request)
+        )
+        traffic_mirror_target_nic_ids = [a.targetNicId for a in actions if a.targetNicId]
+        traffic_mirror_target_ids = self._traffic_mirror_service.find_traffic_mirror_target_ids_by_target_nic_ids(ec2_client, traffic_mirror_target_nic_ids)
+
+        sessions.extend(
+            self._traffic_mirror_service.find_sessions_by_traffic_mirror_target_ids(ec2_client, traffic_mirror_target_ids)
+        )
+
+        return sessions
+
+    @staticmethod
+    def _validate_remove_actions(actions, logger):
+        """
+        :param list[cloudshell.cp.core.models.RemoveTrafficMirroring] actions:
+        """
+        logger.info('Validating requested actions...')
+
+        if len(actions)==0:
+            raise Exception('Invalid request, expected remove actions but none found')
+
+        for a in actions:
+            if not a.actionId:
+                raise Exception('Expected actionId but none received')
+
+            if not a.sessionId and not a.targetNicId:
+                raise Exception('Must have either sessionId or target_nic_id for actionId {0} but none received'.format(a.actionId))
+
+        logger.info('Completed validation for Remove Traffic Mirroring request...')
+
+    def find_traffic_mirror_target_nic_id_by_target_id(self, ec2_client, traffic_mirror_target_id):
+        return self._traffic_mirror_service.find_traffic_mirror_target_nic_id_by_target_id(ec2_client, traffic_mirror_target_id)

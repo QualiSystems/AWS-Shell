@@ -93,3 +93,7 @@ class AWSShellDriver(ResourceDriverInterface):
     def CreateTrafficMirroring(self, context, request, cancellation_context=None):
         action_results = self.aws_shell.create_traffic_mirroring(context, cancellation_context, request)
         return DriverResponse(action_results).to_driver_response_json()
+
+    def RemoveTrafficMirroring(self, context, request):
+        action_results = self.aws_shell.remove_traffic_mirroring(context, request)
+        return DriverResponse(action_results).to_driver_response_json()
