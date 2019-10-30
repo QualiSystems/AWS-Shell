@@ -42,6 +42,50 @@ class TrafficMirrorService(object):
             traffic_mirror_sessions.extend(response['TrafficMirrorSessions'])
         return {t['Description']: t for t in traffic_mirror_sessions}
 
+    @staticmethod
+    def find_sessions_by_session_ids(ec2_client, session_ids):
+        """
+        :param list(str) session_ids:
+        """
+        traffic_mirror_sessions = []
+
+        response = ec2_client.describe_traffic_mirror_sessions(
+            Filters=[
+                {
+                    'Name': 'traffic-mirror-session-id',
+                    'Values': session_ids
+                },
+            ],
+            MaxResults=100)
+
+        traffic_mirror_sessions.extend(response['TrafficMirrorSessions'])
+
+        while 'NextToken' in response:
+            response = ec2_client.describe_traffic_mirror_sessions(NextToken=response['NextToken'])
+            traffic_mirror_sessions.extend(response['TrafficMirrorSessions'])
+
+        return traffic_mirror_sessions
+
+    @staticmethod
+    def find_sessions_by_traffic_mirror_target_ids(ec2_client, traffic_mirror_target_ids):
+        traffic_mirror_sessions = []
+
+        response = ec2_client.describe_traffic_mirror_sessions(
+            Filters=[
+                {
+                    'Name': 'traffic-mirror-target-id',
+                    'Values': traffic_mirror_target_ids
+                },
+            ],
+            MaxResults=100)
+
+        traffic_mirror_sessions.extend(response['TrafficMirrorSessions'])
+
+        while 'NextToken' in response:
+            response = ec2_client.describe_traffic_mirror_sessions(NextToken=response['NextToken'])
+            traffic_mirror_sessions.extend(response['TrafficMirrorSessions'])
+
+        return traffic_mirror_sessions
 
     @staticmethod
     def find_mirror_session_ids_by_reservation_id(ec2_client, reservation_id):
@@ -203,7 +247,54 @@ class TrafficMirrorService(object):
 
         return [target['TrafficMirrorTargetId'] for target in traffic_mirror_targets]
 
-    #endregion
+    @staticmethod
+    def find_traffic_mirror_target_ids_by_target_nic_ids(ec2_client, traffic_target_nic_ids):
+        """
+        :param list[str] traffic_target_nic_ids:
+        """
+        traffic_mirror_targets = []
+        response = ec2_client.describe_traffic_mirror_targets(
+            Filters=[
+                {
+                    'Name': 'network-interface-id',
+                    'Values': traffic_target_nic_ids
+                },
+            ],
+            MaxResults=100)
+        traffic_mirror_targets.extend(response['TrafficMirrorTargets'])
+        while 'NextToken' in response:
+            response = ec2_client.describe_traffic_mirror_filters(NextToken=response['NextToken'])
+            traffic_mirror_targets.extend(response['TrafficMirrorTargets'])
+
+        return [target['TrafficMirrorTargetId'] for target in traffic_mirror_targets]
+
+    @staticmethod
+    def find_traffic_mirror_target_nic_id_by_target_id(ec2_client, traffic_mirror_target_id):
+        """
+        :param str traffic_mirror_target_id:
+        """
+        traffic_mirror_targets = []
+        response = ec2_client.describe_traffic_mirror_targets(
+            Filters=[
+                {
+                    'Name': 'traffic-mirror-target-id',
+                    'Values': [traffic_mirror_target_id]
+                },
+            ],
+            MaxResults=100)
+        traffic_mirror_targets.extend(response['TrafficMirrorTargets'])
+        while 'NextToken' in response:
+            response = ec2_client.describe_traffic_mirror_filters(NextToken=response['NextToken'])
+            traffic_mirror_targets.extend(response['TrafficMirrorTargets'])
+
+        return next((target['TrafficMirrorTargetId'] for target in traffic_mirror_targets))
+
+    # endregion
 
     def _empty(self):
         pass
+
+
+
+
+

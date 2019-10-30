@@ -12,15 +12,18 @@ class SessionNumberService(object):
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
         :param list(str) session_numbers:
         """
+
         try:
             logger.info('Releasing from poolId {0} in reservationId {1} session numbers {2}'.format(pool_id,
                                                                                                     reservation.reservation_id,
-                                                                                                    ', '.join(session_numbers)))
+                                                                                                    repr(session_numbers)))
             cloudshell.ReleaseFromPool(values=session_numbers,
                                        poolId=pool_id,
                                        ownerId=self.OWNER_ID,
                                        reservationId=reservation.reservation_id)
         except Exception as e:
+            if 'reservation has ended' in e.message:
+                raise Exception('Tried to checkout a session number for traffic mirroring, but reservation has already ended')
             logger.exception('Could not release session number: ' + e.message)
 
     def checkout(self, cloudshell, logger, reservation, source_nic, specific_number=None):

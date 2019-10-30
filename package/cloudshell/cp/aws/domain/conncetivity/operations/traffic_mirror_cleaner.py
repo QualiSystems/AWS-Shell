@@ -1,6 +1,8 @@
 from botocore.waiter import WaiterModel, create_waiter_with_client
 import itertools as it
 
+from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
+
 
 class TrafficMirrorCleaner(object):
     @staticmethod
@@ -47,6 +49,14 @@ class TrafficMirrorCleaner(object):
         for source_nic, fulfillments in source_nic_to_fulfillments:
             session_numbers = [f.session_number for f in fulfillments]
             session_number_service.release(cloudshell, logger, reservation, list(session_numbers), source_nic)
+
+    @staticmethod
+    def release_session_numbers_from_pool_by_session_ids_and_network_interface_id(cloudshell, session_number_service, logger, reservation, session_numbers, network_interface_id):
+        """
+        :param SessionNumberService session_number_service:
+        """
+        logger.info('Releasing session numbers from pool, after deleting traffic mirror sessions')
+        session_number_service.release(cloudshell, logger, reservation, session_numbers, network_interface_id)
 
     @staticmethod
     def cleanup(logger, ec2_client, traffic_mirror_session_ids=None, traffic_mirror_filter_ids=None,
@@ -196,3 +206,12 @@ class TrafficMirrorCleaner(object):
     def try_delete_mirror_target(ec2_client, traffic_mirror_target_id):
         if traffic_mirror_target_id:
             ec2_client.delete_traffic_mirror_target(TrafficMirrorTargetId=traffic_mirror_target_id)
+
+
+class SimplifiedTrafficMirrorSession(object):
+    def __init__(self, traffic_mirror_session):
+        """
+        :param dict[str] traffic_mirror_session: see response for https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/ec2.html#EC2.Client.describe_traffic_mirror_sessions
+        """
+        self.session_id = traffic_mirror_session['TrafficMirrorSessionId']
+        self.target_id = traffic_mirror_session['TrafficMirrorTargetId']
