@@ -2,6 +2,8 @@ import itertools
 import time
 from collections import defaultdict
 
+from jsonschema import validate
+
 from cloudshell.cp.aws.domain.common.CheckCancellationThread import CheckCancellationThread
 from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
 from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, create_results
@@ -190,6 +192,8 @@ class TrafficMirrorOperation(object):
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
         """
         self._there_are_actions(actions)
+        for a in actions:
+            self._validate_schema(CREATE_SCHEMA, a)
         self._there_are_source_and_target_nics(actions)
         self._session_numbers_are_valid(actions, logger)  # must be 1-32766 or NONE
 
@@ -346,6 +350,7 @@ class TrafficMirrorOperation(object):
             raise Exception('Invalid request, expected remove actions but none found')
 
         for a in actions:
+            TrafficMirrorOperation._validate_schema(REMOVE_SCHEMA, a)
             if not a.actionId:
                 raise Exception('Expected actionId but none received')
 
@@ -356,3 +361,55 @@ class TrafficMirrorOperation(object):
 
     def find_traffic_mirror_target_nic_id_by_target_id(self, ec2_client, traffic_mirror_target_id):
         return self._traffic_mirror_service.find_traffic_mirror_target_nic_id_by_target_id(ec2_client, traffic_mirror_target_id)
+
+    @staticmethod
+    def _validate_schema(schema, action):
+        """
+        :param cloudshell.cp.core.models.RequestActionBase action:
+        :return:
+        """
+
+        validate(action, schema)
+
+
+REMOVE_SCHEMA = {
+    "$id": "https://example.com/geographical-location.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "RemoveTrafficMirroring",
+    "required": ["actionId", "sessionId", "targetNicId"],
+    "additionalProperties": False,
+    "properties": {
+        "properties": {
+            "actionId": {
+                "type": "string",
+            },
+            "sessionId": {
+                "type": "string",
+            },
+            "targetNicId": {
+                "type": "string",
+            }
+        }
+    }
+}
+
+CREATE_SCHEMA = {
+    "$id": "https://example.com/geographical-location.schema.json",
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "RemoveTrafficMirroring",
+    "required": ["actionId", "sessionId", "targetNicId"],
+    "additionalProperties": False,
+    "properties": {
+        "properties": {
+            "actionId": {
+                "type": "string",
+            },
+            "sessionId": {
+                "type": "string",
+            },
+            "targetNicId": {
+                "type": "string",
+            }
+        }
+    }
+}
