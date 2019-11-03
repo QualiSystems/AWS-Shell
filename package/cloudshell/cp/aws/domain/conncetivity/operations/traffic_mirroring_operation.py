@@ -1,4 +1,5 @@
 import itertools
+import json
 import time
 from collections import defaultdict
 
@@ -9,6 +10,7 @@ from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner imp
 from cloudshell.cp.aws.models.traffic_mirror_fulfillment import TrafficMirrorFulfillment, create_results
 from cloudshell.cp.core.models import RemoveTrafficMirroringResult
 from cloudshell.cp.aws.domain.services.ec2.mirroring import TrafficMirrorService
+
 flatten = itertools.chain.from_iterable
 
 
@@ -53,8 +55,6 @@ class TrafficMirrorOperation(object):
         success = False
 
         logger.info('Received request to deploy traffic mirroring. ')
-
-        self._validate_create_actions(actions, logger)
 
         action_parameters_string = self._get_action_parameters_string(actions)
         logger.info(action_parameters_string)
@@ -136,7 +136,7 @@ class TrafficMirrorOperation(object):
         found_session_names = session_name_to_found_session.keys()
 
         for s in session_names:
-            fulfillment = next((f for f in fulfillments if f.session_name==s))
+            fulfillment = next((f for f in fulfillments if f.session_name == s))
 
             if s not in found_session_names:
                 self._create_filter(ec2_client, fulfillment)
@@ -187,8 +187,9 @@ class TrafficMirrorOperation(object):
             self._traffic_mirror_service.create_filter(ec2_client, traffic_filter_tags)
         self._traffic_mirror_service.create_filter_rules(ec2_client, fulfillment)
 
-    def _validate_create_actions(self, actions, logger):
+    def validate_create_actions(self, actions, request, logger):
         """
+        :param str request:
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
         """
         self._there_are_actions(actions)
@@ -255,21 +256,20 @@ class TrafficMirrorOperation(object):
                 if a.actionParams.sessionNumber.strip() == '':
                     a.actionParams.sessionNumber = None
                 else:
-                    raise ValueError('Session number must be an integer, or an empty string! Passed an invalid session number {0} in action {1}'
-                                     .format(a.actionParams.sessionNumber, a.actionId))
+                    raise ValueError(
+                        'Session number must be an integer, or an empty string! Passed an invalid session number {0} in action {1}'
+                            .format(a.actionParams.sessionNumber, a.actionId))
 
     def remove(self, ec2_client, reservation, actions, logger, cloudshell):
         """
         :param cloudshell.api.cloudshell_api.CloudShellAPISession cloudshell:
         :param EC2.Client ec2_client:
         :param cloudshell.cp.aws.models.reservation_model.ReservationModel reservation:
-        :param list[cloudshell.cp.core.models.RemoveTrafficMirroring] actions: what sessions to remove
+        :param list[cloudshell.cp.core.models.RemoveTrafficMirroring] actions:
         :param logging.Logger logger:
         :return:
         """
         logger.info('Received request to remove traffic mirroring. ')
-
-        self._validate_remove_actions(actions, logger)
 
         remove_results = [RemoveTrafficMirroringResult(
             actionId=a.actionId,
@@ -281,7 +281,7 @@ class TrafficMirrorOperation(object):
 
             sessions = self._find_sessions_to_remove(ec2_client, actions)
 
-            if not len(sessions)>0:
+            if not len(sessions) > 0:
                 raise Exception('No sessions found to remove!')
 
             logger.info('Removing sessions and release...')
@@ -296,7 +296,7 @@ class TrafficMirrorOperation(object):
             self._releasing_session_numbers(cloudshell, reservation, ec2_client, logger, sessions)
 
             traffic_mirror_filter_ids = [s['TrafficMirrorFilterId'] for s in sessions]
-            if len(traffic_mirror_filter_ids)>0:
+            if len(traffic_mirror_filter_ids) > 0:
                 logger.info('Removing filters...')
                 TrafficMirrorCleaner.delete_mirror_filters(ec2_client, traffic_mirror_filter_ids)
 
@@ -331,36 +331,44 @@ class TrafficMirrorOperation(object):
             self._traffic_mirror_service.find_sessions_by_session_ids(ec2_client, session_ids_from_request)
         )
         traffic_mirror_target_nic_ids = [a.targetNicId for a in actions if a.targetNicId]
-        traffic_mirror_target_ids = self._traffic_mirror_service.find_traffic_mirror_target_ids_by_target_nic_ids(ec2_client, traffic_mirror_target_nic_ids)
+        traffic_mirror_target_ids = self._traffic_mirror_service.find_traffic_mirror_target_ids_by_target_nic_ids(
+            ec2_client, traffic_mirror_target_nic_ids)
 
         sessions.extend(
-            self._traffic_mirror_service.find_sessions_by_traffic_mirror_target_ids(ec2_client, traffic_mirror_target_ids)
+            self._traffic_mirror_service.find_sessions_by_traffic_mirror_target_ids(ec2_client,
+                                                                                    traffic_mirror_target_ids)
         )
 
-        return sessions
+        unique_sessions = {s['TrafficMirrorSessionId']: s for s in sessions}
+
+        return unique_sessions.values()
 
     @staticmethod
-    def _validate_remove_actions(actions, logger):
+    def validate_remove_request(request, logger):
         """
-        :param list[cloudshell.cp.core.models.RemoveTrafficMirroring] actions:
+        :param str request:
         """
         logger.info('Validating requested actions...')
 
-        if len(actions)==0:
+        result = json.loads(request)
+
+        actions = result['driverRequest']['actions']
+
+        if len(actions) == 0:
             raise Exception('Invalid request, expected remove actions but none found')
 
         for a in actions:
             TrafficMirrorOperation._validate_schema(REMOVE_SCHEMA, a)
-            if not a.actionId:
-                raise Exception('Expected actionId but none received')
 
-            if not a.sessionId and not a.targetNicId:
-                raise Exception('Must have either sessionId or target_nic_id for actionId {0} but none received'.format(a.actionId))
+            if not a['sessionId'] and not a['targetNicId']:
+                raise Exception(
+                    'Must have either sessionId or target_nic_id for actionId {0} but received empty values'.format(a.actionId))
 
         logger.info('Completed validation for Remove Traffic Mirroring request...')
 
     def find_traffic_mirror_target_nic_id_by_target_id(self, ec2_client, traffic_mirror_target_id):
-        return self._traffic_mirror_service.find_traffic_mirror_target_nic_id_by_target_id(ec2_client, traffic_mirror_target_id)
+        return self._traffic_mirror_service.find_traffic_mirror_target_nic_id_by_target_id(ec2_client,
+                                                                                           traffic_mirror_target_id)
 
     @staticmethod
     def _validate_schema(schema, action):
@@ -379,37 +387,76 @@ REMOVE_SCHEMA = {
     "required": ["actionId", "sessionId", "targetNicId"],
     "additionalProperties": False,
     "properties": {
-        "properties": {
-            "actionId": {
-                "type": "string",
-            },
-            "sessionId": {
-                "type": "string",
-            },
-            "targetNicId": {
-                "type": "string",
-            }
-        }
+        "type": {"type": "string"},
+        "actionId": {"type": "string"},
+        "sessionId": {"type": "string"},
+        "targetNicId": {"type": "string"}
     }
 }
 
 CREATE_SCHEMA = {
     "$id": "https://example.com/geographical-location.schema.json",
     "$schema": "http://json-schema.org/draft-07/schema#",
-    "title": "RemoveTrafficMirroring",
-    "required": ["actionId", "sessionId", "targetNicId"],
+    "title": "CreateTrafficMirroring",
+    "type": "object",
     "additionalProperties": False,
-    "properties": {
-        "properties": {
-            "actionId": {
-                "type": "string",
-            },
-            "sessionId": {
-                "type": "string",
-            },
-            "targetNicId": {
-                "type": "string",
+    "required": ["actionId", "actionParams"],
+    "definitions": {
+        "CreateTrafficMirroringParams": {
+            "title": "CreateTrafficMirroringParams",
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["sourceNicId", "targetNicId", "sessionNumber"],
+            "properties": {
+                "type": {"type": "string"},
+                "sourceNicId": {
+                    "type": "string"
+                },
+                "targetNicId": {
+                    "type": "string"
+                },
+                "sessionNumber": {
+                    "type": "string"
+                },
+                "filterRules": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/filterRule"
+                    }
+                }
+            }},
+        "filterRule": {
+            "type": "object",
+            "additionalProperties": False,
+            "required": ["direction", "protocol"],
+            "properties": {
+                "type": {"type": "string"},
+                "direction": {
+                    "type": "string"
+                },
+                "destinationCidr": {
+                    "type": "string"
+                },
+                "destinationPortRange": {
+                    "type": ["object", "null"]
+                },
+                "sourceCidr": {
+                    "type": "string"
+                },
+                "sourcePortRange": {
+                    "type": ["object", "null"]
+                },
+                "protocol": {
+                    "type": "string"
+                }
             }
         }
+    },
+    "properties": {
+        "actionId": {
+            "type": "string",
+        },
+        "type": {"type": "string"},
+        "actionParams": {"$ref": "#/definitions/CreateTrafficMirroringParams"}
     }
 }
