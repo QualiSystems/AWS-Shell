@@ -408,6 +408,7 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Create traffic mirroring')
                 actions = self._parse_request(request, shell_context)
+                self.traffic_mirroring_operation.validate_create_actions(actions, request, shell_context.logger)
                 results = self.traffic_mirroring_operation.create(
                     ec2_client=shell_context.aws_api.ec2_client,
                     reservation=self.model_parser.convert_to_reservation_model(context.reservation),
@@ -449,7 +450,11 @@ class AWSShell(object):
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Create traffic mirroring')
+
+                self.traffic_mirroring_operation.validate_remove_request(request, shell_context.logger)
+
                 actions = self._parse_request(request, shell_context)
+
                 results = self.traffic_mirroring_operation.remove(
                     ec2_client=shell_context.aws_api.ec2_client,
                     reservation=self.model_parser.convert_to_reservation_model(context.reservation),

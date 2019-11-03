@@ -1,16 +1,18 @@
+import json
 import logging
 from unittest import TestCase
 from uuid import uuid4
 
 import boto3
 from cloudshell.api.cloudshell_api import CloudShellAPISession
+from jsonschema import validate
 
 from mock import Mock
 
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 
 from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirroring_operation import \
-    TrafficMirrorOperation
+    TrafficMirrorOperation, CREATE_SCHEMA, REMOVE_SCHEMA
 from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
 from cloudshell.cp.aws.domain.services.ec2.mirroring import TrafficMirrorService
 from cloudshell.cp.aws.domain.services.ec2.tags import TagService
@@ -21,7 +23,7 @@ from cloudshell.cp.core.models import CreateTrafficMirroring, CreateTrafficMirro
 
 class TestCreateTrafficMirroring(TestCase):
     # def test_create_traffic_mirroring(self):
-    #     reservation_id = '8f05a8d2-e2b7-49bb-af46-ec7feea3b783'
+    #     reservation_id = '98900220-1216-4d81-8481-a1356093adac'
     #     session_number = ''
     #
     #     # region prep
@@ -114,9 +116,9 @@ class TestCreateTrafficMirroring(TestCase):
     #                     'Was not able to create traffic mirroring')
     #
     # def test_remove_traffic_mirroring(self):
-    #     reservation_id = '8f05a8d2-e2b7-49bb-af46-ec7feea3b783'
-    #     session_id = "tms-0fd403c4c349ed236"
-    #     target_nic_id = ""
+    #     reservation_id = '97fb8c3a-0eaa-4340-94db-86dc4c3ed897'
+    #     session_id = "tms-07eaf6f71e8bfa0e1"
+    #     target_nic_id = "eni-0048855a9867bdc43"
     #
     #     # region prep
     #     self.ec2_client = boto3.client('ec2')
@@ -153,8 +155,8 @@ class TestCreateTrafficMirroring(TestCase):
     #                                             {
     #                                                 "actionId": "a156d3db-78fe-4c19-9039-a225d0360119",
     #                                                 "type": "RemoveTrafficMirroring",
-    #                                                 "sessionId": "tms-095c0f48db192a0f9",
-    #                                                 "targetNicId": ""
+    #                                                 "sessionId": "tms-0f457d0854e043637",
+    #                                                 "targetNicId": "eni-0048855a9867bdc43"
     #                                             }
     #                                         ]
     #                           }
@@ -171,6 +173,40 @@ class TestCreateTrafficMirroring(TestCase):
     #
     #     cancellation_context = Mock()
     #     cancellation_context.is_cancelled = False
+    #
+    #     schema = {
+    #         "$id": "https://example.com/geographical-location.schema.json",
+    #         "$schema": "http://json-schema.org/draft-07/schema#",
+    #         "title": "RemoveTrafficMirroringDriverRequest",
+    #         "properties": {
+    #             "actions": {
+    #                 "type": "array",
+    #                 "items": {"$ref": "#/definitions/remove_traffic_mirroring_request"}
+    #             }
+    #         },
+    #         "definitions": {
+    #             "remove_traffic_mirroring_request": {
+    #                 "required": ["type", "actionId", "sessionId", "targetNicId"],
+    #                 "properties": {
+    #                     "type": {
+    #                         "type": "string"
+    #                     },
+    #                     "actionId": {
+    #                         "type": "string",
+    #                     },
+    #                     "sessionId": {
+    #                         "type": "string",
+    #                     },
+    #                     "targetNicId": {
+    #                         "type": "string",
+    #                     }
+    #                 }
+    #             }
+    #         }
+    #
+    #     }
+    #
+    #     validate(request, schema)
     #
     #     # endregion
     #
@@ -257,3 +293,59 @@ class TestCreateTrafficMirroring(TestCase):
                             cloudshell=cloudshell)
 
         self.assertTrue([x for x in results if x.success])
+
+    def test_json_validate(self):
+
+        request = '''
+        {
+            "driverRequest": {
+                                "actions": [
+                                                {
+                                                    "actionId": "a156d3db-78fe-4c19-9039-a225d0360119",
+                                                    "type": "RemoveTrafficMirroring",
+                                                    "sessionId": "tms-020e45731259d882d",
+                                                    "targetNicId": ""
+                                                }
+                                            ]
+                              }
+        }
+        '''
+
+        result = json.loads(request)
+        for a in result["driverRequest"]["actions"]:
+            validate(a, REMOVE_SCHEMA)
+
+        create_request = '''
+        {
+            "driverRequest": {
+                                "actions": [
+                                                {
+                                                    "actionId": "a156d3db-78fe-4c19-9039-a225d0360119",
+                                                    "type": "CreateTrafficMirroring",
+                                                    "actionParams": {"type": "CreateTrafficMirroringParams",
+                                                                     "sourceNicId": "eni-0bf9b403bd8d36a79",
+                                                                     "targetNicId": "eni-060613fdccd935b67",
+                                                                     "sessionNumber": "",
+                                                                     "filterRules": [
+                                                                        {
+                                                                            "type": "TrafficFilterRule",
+                                                                            "direction": "ingress",
+                                                                            "sourcePortRange": {
+                                                                                "type": "PortRange",
+                                                                                "fromPort": "123",
+                                                                                "toPort": "123"
+                                                                            },
+                                                                            "protocol": "udp"
+                                                                        }
+                                                                     ]
+                                                                     }
+                                                }
+                                            ]
+                              }
+        }
+        '''
+
+        create_actions2 = json.loads(create_request)
+        for a in create_actions2['driverRequest']['actions']:
+            validate(a, CREATE_SCHEMA)
+
