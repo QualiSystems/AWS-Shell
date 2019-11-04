@@ -407,7 +407,7 @@ CREATE_SCHEMA = {
             "title": "CreateTrafficMirroringParams",
             "type": "object",
             "additionalProperties": False,
-            "required": ["sourceNicId", "targetNicId", "sessionNumber"],
+            "required": ["sourceNicId", "targetNicId"],
             "properties": {
                 "type": {"type": "string"},
                 "sourceNicId": {
