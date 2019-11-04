@@ -193,7 +193,8 @@ class TrafficMirrorOperation(object):
         :param list[cloudshell.cp.core.models.CreateTrafficMirroring] actions:
         """
         self._there_are_actions(actions)
-        for a in actions:
+        result = json.loads(request)
+        for a in result['driverRequest']['actions']:
             self._validate_schema(CREATE_SCHEMA, a)
         self._there_are_source_and_target_nics(actions)
         self._session_numbers_are_valid(actions, logger)  # must be 1-32766 or NONE
