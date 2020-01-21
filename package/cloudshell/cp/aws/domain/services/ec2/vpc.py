@@ -37,7 +37,7 @@ class VPCService(object):
         self.sg_service = sg_service
         self.route_table_service = route_table_service
 
-    def create_vpc_for_reservation(self, ec2_session, reservation, cidr):
+    def create_vpc_for_reservation(self, ec2_session, reservation, cidr, logger):
         """
         Will create a vpc for reservation and will save it in a folder in the s3 bucket
         :param ec2_session: Ec2 Session
@@ -48,8 +48,9 @@ class VPCService(object):
         :return: vpc
         """
         vpc = ec2_session.create_vpc(CidrBlock=cidr)
+        logger.info("Created VPC for reservation {0}. Id is {1}".format(reservation.reservation_id, vpc.id))
 
-        self.vpc_waiter.wait(vpc=vpc,state= self.vpc_waiter.AVAILABLE)
+        self.vpc_waiter.wait(vpc=vpc, state=self.vpc_waiter.AVAILABLE)
 
         vpc_name = self.VPC_RESERVATION.format(reservation.reservation_id)
         self._set_tags(vpc_name=vpc_name, reservation=reservation, vpc=vpc)
@@ -99,18 +100,20 @@ class VPCService(object):
             route_table = self.route_table_service.create_route_table(ec2_session, reservation, vpc_id, route_table_name)
         return route_table
 
-    def find_vpc_for_reservation(self, ec2_session, reservation_id):
+    def find_vpc_for_reservation(self, ec2_session, reservation_id, logger):
         filters = [{'Name': 'tag:Name',
                     'Values': [self.VPC_RESERVATION.format(reservation_id)]}]
 
         vpcs = list(ec2_session.vpcs.filter(Filters=filters))
 
         if not vpcs:
+            logger.info("No VPC found for reservation {0}".format(reservation_id))
             return None
 
         if len(vpcs) > 1:
             raise ValueError('Too many vpcs for the reservation')
 
+        logger.info("VPC found for reservation {0}. Id is {1}".format(reservation_id, vpcs[0].id))
         return vpcs[0]
 
     def peer_vpcs(self, ec2_session, vpc_id1, vpc_id2, reservation_model, logger):
@@ -128,7 +131,7 @@ class VPCService(object):
         """
 
         # create peering connection
-        logger.info("Creating VPC Peering between {0} to {1} ".format(vpc_id1, vpc_id1))
+        logger.info("Creating VPC Peering between {0} to {1}".format(vpc_id1, vpc_id2))
         vpc_peer_connection = ec2_session.create_vpc_peering_connection(VpcId=vpc_id1, PeerVpcId=vpc_id2)
         logger.info(
             "VPC Peering created {0} ,State : {1} ".format(vpc_peer_connection.id, vpc_peer_connection.status['Code']))

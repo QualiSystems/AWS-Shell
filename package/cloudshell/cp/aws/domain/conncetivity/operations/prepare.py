@@ -142,7 +142,7 @@ class PrepareSandboxInfraOperation(object):
         # will get or create a vpc for the reservation
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Get or create existing VPC (no subnets yet)")
-        vpc = self._get_or_create_vpc(cidr, ec2_session, reservation)
+        vpc = self._get_or_create_vpc(cidr, ec2_session, reservation, logger)
 
         # will enable dns for the vpc
         self.cancellation_service.check_if_cancelled(cancellation_context)
@@ -363,13 +363,15 @@ class PrepareSandboxInfraOperation(object):
 
         return security_group
 
-    def _get_or_create_vpc(self, cidr, ec2_session, reservation):
+    def _get_or_create_vpc(self, cidr, ec2_session, reservation, logger):
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
-                                                        reservation_id=reservation.reservation_id)
+                                                        reservation_id=reservation.reservation_id,
+                                                        logger = logger)
         if not vpc:
             vpc = self.vpc_service.create_vpc_for_reservation(ec2_session=ec2_session,
                                                               reservation=reservation,
-                                                              cidr=cidr)
+                                                              cidr=cidr,
+                                                              logger = logger)
         return vpc
     def _create_prepare_create_keys_result(self, action, access_key):
         action_result = CreateKeysActionResult()
