@@ -71,7 +71,7 @@ class TestVPCService(TestCase):
         self.assertEqual(internet_gateway_id, internet_gate.id)
 
     def test_create_vpc_for_reservation(self):
-        vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation, self.cidr)
+        vpc = self.vpc_service.create_vpc_for_reservation(self.ec2_session, self.reservation, self.cidr, self.logger)
         vpc_name = self.vpc_service.VPC_RESERVATION.format(self.reservation.reservation_id)
 
         self.vpc_waiter.wait.assert_called_once_with(vpc=vpc, state=self.vpc_waiter.AVAILABLE)
@@ -84,19 +84,19 @@ class TestVPCService(TestCase):
     def test_find_vpc_for_reservation(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[self.vpc])
-        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation)
+        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation, self.logger)
         self.assertEqual(vpc, self.vpc)
 
     def test_find_vpc_for_reservation_no_vpc(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[])
-        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation)
+        vpc = self.vpc_service.find_vpc_for_reservation(self.ec2_session, self.reservation, self.logger)
         self.assertIsNone(vpc)
 
     def test_find_vpc_for_reservation_too_many(self):
         self.ec2_session.vpcs = Mock()
         self.ec2_session.vpcs.filter = Mock(return_value=[1, 2])
-        self.assertRaises(ValueError, self.vpc_service.find_vpc_for_reservation, self.ec2_session, self.reservation)
+        self.assertRaises(ValueError, self.vpc_service.find_vpc_for_reservation, self.ec2_session, self.reservation, self.logger)
 
     def test_peer_vpc(self):
         def change_to_active(vpc_peering_connection):
