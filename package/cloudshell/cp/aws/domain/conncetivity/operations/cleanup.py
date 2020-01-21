@@ -5,7 +5,7 @@ from cloudshell.cp.core.models import CleanupNetwork
 
 
 class CleanupSandboxInfraOperation(object):
-    def __init__(self, vpc_service, key_pair_service, route_table_service):
+    def __init__(self, vpc_service, key_pair_service, route_table_service, traffic_mirror_service):
         """
         :param vpc_service: VPC Service
         :type vpc_service: cloudshell.cp.aws.domain.services.ec2.vpc.VPCService
@@ -13,10 +13,12 @@ class CleanupSandboxInfraOperation(object):
         :type key_pair_service: cloudshell.cp.aws.domain.services.ec2.keypair.KeyPairService
         :param route_table_service:
         :type route_table_service: cloudshell.cp.aws.domain.services.ec2.route_table.RouteTablesService
+        :param cloudshell.cp.aws.domain.services.ec2.mirroring.TrafficMirrorService traffic_mirror_service:
         """
         self.vpc_service = vpc_service
         self.key_pair_service = key_pair_service
         self.route_table_service = route_table_service
+        self.traffic_mirror_service = traffic_mirror_service
 
     def cleanup(self, ec2_client, ec2_session, s3_session, aws_ec2_data_model, reservation_id, actions, logger):
         """
@@ -55,7 +57,13 @@ class CleanupSandboxInfraOperation(object):
             self._delete_blackhole_routes_in_vpc_route_table(ec2_session, ec2_client, aws_ec2_data_model)
             self.vpc_service.remove_custom_route_tables(ec2_session, vpc)
 
+            logger.info('Deleting traffic mirror elements')
+            self.vpc_service.delete_traffic_mirror_elements(ec2_client, self.traffic_mirror_service, reservation_id,
+                                                            logger)
+
             self.vpc_service.delete_vpc(vpc)
+
+
             
         except Exception as exc:
             logger.error("Error in cleanup connectivity. Error: {0}".format(traceback.format_exc()))

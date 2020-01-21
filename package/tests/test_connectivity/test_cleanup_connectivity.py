@@ -16,8 +16,9 @@ class TestCleanupSandboxInfra(TestCase):
         self.aws_ec2_data_model = Mock()
         self.reservation_id = Mock()
         self.route_table_service = Mock()
+        self.traffic_mirror_service = Mock()
         self.cleanup_operation = CleanupSandboxInfraOperation(self.vpc_serv, self.key_pair_serv,
-                                                              self.route_table_service)
+                                                              self.route_table_service, self.traffic_mirror_service)
 
     def test_cleanup(self):
         self.route_table_service.get_all_route_tables = Mock(return_value=[Mock(), Mock()])
@@ -47,7 +48,7 @@ class TestCleanupSandboxInfra(TestCase):
     def test_cleanup_no_vpc(self):
         vpc_serv = Mock()
         vpc_serv.find_vpc_for_reservation = Mock(return_value=None)
-        result = CleanupSandboxInfraOperation(vpc_serv, self.key_pair_serv, self.route_table_service) \
+        result = CleanupSandboxInfraOperation(vpc_serv, self.key_pair_serv, self.route_table_service, self.traffic_mirror_service) \
             .cleanup(
                 ec2_session=self.ec2_session,
                 s3_session=self.s3_session,

@@ -1,6 +1,7 @@
 import traceback
 from retrying import retry
 from cloudshell.cp.aws.common import retry_helper
+from cloudshell.cp.aws.domain.conncetivity.operations.traffic_mirror_cleaner import TrafficMirrorCleaner
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
 from cloudshell.cp.aws.domain.common.list_helper import index_of
 
@@ -12,7 +13,8 @@ class VPCService(object):
     PRIVATE_ROUTE_TABLE_RESERVATION = 'Private RoutingTable Reservation: {0}'
     PEERING_CONNECTION = "Peering connection for {0} with management vpc"
 
-    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service, route_table_service):
+    def __init__(self, tag_service, subnet_service, instance_service, vpc_waiter, vpc_peering_waiter, sg_service,
+                 route_table_service, traffic_mirror_service):
         """
         :param tag_service: Tag Service
         :type tag_service: cloudshell.cp.aws.domain.services.ec2.tags.TagService
@@ -36,6 +38,7 @@ class VPCService(object):
         self.vpc_peering_waiter = vpc_peering_waiter
         self.sg_service = sg_service
         self.route_table_service = route_table_service
+        self.traffic_mirror_service = traffic_mirror_service
 
     def create_vpc_for_reservation(self, ec2_session, reservation, cidr, logger):
         """
@@ -66,7 +69,8 @@ class VPCService(object):
 
         subnet_name = self.SUBNET_RESERVATION.format(alias, reservation.reservation_id)
         availability_zone = self.get_or_pick_availability_zone(ec2_client, vpc, aws_ec2_datamodel)
-        logger.info("Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(alias, cidr, availability_zone))
+        logger.info(
+            "Create subnet (alias: {0}, cidr: {1}, availability-zone: {2})".format(alias, cidr, availability_zone))
         return self.subnet_service.create_subnet_for_vpc(
             vpc=vpc,
             cidr=cidr,
@@ -82,7 +86,7 @@ class VPCService(object):
         :return:
         """
         route_table_name = self.PRIVATE_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
-        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name )
+        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name)
         if not route_table:
             raise ValueError("Routing table for non-public subnet was not found")
         return route_table
@@ -95,9 +99,10 @@ class VPCService(object):
         :return:
         """
         route_table_name = self.PRIVATE_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
-        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name )
+        route_table = self.route_table_service.get_route_table(ec2_session, vpc_id, route_table_name)
         if not route_table:
-            route_table = self.route_table_service.create_route_table(ec2_session, reservation, vpc_id, route_table_name)
+            route_table = self.route_table_service.create_route_table(ec2_session, reservation, vpc_id,
+                                                                      route_table_name)
         return route_table
 
     def find_vpc_for_reservation(self, ec2_session, reservation_id, logger):
@@ -239,16 +244,9 @@ class VPCService(object):
         """
         security_groups = list(vpc.security_groups.all())
 
-        # its possible that a group is dependent on an isolated group so we must delete the isolated group LAST
-        isolated_sg_name =  self.sg_service.sandbox_isolated_sg_name(reservation_id)
-
-        # trying to find isolated group index
-        isolated_ix =  index_of(security_groups, lambda sg: sg.group_name == isolated_sg_name)
-
-        # if there is one
-        if(isolated_ix != None):
-            # move isolated group to the end
-            security_groups.insert(len(security_groups), security_groups.pop(isolated_ix))
+        for sg in security_groups:
+            # delete security rules, so delete doesnt fail on dependendent security groups
+            sg.revoke_ingress(IpPermissions=sg.ip_permissions)
 
         for sg in security_groups:
             self.sg_service.delete_security_group(sg)
@@ -338,7 +336,7 @@ class VPCService(object):
 
     def set_main_route_table_tags(self, main_route_table, reservation):
         table_name = self.MAIN_ROUTE_TABLE_RESERVATION.format(reservation.reservation_id)
-        tags = self.tag_service.get_default_tags(table_name , reservation)
+        tags = self.tag_service.get_default_tags(table_name, reservation)
         self.tag_service.set_ec2_resource_tags(main_route_table, tags)
 
     def get_active_vpcs_count(self, ec2_client, logger):
@@ -351,3 +349,25 @@ class VPCService(object):
             logger.error("Error querying VPCs count. Error: {0}".format(traceback.format_exc()))
 
         return result
+
+    def delete_traffic_mirror_elements(self, ec2_client, traffic_mirror_service, reservation_id, logger):
+        """
+        :param logging.Logger logger:
+        :param cloudshell.cp.aws.domain.services.ec2.mirroring.TrafficMirrorService traffic_mirror_service:
+        :param uuid.uuid4 reservation_id:
+        :return:
+        """
+        session_ids = traffic_mirror_service.find_mirror_session_ids_by_reservation_id(ec2_client,
+                                                                                       reservation_id)
+        filter_ids = traffic_mirror_service.find_traffic_mirror_filter_ids_by_reservation_id(ec2_client,
+                                                                                             reservation_id)
+        target_ids = traffic_mirror_service.find_traffic_mirror_targets_by_reservation_id(ec2_client,
+                                                                                          reservation_id)
+        try:
+            TrafficMirrorCleaner.cleanup(logger,
+                                         ec2_client,
+                                         session_ids,
+                                         filter_ids,
+                                         target_ids)
+        except:
+            logger.exception('Failed to cleanup traffic mirror elements during reservation cleanup')
