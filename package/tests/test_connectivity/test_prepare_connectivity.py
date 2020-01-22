@@ -396,10 +396,12 @@ class TestPrepareSandboxInfra(TestCase):
                                               logger=Mock())
 
         vpc_service.find_vpc_for_reservation.assert_called_once_with(ec2_session=self.ec2_session,
-                                                                     reservation_id=self.reservation.reservation_id)
+                                                                     reservation_id=self.reservation.reservation_id,
+                                                                     logger=Mock())
 
         vpc_service.create_vpc_for_reservation.assert_called_once_with(ec2_session=self.ec2_session,
                                                                        reservation=self.reservation,
-                                                                       cidr=cidr)
+                                                                       cidr=cidr,
+                                                                       logger=Mock())
 
         self.assertEqual(vpc, result)
