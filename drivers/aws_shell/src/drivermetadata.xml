@@ -1,4 +1,4 @@
-<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.3">
+<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.4">
     <Layout>
         <Category Name="Deployment">
             <Command Description="" DisplayName="Deploy From AMI" EnableCancellation="true" Name="deploy_ami" Tags="allow_unreserved" />
@@ -27,6 +27,8 @@
                     <Parameter DefaultValue="" Description="A well formed request to remove traffic mirroring; Parameters are ActionId, SessionId (optional), Target NIC Id(optional)" DisplayName="Request" Mandatory="True" Name="request" Type="String" />
                 </Parameters>
             </Command>
+
+            <Command Description="" DisplayName="Get AMI Platform" Name="GetAmiPlatform" Tags="allow_unreserved" />
         </Category>
 
         <Category Name="Power">

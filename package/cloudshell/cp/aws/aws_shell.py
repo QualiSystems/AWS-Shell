@@ -442,7 +442,6 @@ class AWSShell(object):
         Can remove traffic mirroring sessions by session id, or all sessions associated with a traffic mirror target (by target nic id)
         :param str request:
         :param ResourceCommandContext context:
-        :param ResourceCommandContext context:
 
         :return: json string response
         :rtype: list[ActionResultBase]
@@ -463,3 +462,18 @@ class AWSShell(object):
                     cloudshell=shell_context.cloudshell_session)
 
                 return results
+
+    def get_ami_platform(self, context, request):
+        """
+        Get the platform (OS) type of a specific AMI in the region from the CLP
+        :param ResourceCommandContext context:
+        :param request: json string. example: {'image_ids': ['img1', 'img2']}
+        :rtype: str
+        :return: [{'image_id': 'xxx', 'platform': 'windows/linux'}]
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get AMI Platform')
+                return self.deploy_ami_operation.get_ami_platform(jsonpickle.loads(request)['image_ids'],
+                                                                  shell_context.aws_api.ec2_client,
+                                                                  shell_context.logger)

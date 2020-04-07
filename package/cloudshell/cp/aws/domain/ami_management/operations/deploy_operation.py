@@ -1,3 +1,4 @@
+import json
 import traceback
 import uuid
 from multiprocessing import TimeoutError
@@ -628,3 +629,21 @@ class DeployAMIOperation(object):
             if "Association" in interface and "PublicIp" in interface["Association"] \
                     and interface["Association"]["PublicIp"]:
                 result.public_ip = interface["Association"]["PublicIp"]
+
+    def get_ami_platform(self, image_ids, ec2_client, logger):
+        """
+        Receives a list of image ids and return a list of dictionaries with {image_id, platform} data
+        :param List[str] image_ids
+        :param ec2_client:
+        :param logging.Logger logger:
+        """
+        logger.info('describing images: {}'.format(image_ids))
+
+        result = ec2_client.describe_images(ImageIds=image_ids)
+
+        # boto3 -- Platform (string) -- This value is set to windows for Windows AMIs; otherwise, it is blank.
+        logger.info('extracting platform information from aws describe images result')
+        logger.info('result: {}'.format(json.dumps(result)))
+        return list(map(lambda x: {'image_id': x['ImageId'],
+                                   'platform': x['Platform'] if 'Platform' in x and x['Platform'] else 'linux'},
+                        result['Images']))

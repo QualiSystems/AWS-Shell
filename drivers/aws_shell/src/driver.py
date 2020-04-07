@@ -8,7 +8,6 @@ from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import 
 from cloudshell.cp.core.models import ConnectSubnet
 
 
-
 class AWSShellDriver(ResourceDriverInterface):
     def cleanup(self):
         pass
@@ -97,3 +96,6 @@ class AWSShellDriver(ResourceDriverInterface):
     def RemoveTrafficMirroring(self, context, request):
         action_results = self.aws_shell.remove_traffic_mirroring(context, request)
         return DriverResponse(action_results).to_driver_response_json()
+
+    def GetAmiPlatform(self, context, request):
+        return self.aws_shell.get_ami_platform(context, request)
