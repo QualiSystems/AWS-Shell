@@ -32,6 +32,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.allocate_elastic_ip = False  # type: bool
         self.network_configurations = None  # type: list[NetworkAction]
         self.allow_all_sandbox_traffic = True  # type: bool
+        self.user_data = ''  # type: str
 
         self.aws_ami_id = attributes["AWS AMI Id"]
         self.allow_all_sandbox_traffic = convert_to_bool(attributes['Allow all Sandbox Traffic'])
@@ -48,3 +49,4 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.wait_for_credentials = convert_to_bool(attributes['Wait for Credentials'])
         (self.add_public_ip, self.allocate_elastic_ip) = \
             AWSModelsParser.parse_public_ip_options_attribute(attributes['Public IP Options'])
+        self.user_data = attributes['User Data']

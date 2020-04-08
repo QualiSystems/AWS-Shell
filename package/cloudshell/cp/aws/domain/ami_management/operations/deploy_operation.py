@@ -370,6 +370,7 @@ class DeployAMIOperation(object):
         image = ec2_session.Image(ami_deployment_model.aws_ami_id)
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
+        aws_model.user_data = self._get_user_data(ami_deployment_model.user_data)
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
         aws_model.min_count = 1
@@ -419,8 +420,8 @@ class DeployAMIOperation(object):
             logger.info("Single subnet mode detected")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                add_public_ip=ami_deployment_model.add_public_ip,
-                security_group_ids=security_group_ids,
+                    add_public_ip=ami_deployment_model.add_public_ip,
+                    security_group_ids=security_group_ids,
                 vpc=vpc)]
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
@@ -647,3 +648,8 @@ class DeployAMIOperation(object):
         return list(map(lambda x: {'image_id': x['ImageId'],
                                    'platform': x['Platform'] if 'Platform' in x and x['Platform'] else 'linux'},
                         result['Images']))
+
+    def _get_user_data(self, user_data_text):
+        # todo - check if works with windows or if we need to remove shebang
+        data = "#!/bin/bash\n" + "{0}".format(user_data_text)
+        return data

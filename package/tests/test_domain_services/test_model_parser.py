@@ -301,7 +301,12 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Inbound Ports",'\
                                 '"attributeValue": "",'\
                                 '"type": "attribute"'\
-                              '}'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "User Data",' \
+                                '"attributeValue": "",' \
+                                '"type": "attribute"' \
+                              '}' \
                             '],'\
                             '"type": "deployAppDeploymentInfo"'\
                           '},'\

@@ -39,8 +39,9 @@ class InstanceService(object):
                 KeyName=ami_deployment_info.aws_key,
                 BlockDeviceMappings=ami_deployment_info.block_device_mappings,
                 NetworkInterfaces=ami_deployment_info.network_interfaces,
-                IamInstanceProfile=ami_deployment_info.iam_role
+                IamInstanceProfile=ami_deployment_info.iam_role,
                 # PrivateIpAddress=ami_deployment_info.private_ip_address
+                UserData=ami_deployment_info.user_data
         )[0]
 
         self.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,

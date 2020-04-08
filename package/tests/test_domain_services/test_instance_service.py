@@ -51,7 +51,8 @@ class TestInstanceService(TestCase):
                                                                   IamInstanceProfile=ami_dep.iam_role,
                                                                   KeyName=ami_dep.aws_key,
                                                                   BlockDeviceMappings=ami_dep.block_device_mappings,
-                                                                  NetworkInterfaces=ami_dep.network_interfaces)
+                                                                  NetworkInterfaces=ami_dep.network_interfaces,
+                                                                  UserData=ami_dep.user_data)
 
         self.instance_waiter.wait.assert_called_once_with(instance=new_instance,
                                                           state=self.instance_waiter.RUNNING,
