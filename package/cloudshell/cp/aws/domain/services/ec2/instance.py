@@ -7,15 +7,18 @@ from cloudshell.cp.aws.common import retry_helper
 
 
 class InstanceService(object):
-    def __init__(self, tags_creator_service, instance_waiter):
+    def __init__(self, tags_creator_service, instance_waiter, network_interface_service):
         """
         :param tags_creator_service: Tags Service
         :type tags_creator_service: cloudshell.cp.aws.domain.services.tags.TagService
         :param instance_waiter: Instance Waiter
         :type instance_waiter: cloudshell.cp.aws.domain.services.waiters.instance.InstanceWaiter
+        :param network_interface_service: Network Interface Service
+        :type network_interface_service: cloudshell.cp.aws.domain.services.ec2.network_interface.NetworkInterfaceService
         """
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
+        self.network_interface_service = network_interface_service
 
     def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check,
                         cancellation_context, logger):
@@ -54,7 +57,24 @@ class InstanceService(object):
 
         # Reload the instance attributes
         retry_helper.do_with_retry(lambda: instance.load())
+
+        self._source_dest_check(ami_deployment_info, ec2_client, instance)
+
         return instance
+
+    def _source_dest_check(self, ami_deployment_info, ec2_client, instance):
+        """
+        If source_dest_check set to False will disable the 'source/dest check' attribute on all attached nics
+
+        :param cloudshell.cp.aws.models.ami_deployment_model.AMIDeploymentModel ami_deployment_info:
+        :param ec2_client:
+        :param instance:
+        """
+        if ami_deployment_info.source_dest_check:
+            return
+
+        for nic in instance.network_interfaces_attribute:
+            self.network_interface_service.disable_source_dest_check(ec2_client, nic['NetworkInterfaceId'])
 
     def wait_for_instance_to_run_in_aws(self, ec2_client, instance, wait_for_status_check, cancellation_context,
                                         logger):

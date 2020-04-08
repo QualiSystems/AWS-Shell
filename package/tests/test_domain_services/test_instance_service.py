@@ -10,6 +10,7 @@ class TestInstanceService(TestCase):
     def setUp(self):
         self.tag_service = Mock()
         self.instance_waiter = Mock()
+        self.network_interface_service = Mock()
         self.ec2_session = Mock()
         self.ec2_client = Mock()
         self.name = 'name'
@@ -20,7 +21,7 @@ class TestInstanceService(TestCase):
         self.tag_service.get_default_tags = Mock(return_value=self.default_tags)
         self.ec2_session.create_instances = Mock(return_value=[self.instance])
         self.ec2_session.Instance = Mock(return_value=self.instance)
-        self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
+        self.instance_service = InstanceService(self.tag_service, self.instance_waiter, self.network_interface_service)
 
     # @Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
     def test_create_instance(self):
@@ -65,6 +66,28 @@ class TestInstanceService(TestCase):
         self.tag_service.set_ec2_resource_tags.assert_any_call(volume_1, self.default_tags)
         self.assertTrue(new_instance.load.called)
         self.assertEqual(new_instance, res)
+
+    def test_create_instance_with_disable_sourcedestcheck(self):
+        # Arrange
+        ami_dep = Mock(source_dest_check=False)
+        cancellation_context = Mock()
+        new_instance = Mock()
+        new_instance.instance_id = 'id'
+        self.ec2_session.create_instances = Mock(return_value=[new_instance])
+        new_instance.volumes.all = Mock(return_value=[Mock])
+        new_instance.network_interfaces_attribute = [{'NetworkInterfaceId': 'nic1'}, {'NetworkInterfaceId': 'nic2'}]
+
+        # Act
+        res = self.instance_service.create_instance(ec2_session=self.ec2_session,
+                                                    name=self.name,
+                                                    reservation=self.reservation_id,
+                                                    ami_deployment_info=ami_dep,
+                                                    ec2_client=self.ec2_client,
+                                                    wait_for_status_check=False,
+                                                    cancellation_context=cancellation_context,
+                                                    logger=Mock())
+
+        self.assertEqual(2, self.network_interface_service.disable_source_dest_check.call_count)
 
     def test_get_instance_by_id(self):
         res = self.instance_service.get_instance_by_id(self.ec2_session, 'id')

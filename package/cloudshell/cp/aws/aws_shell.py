@@ -62,7 +62,6 @@ class AWSShell(object):
         self.client_err_wrapper = ClientErrorWrapper()
         self.tag_service = TagService(client_err_wrapper=self.client_err_wrapper)
         self.ec2_instance_waiter = InstanceWaiter(cancellation_service=self.cancellation_service)
-        self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter)
         self.ec2_storage_service = EC2StorageService()
         self.model_parser = AWSModelsParser()
         self.cloudshell_session_helper = CloudshellDriverHelper()
@@ -79,6 +78,8 @@ class AWSShell(object):
         self.vpc_waiter = VPCWaiter()
         self.route_tables_service = RouteTablesService(self.tag_service)
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
+        self.instance_service = InstanceService(self.tag_service, self.ec2_instance_waiter,
+                                                self.network_interface_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
         self.session_number_service = SessionNumberService()

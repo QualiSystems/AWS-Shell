@@ -13,3 +13,4 @@ class AMIDeploymentModel(object):
         self.network_interfaces = []  # type: list[dict]
         self.aws_key = ''  # type: str
         self.user_data = ''  # type: str
+        self.source_dest_check = True  # type: bool

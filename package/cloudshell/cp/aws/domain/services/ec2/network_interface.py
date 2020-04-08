@@ -1,3 +1,8 @@
+from retrying import retry
+
+from cloudshell.cp.aws.common.retry_helper import retry_if_client_error
+
+
 class NetworkInterfaceService(object):
     def __init__(self, subnet_service):
         """
@@ -30,3 +35,16 @@ class NetworkInterfaceService(object):
             net_if['AssociatePublicIpAddress'] = public_ip
 
         return net_if
+
+    @retry(retry_on_exception=retry_if_client_error, stop_max_attempt_number=30, wait_fixed=1000)
+    def disable_source_dest_check(self, ec2_client, nic_id):
+        ec2_client.modify_network_interface_attribute(
+            NetworkInterfaceId=nic_id,
+            SourceDestCheck={
+                'Value': False,
+            },
+        )
+
+
+
+

@@ -371,6 +371,7 @@ class DeployAMIOperation(object):
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
         aws_model.user_data = self._get_user_data(ami_deployment_model.user_data)
+        aws_model.source_dest_check = ami_deployment_model.enable_source_dest_check
         aws_model.aws_ami_id = ami_deployment_model.aws_ami_id
         aws_model.iam_role = self._get_iam_instance_profile_request(ami_deployment_model)
         aws_model.min_count = 1
