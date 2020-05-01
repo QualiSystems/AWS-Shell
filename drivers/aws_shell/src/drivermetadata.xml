@@ -28,8 +28,6 @@
                 </Parameters>
             </Command>
 
-            <Command Description="" DisplayName="Get AMI Platform" Name="GetAmiPlatform" Tags="allow_unreserved" />
-
             <Command Description="" DisplayName="Run Command" EnableCancellation="true" Name="RunCommand" Tags="remote_connectivity,allow_shared">
                 <Parameters>
                     <Parameter Name="command" Mandatory="True" DisplayName="Command To Run" Description="Command to run on the app" />
