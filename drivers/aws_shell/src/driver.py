@@ -99,3 +99,6 @@ class AWSShellDriver(ResourceDriverInterface):
 
     def GetAmiPlatform(self, context, request):
         return self.aws_shell.get_ami_platform(context, request)
+
+    def RunCommand(self, context, ports, command, use_public_ip, cancellation_context):
+        return self.aws_shell.run_command(context, command, use_public_ip, cancellation_context)

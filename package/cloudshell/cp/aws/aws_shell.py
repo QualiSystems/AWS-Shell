@@ -1,4 +1,7 @@
+import json
+
 import jsonpickle
+from cloudshell.cm.customscript.customscript_shell import CustomScriptShell
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
@@ -18,6 +21,7 @@ from cloudshell.cp.aws.domain.conncetivity.operations.prepare import PrepareSand
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContext
 from cloudshell.cp.aws.domain.context.client_error import ClientErrorWrapper
 from cloudshell.cp.aws.domain.deployed_app.operations.app_ports_operation import DeployedAppPortsOperation
+from cloudshell.cp.aws.domain.deployed_app.operations.run_command_operation import RunCommandOperation
 from cloudshell.cp.aws.domain.deployed_app.operations.vm_details_operation import VmDetailsOperation
 from cloudshell.cp.aws.domain.services.cloudshell.traffic_mirror_pool_services import SessionNumberService
 from cloudshell.cp.aws.domain.services.ec2.ebs import EC2StorageService
@@ -151,6 +155,8 @@ class AWSShell(object):
                                    session_number_service=self.session_number_service,
                                    traffic_mirror_service=self.traffic_mirror_service,
                                    cancellation_service=self.cancellation_service)
+
+        self.run_command_operation = RunCommandOperation(self.key_pair_service)
 
     def cleanup_connectivity(self, command_context, actions):
         """
@@ -478,3 +484,28 @@ class AWSShell(object):
                 return self.deploy_ami_operation.get_ami_platform(jsonpickle.loads(request)['image_ids'],
                                                                   shell_context.aws_api.ec2_client,
                                                                   shell_context.logger)
+
+    def run_command(self, context, command, use_public_ip, cancellation_context):
+        """
+        :param ResourceRemoteCommandContext context:
+        :param str command:
+        :param use_public_ip:
+        :param CancellationContext cancellation_context:
+        :return: Command output in format "{'str_out': '', 'str_err': '', 'exit_code': ''}"
+        :rtype: str
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Run command')
+
+                sandbox_id = self._get_reservation_id(context)
+
+                return self.run_command_operation.run_command(shell_context.logger,
+                                                              shell_context.cloudshell_session,
+                                                              command,
+                                                              context,
+                                                              use_public_ip,
+                                                              sandbox_id,
+                                                              shell_context.aws_api,
+                                                              shell_context.aws_ec2_resource_model,
+                                                              cancellation_context)

@@ -1,4 +1,4 @@
-<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.4">
+<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.6">
     <Layout>
         <Category Name="Deployment">
             <Command Description="" DisplayName="Deploy From AMI" EnableCancellation="true" Name="deploy_ami" Tags="allow_unreserved" />
@@ -29,6 +29,13 @@
             </Command>
 
             <Command Description="" DisplayName="Get AMI Platform" Name="GetAmiPlatform" Tags="allow_unreserved" />
+
+            <Command Description="" DisplayName="Run Command" EnableCancellation="true" Name="RunCommand" Tags="remote_connectivity,allow_shared">
+                <Parameters>
+                    <Parameter Name="command" Mandatory="True" DisplayName="Command To Run" Description="Command to run on the app" />
+                    <Parameter Name="use_public_ip" Type="Lookup" Mandatory="False" AllowedValues="True,False" DisplayName="Use Public IP" Description="Specify if public IP or private IP should be used to connect to the app to run the command" DefaultValue="False" />
+                </Parameters>
+            </Command>
         </Category>
 
         <Category Name="Power">
