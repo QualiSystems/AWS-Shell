@@ -143,7 +143,7 @@
 		"AMILookup": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/AMI_Lookup.json",
+				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/AMI_Lookup.json",
 				"Parameters": {
 					"LookupLatestWindowsServerAmi": "False",
 					"LookupLatestCentosAmi": "True"
@@ -153,7 +153,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/1_VPC.json",
+				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/1_VPC.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
@@ -265,7 +265,7 @@
 						"Ref": "8InstanceType"
 					}
 				},
-				"TemplateURL": "https://s3.amazonaws.com/cf-dynamic-execution-server/2_EC2.json"
+				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/2_EC2.json"
 			}
 		}
 	},
