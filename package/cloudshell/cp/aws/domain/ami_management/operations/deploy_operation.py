@@ -81,7 +81,7 @@ class DeployAMIOperation(object):
         """
         ami_deployment_model = ami_deploy_action.actionParams.deployment.customModel
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
-                                                        reservation_id=reservation.reservation_id)
+                                                        reservation_id=reservation.reservation_id, logger=logger)
         if not vpc:
             raise ValueError('VPC is not set for this reservation')
 

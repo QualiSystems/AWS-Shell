@@ -11,6 +11,7 @@ settings_local.py
 # Distribution / packaging
 .Python
 env/
+venv/
 build/
 cover/
 develop-eggs/

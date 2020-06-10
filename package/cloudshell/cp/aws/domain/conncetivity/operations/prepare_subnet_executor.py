@@ -58,7 +58,7 @@ class PrepareSubnetExecutor(object):
         action_items = [PrepareSubnetExecutor.ActionItem(a) for a in subnet_actions]
 
         # get vpc and availability_zone
-        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session, reservation_id=self.reservation.reservation_id)
+        vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=self.ec2_session, reservation_id=self.reservation.reservation_id, logger=self.logger)
 
         if not vpc:
             vpcs_count = self.vpc_service.get_active_vpcs_count(self.ec2_client, self.logger)
