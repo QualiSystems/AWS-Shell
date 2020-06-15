@@ -63,16 +63,45 @@ class SecurityGroupService(object):
 
         return security_groups[0]
 
-    def set_shared_reservation_security_group_rules(self, security_group, management_sg_id, isolated_sg):
+    def set_shared_reservation_security_group_rules(self,
+                                                    security_group,
+                                                    management_sg_id,
+                                                    isolated_sg,
+                                                    need_management_sg):
         """
         Set inbound rules for the reservation shared security group.
         The default rules are:
          1) Allow all inbound traffic from instances with the same reservation id (inner sandbox connectivity)
          2) Allow all inbound traffic from the management vpc for specific security group id
+        :param bool need_management_sg:
         :param security_group: security group object
         :param str management_sg_id: Id of the management security group id
         :return:
         """
+
+        # management_rule = {'IpProtocol': '-1', 'FromPort': -1, 'ToPort': -1,
+        #                    'UserIdGroupPairs': [{'GroupId': management_sg_id}]}
+        #
+        # allow_internal_traffic_rule = {'IpProtocol': '-1', 'FromPort': -1, 'ToPort': -1,
+        #        'UserIdGroupPairs': [{'GroupId': security_group.id}, {'GroupId': isolated_sg.id}]}
+        #
+        # ip_permissions = [allow_internal_traffic_rule]
+        #
+        # if need_management_sg:
+        #     ip_permissions.append(management_rule)
+        management_rule = {'IpProtocol': '-1', 'FromPort': -1, 'ToPort': -1,
+                           'UserIdGroupPairs': [{'GroupId': management_sg_id}]}
+
+        allow_internal_traffic_rule = {'IpProtocol': '-1', 'FromPort': -1, 'ToPort': -1,
+               'UserIdGroupPairs': [{'GroupId': security_group.id}, {'GroupId': isolated_sg.id}]}
+
+        ip_permissions = [allow_internal_traffic_rule]
+
+        if need_management_sg:
+            ip_permissions.append(management_rule)
+
+        security_group.authorize_ingress(IpPermissions=
+                                         ip_permissions)
         security_group.authorize_ingress(IpPermissions=
         [
             {
@@ -100,28 +129,32 @@ class SecurityGroupService(object):
             }
         ])
 
-    def set_isolated_security_group_rules(self, security_group, management_sg_id):
+    def set_isolated_security_group_rules(self, security_group, management_sg_id, need_management_access):
         """
         Set inbound rules for the reservation isolated security group.
         The default rules are:
          1) Allow all inbound traffic from the management vpc for specific security group id
+        :param bool need_management_access:
         :param security_group: security group object
         :param str management_sg_id: Id of the management security group id
         :return:
         """
-        security_group.authorize_ingress(IpPermissions=
-        [
-            {
-                'IpProtocol': '-1',
-                'FromPort': -1,
-                'ToPort': -1,
-                'UserIdGroupPairs': [
-                    {
-                        'GroupId': management_sg_id
-                    }
-                ]
-            }
-        ])
+        # security_group.authorize_ingress(IpPermissions=
+        # [
+        #     {
+        #         'IpProtocol': '-1',
+        #         'FromPort': -1,
+        #         'ToPort': -1,
+        #         'UserIdGroupPairs': [
+        #             {
+        #                 'GroupId': management_sg_id
+        #             }
+        #         ]
+        #     }
+        # ])
+        if need_management_access:
+            ip_permissions = [{'IpProtocol': '-1', 'FromPort': -1, 'ToPort': -1, 'UserIdGroupPairs': [{'GroupId': management_sg_id}]}]
+            security_group.authorize_ingress(IpPermissions=ip_permissions)
 
     def set_security_group_rules(self, security_group, inbound_ports=None, outbound_ports=None, logger=None):
         """

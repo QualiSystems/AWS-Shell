@@ -133,14 +133,16 @@ class DeployedAppPortsOperation(object):
         if not isinstance(ip_ranges, list):
             return None
 
-        result = ''
+        cidrs = []
 
         for ip_range in ip_ranges:
             if not isinstance(ip_range, dict):
                 continue
             cidr = ip_range.get('CidrIp')
             if cidr:
-                result = result.join('{}'.format(cidr))
+                cidrs.append(cidr)
+
+        result = ', '.join(cidrs)
 
         return result
 

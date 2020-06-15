@@ -1,6 +1,10 @@
+import json
+
 import jsonpickle
+from botocore.exceptions import NoCredentialsError
 
 from cloudshell.core.context.error_handling_context import ErrorHandlingContext
+from cloudshell.cp.aws.domain.ami_management.operations.snapshot_operation import SnapshotOperation
 from cloudshell.shell.core.context import ResourceCommandContext, ResourceRemoteCommandContext
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.common.driver_helper import CloudshellDriverHelper
@@ -9,6 +13,7 @@ from cloudshell.cp.aws.domain.ami_management.operations.delete_operation import 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.ami_management.operations.power_operation import PowerOperation
 from cloudshell.cp.aws.domain.ami_management.operations.refresh_ip_operation import RefreshIpOperation
+from cloudshell.cp.aws.domain.operations.autoload_operation import AutoloadOperation
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
 from cloudshell.cp.aws.domain.conncetivity.operations.cleanup import CleanupSandboxInfraOperation
@@ -81,6 +86,7 @@ class AWSShell(object):
         self.network_interface_service = NetworkInterfaceService(subnet_service=self.subnet_service)
         self.elastic_ip_service = ElasticIpService()
         self.vm_details_provider = VmDetailsProvider()
+        self.image_waiter = SubnetWaiter()
         self.session_number_service = SessionNumberService()
         self.traffic_mirror_service = TrafficMirrorService()
         self.request_parser = DriverRequestParser()
@@ -145,6 +151,10 @@ class AWSShell(object):
         self.vm_details_operation = VmDetailsOperation(instance_service=self.instance_service,
                                                        vm_details_provider=self.vm_details_provider)
 
+        self.autoload_operation = AutoloadOperation()
+
+        self.snapshot_operation = SnapshotOperation(self.instance_service, self.image_waiter)
+
         self.traffic_mirroring_operation = \
             TrafficMirrorOperation(tag_service=self.tag_service,
                                    session_number_service=self.session_number_service,
@@ -199,6 +209,44 @@ class AWSShell(object):
                     logger=shell_context.logger)
 
                 return results
+
+    def get_inventory(self, command_context):
+        """Validate Cloud Provider
+
+        :param command_context: ResourceCommandContext
+        """
+        from botocore.exceptions import ClientError
+        try:
+            with AwsShellContext(context=command_context,
+                                 aws_session_manager=self.aws_session_manager) as shell_context:
+                with ErrorHandlingContext(shell_context.logger):
+                    shell_context.logger.info("Starting Autoload Operation...")
+                    result = self.autoload_operation.get_inventory(
+                        cloud_provider_model=shell_context.aws_ec2_resource_model,
+                        logger=shell_context.logger,
+                        ec2_client=shell_context.aws_api.ec2_client,
+                        ec2_session=shell_context.aws_api.ec2_session,
+                        s3_session=shell_context.aws_api.s3_session)
+                    shell_context.logger.info("End Autoload Operation...")
+                    return result
+
+        except ClientError as ce:
+            if 'AuthorizationHeaderMalformed' in ce.message:
+                raise Exception(self.CredentialsErrorMessage())
+            raise ce
+
+        except NoCredentialsError:
+            raise Exception(self.CredentialsErrorMessage())
+
+        except ValueError as ve:
+            if 'Invalid endpoint' in ve.message:
+                raise Exception('Oops, like you didnt configure Region correctly. Please select Region and try again ')
+            else:
+                raise ve
+
+    def CredentialsErrorMessage(self):
+        return 'Oops, looks like there was a problem with your cloud provider credentials. ' \
+               'Please check AWS Secret Access Key and AWS Access Key ID'
 
     def power_on_ami(self, command_context):
         """
@@ -262,8 +310,8 @@ class AWSShell(object):
                     command_context)
 
                 # Get Allow all Storage Traffic on deployed resource
-                allow_all_storage_traffic = self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(
-                    command_context)
+                allow_all_storage_traffic = \
+                    self.model_parser.get_allow_all_storage_traffic_from_connected_resource_details(command_context)
 
                 return self.deployed_app_ports_operation.get_app_ports_from_cloud_provider(
                     ec2_session=shell_context.aws_api.ec2_session,
@@ -393,6 +441,166 @@ class AWSShell(object):
                 results.append(result)
 
         return self.command_result_parser.set_command_result(results)
+
+    # def remote_get_snapshots(self, context):
+    #     with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+    #         with ErrorHandlingContext(shell_context.logger):
+    #             shell_context.logger.info('Get Snapshots')
+    #
+    #             resource = context.remote_endpoints[0]
+    #             resource_fullname = self.model_parser.get_connectd_resource_fullname(context)
+    #             reservation_id = self._get_reservation_id(context)
+    #
+    #             return self.snapshot_operation.get(shell_context.aws_api.ec2_client,
+    #                                                reservation_id, resource_fullname)
+
+    def remote_get_snapshots(self, context):
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Get Snapshots')
+
+                resource = context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+
+                return self.snapshot_operation.get_snapshots(shell_context.aws_api.ec2_client,
+                                                             instance_id=data_holder.vmdetails.uid)
+
+    def remote_save_snapshot(self, context, snapshot_name):
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Save Snapshot')
+                resource = context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                self.snapshot_operation.save_snapshot(ec2_client=shell_context.aws_api.ec2_client,
+                                                      ec2_session=shell_context.aws_api.ec2_session,
+                                                      instance_id=data_holder.vmdetails.uid,
+                                                      snapshot_name=snapshot_name,
+                                                      tags=self.tag_service)
+
+    def remote_restore_snapshot(self, context, snapshot_name):
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Save Snapshot')
+                resource = context.remote_endpoints[0]
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                self.snapshot_operation.save_snapshot(ec2_client=shell_context.aws_api.ec2_client,
+                                                      ec2_session=shell_context.aws_api.ec2_session,
+                                                      instance_id=data_holder.vmdetails.uid,
+                                                      snapshot_name=snapshot_name,
+                                                      tags=self.tag_service)
+                # ec2_session = self._connect_amazon_session(context).resource('ec2')
+                # ec2_client = self._connect_amazon_session(context).client('ec2')
+                # instance = self._get_ec2_instance(self._get_connected_instance_id(context), ec2_session)
+                #
+                # # Find the requested snapshot
+                # instance_id_filter = {'Name': 'tag:InstanceId', 'Values': [instance.id]}
+                # try:
+                #     instance_snapshot = next(
+                #         snapshot for snapshot in ec2_session.snapshots.filter(Filters=[instance_id_filter])
+                #         if next(
+                #             tag['Value'] for tag in snapshot.tags if tag['Key'] == "Name") == snapshot_name)
+                # except StopIteration:
+                #     return "Could not find snapshot" + snapshot_name
+
+                # # Get the Device Name and Volume info of the instance's current volume
+                # root_device_mapping = instance.block_device_mappings[0]["DeviceName"]
+                # root_device_volume_id = instance.block_device_mappings[0]["Ebs"]["VolumeId"]
+                # instance_root_volume = ec2_session.Volume(root_device_volume_id)
+                #
+                # # Save the instances current state and stop it if necessary.
+                # current_instance_state = instance.state["Name"]
+                # instance.stop()
+                # instance.wait_until_stopped()
+                #
+                # # Detach the volume from the instance and wait for it to become available
+                # instance_root_volume.detach_from_instance()
+                # volume_waiter = ec2_client.get_waiter('volume_available')
+                # volume_waiter.wait(VolumeIds=[instance_root_volume.id])
+                #
+                # # Create a new volume from the requested snapshot and put it in the same availability zone as the current volume then wait for it to finish creating
+                # volume_create_response = ec2_client.create_volume(
+                #     AvailabilityZone=instance.placement["AvailabilityZone"],
+                #     SnapshotId=instance_snapshot.id,
+                #     VolumeType=instance_root_volume.volume_type)
+                # new_volume = ec2_session.Volume(volume_create_response["VolumeId"])
+                # volume_waiter.wait(VolumeIds=[new_volume.id])
+                #
+                # # Tag the new Volume
+                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'Name', 'Value': snapshot_name}])
+                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'CreatedBy', 'Value': 'CloudShell'}])
+                # ec2_session.create_tags(Resources=(new_volume.id,),
+                #                         Tags=[{'Key': 'Owner', 'Value': context.remote_reservation.owner_user}])
+                # ec2_session.create_tags(Resources=(new_volume.id,),
+                #                         Tags=[{'Key': 'Domain', 'Value': context.remote_reservation.domain}])
+                # ec2_session.create_tags(Resources=(new_volume.id,),
+                #                         Tags=[
+                #                             {'Key': 'Blueprint', 'Value': context.remote_reservation.environment_name}])
+                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'InstanceId', 'Value': instance.id}])
+                # ec2_session.create_tags(Resources=(new_volume.id,),
+                #                         Tags=[{'Key': 'ReservationId',
+                #                                'Value': context.remote_reservation.reservation_id}])
+                #
+                # # Attach the new Volume to the instance and delete the old volume
+                # new_volume.attach_to_instance(InstanceId=instance.id, Device=root_device_mapping)
+                # volume_waiter = ec2_client.get_waiter('volume_in_use')
+                # volume_waiter.wait(VolumeIds=[new_volume.id])
+                # instance_root_volume.delete()
+                #
+                # # if the original instance state was Powered On, return it to this state.
+                # if current_instance_state == "running":
+                #     instance.start()
+                #     instance.wait_until_running()
+                #     instance_ok_waiter = ec2_client.get_waiter('instance_status_ok')
+                #     instance_ok_waiter.wait(InstanceIds=[instance.id])
+
+    def save_app(self, context, cancellation_context, snapshot_prefix):
+        """
+        :param context:
+        :param cancellation_context:
+        :param snapshot_prefix:
+        :return:
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Save Snapshot')
+
+                resource = context.remote_endpoints[0]
+
+                data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
+                resource_fullname = self.model_parser.get_connectd_resource_fullname(context)
+
+                image_id = self.snapshot_operation.save(logger=shell_context.logger,
+                                                        ec2_session=shell_context.aws_api.ec2_session,
+                                                        instance_id=data_holder.vmdetails.uid,
+                                                        deployed_app_name=resource_fullname,
+                                                        snapshot_prefix=snapshot_prefix,
+                                                        no_reboot=True)
+
+                return json.dumps({"AWS EC2 Instance.AWS AMI Id": image_id})
+
+    def add_custom_tags(self, context, request):
+        """
+        :param ResourceCommandContext context:
+        :param str request:
+        :return:
+        """
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Add custom tags')
+
+                # Get instance id
+                deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(context)
+
+                # Expected request syntax:
+                # [{
+                #     'Key': 'string',
+                #     'Value': 'string'
+                # }]
+                tags = json.loads(request)
+
+                instance = self.instance_service.get_instance_by_id(shell_context.aws_api.ec2_session,
+                                                                    deployed_instance_id)
+                instance.create_tags(Tags=tags)
 
     def create_traffic_mirroring(self, context, cancellation_context, request):
         """

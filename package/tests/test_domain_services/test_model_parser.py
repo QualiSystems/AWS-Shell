@@ -63,6 +63,21 @@ class TestModelParser(TestCase):
                                 '"type": "attribute"'\
                               '},'\
                               '{'\
+                                '"attributeName": "Custom Tags",'\
+                                '"attributeValue": "custom_tags",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
+                                '"attributeName": "User Data URL",'\
+                                '"attributeValue": "user_data_url",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
+                                '"attributeName": "User Data Parameters",'\
+                                '"attributeValue": "user_data_parameters",'\
+                                '"type": "attribute"'\
+                              '},'\
+                              '{'\
                                 '"attributeName": "Allow all Sandbox Traffic",'\
                                 '"attributeValue": "True",'\
                                 '"type": "attribute"'\
@@ -126,7 +141,12 @@ class TestModelParser(TestCase):
                                 '"attributeName": "IAM Role Name",'\
                                 '"attributeValue": "top secret",'\
                                 '"type": "attribute"'\
-                              '}'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Private IP",' \
+                                '"attributeValue": "",' \
+                                '"type": "attribute"' \
+                              '}' \
                             '],'\
                             '"type": "deployAppDeploymentInfo"'\
                           '},'\

@@ -1,5 +1,7 @@
 import re
 
+import ipaddress
+
 from cloudshell.cp.aws.models.port_data import PortData
 
 
@@ -44,6 +46,40 @@ class PortGroupAttributeParser(object):
         protocol = 'protocol'
         tcp = 'tcp'
 
+        # # 4000-5000:tcp:10.0.0.20 or 4000-5000:tcp:10.0.0.0/24
+        # regex_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)):(?P<source>.+))$",
+        #                        ports_attribute,
+        #                        flags=re.IGNORECASE)
+        # if regex_match:
+        #     from_port = regex_match.group(from_port)
+        #     to_port = regex_match.group(to_port)
+        #     protocol = regex_match.group(protocol).lower()
+        #     req_source = regex_match.group(source)
+        #     if PortGroupAttributeParser._is_valid_source(req_source):
+        #         return PortData(from_port, to_port, protocol, req_source)
+        #
+        # # 4000:tcp:10.0.0.20 or 4000:tcp:10.0.0.0/24
+        # regex_match = re.match(r"^((?P<from_port>\d+):(?P<protocol>(udp|tcp)):(?P<source>.+))$",
+        #                        ports_attribute,
+        #                        flags=re.IGNORECASE)
+        # if regex_match:
+        #     from_port = regex_match.group(from_port)
+        #     to_port = from_port
+        #     protocol = regex_match.group(protocol).lower()
+        #     req_source = regex_match.group(source)
+        #     if PortGroupAttributeParser._is_valid_source(req_source):
+        #         return PortData(from_port, to_port, protocol, req_source)
+        #
+        # # 80-50000:udp
+        # regex_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
+        #                        ports_attribute,
+        #                        flags=re.IGNORECASE)
+        # if regex_match:
+        #     from_port = regex_match.group(from_port)
+        #     to_port = regex_match.group(to_port)
+        #     protocol = regex_match.group(protocol).lower()
+        #     return PortData(from_port, to_port, protocol, default_source)
+
         from_to_protocol_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
                                           ports_attribute,
                                           flags=re.IGNORECASE)
@@ -85,3 +121,13 @@ class PortGroupAttributeParser(object):
             return PortData(from_port, to_port, protocol, destination)
 
         raise ValueError("The value '{0}' is not a valid ports rule".format(ports_attribute))
+
+    @staticmethod
+    def _is_valid_source(source):
+        try:
+            # check if source is a valid CIDR
+            ipaddress.ip_network(unicode(source))
+        except:
+            return False
+
+        return True
