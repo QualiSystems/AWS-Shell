@@ -102,32 +102,6 @@ class SecurityGroupService(object):
 
         security_group.authorize_ingress(IpPermissions=
                                          ip_permissions)
-        security_group.authorize_ingress(IpPermissions=
-        [
-            {
-                'IpProtocol': '-1',
-                'FromPort': -1,
-                'ToPort': -1,
-                'UserIdGroupPairs': [
-                    {
-                        'GroupId': management_sg_id
-                    }
-                ]
-            },
-            {
-                'IpProtocol': '-1',
-                'FromPort': -1,
-                'ToPort': -1,
-                'UserIdGroupPairs': [
-                    {
-                        'GroupId': security_group.id
-                    },
-                    {
-                        'GroupId': isolated_sg.id
-                    }
-                ]
-            }
-        ])
 
     def set_isolated_security_group_rules(self, security_group, management_sg_id, need_management_access):
         """
