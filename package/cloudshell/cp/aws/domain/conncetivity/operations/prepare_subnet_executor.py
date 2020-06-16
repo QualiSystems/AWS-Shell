@@ -195,9 +195,9 @@ class SubnetActionHelper(object):
             logger.info('Decided to use VPC CIDR {0} as defined on cloud provider for subnet {1}'
                         .format(self._cidr, alias))
         elif aws_cp_model.is_static_vpc_mode and aws_cp_model.vpc_cidr != '' and is_multi_subnet_mode:
-            self._cidr = prepare_subnet_params.subnetServiceAttributes.get('Allocated CIDR', '')
+            self._cidr = prepare_subnet_params.subnetServiceAttributes.get('Requested CIDR', '')
             if not self._cidr:
-                raise Exception('"Allocated CIDR" attribute is empty. A value must be set for this attribute in static '
+                raise Exception('"Requested CIDR" attribute is empty. A value must be set for this attribute in static '
                                 'vpc mode with multiple subnets.')
             logger.info('Decided to use Requested CIDR {0} as defined on subnet request for subnet {1}'
                         .format(self._cidr, alias))
