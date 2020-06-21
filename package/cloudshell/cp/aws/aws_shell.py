@@ -53,6 +53,7 @@ from cloudshell.shell.core.driver_context import CancellationContext
 from cloudshell.cp.aws.domain.deployed_app.operations.set_app_security_groups import \
     SetAppSecurityGroupsOperation
 from cloudshell.cp.aws.models.network_actions_models import SetAppSecurityGroupActionResult
+from cloudshell.cp.aws.models.reservation_model import ReservationModel
 from cloudshell.cp.aws.models.vm_details import VmDetailsRequest
 from cloudshell.cp.core import DriverRequestParser
 from cloudshell.cp.core.models import RequestActionBase, ActionResultBase, DeployApp, ConnectSubnet
@@ -206,7 +207,8 @@ class AWSShell(object):
                     aws_ec2_datamodel=shell_context.aws_ec2_resource_model,
                     actions=actions,
                     cancellation_context=cancellation_context,
-                    logger=shell_context.logger)
+                    logger=shell_context.logger,
+                )
 
                 return results
 
@@ -470,94 +472,33 @@ class AWSShell(object):
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Save Snapshot')
                 resource = context.remote_endpoints[0]
+                reservation = ReservationModel(context.remote_reservation)
+                tags = self.tag_service.get_default_tags(snapshot_name, reservation)
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
                 self.snapshot_operation.save_snapshot(ec2_client=shell_context.aws_api.ec2_client,
                                                       ec2_session=shell_context.aws_api.ec2_session,
                                                       instance_id=data_holder.vmdetails.uid,
                                                       snapshot_name=snapshot_name,
-                                                      tags=self.tag_service)
+                                                      tags=tags)
 
     def remote_restore_snapshot(self, context, snapshot_name):
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             with ErrorHandlingContext(shell_context.logger):
                 shell_context.logger.info('Save Snapshot')
                 resource = context.remote_endpoints[0]
+                reservation = ReservationModel(context.remote_reservation)
+                tags = self.tag_service.get_default_tags(snapshot_name, reservation)
                 data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
                 self.snapshot_operation.save_snapshot(ec2_client=shell_context.aws_api.ec2_client,
                                                       ec2_session=shell_context.aws_api.ec2_session,
                                                       instance_id=data_holder.vmdetails.uid,
                                                       snapshot_name=snapshot_name,
-                                                      tags=self.tag_service)
-                # ec2_session = self._connect_amazon_session(context).resource('ec2')
-                # ec2_client = self._connect_amazon_session(context).client('ec2')
-                # instance = self._get_ec2_instance(self._get_connected_instance_id(context), ec2_session)
-                #
-                # # Find the requested snapshot
-                # instance_id_filter = {'Name': 'tag:InstanceId', 'Values': [instance.id]}
-                # try:
-                #     instance_snapshot = next(
-                #         snapshot for snapshot in ec2_session.snapshots.filter(Filters=[instance_id_filter])
-                #         if next(
-                #             tag['Value'] for tag in snapshot.tags if tag['Key'] == "Name") == snapshot_name)
-                # except StopIteration:
-                #     return "Could not find snapshot" + snapshot_name
+                                                      tags=tags)
 
-                # # Get the Device Name and Volume info of the instance's current volume
-                # root_device_mapping = instance.block_device_mappings[0]["DeviceName"]
-                # root_device_volume_id = instance.block_device_mappings[0]["Ebs"]["VolumeId"]
-                # instance_root_volume = ec2_session.Volume(root_device_volume_id)
-                #
-                # # Save the instances current state and stop it if necessary.
-                # current_instance_state = instance.state["Name"]
-                # instance.stop()
-                # instance.wait_until_stopped()
-                #
-                # # Detach the volume from the instance and wait for it to become available
-                # instance_root_volume.detach_from_instance()
-                # volume_waiter = ec2_client.get_waiter('volume_available')
-                # volume_waiter.wait(VolumeIds=[instance_root_volume.id])
-                #
-                # # Create a new volume from the requested snapshot and put it in the same availability zone as the current volume then wait for it to finish creating
-                # volume_create_response = ec2_client.create_volume(
-                #     AvailabilityZone=instance.placement["AvailabilityZone"],
-                #     SnapshotId=instance_snapshot.id,
-                #     VolumeType=instance_root_volume.volume_type)
-                # new_volume = ec2_session.Volume(volume_create_response["VolumeId"])
-                # volume_waiter.wait(VolumeIds=[new_volume.id])
-                #
-                # # Tag the new Volume
-                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'Name', 'Value': snapshot_name}])
-                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'CreatedBy', 'Value': 'CloudShell'}])
-                # ec2_session.create_tags(Resources=(new_volume.id,),
-                #                         Tags=[{'Key': 'Owner', 'Value': context.remote_reservation.owner_user}])
-                # ec2_session.create_tags(Resources=(new_volume.id,),
-                #                         Tags=[{'Key': 'Domain', 'Value': context.remote_reservation.domain}])
-                # ec2_session.create_tags(Resources=(new_volume.id,),
-                #                         Tags=[
-                #                             {'Key': 'Blueprint', 'Value': context.remote_reservation.environment_name}])
-                # ec2_session.create_tags(Resources=(new_volume.id,), Tags=[{'Key': 'InstanceId', 'Value': instance.id}])
-                # ec2_session.create_tags(Resources=(new_volume.id,),
-                #                         Tags=[{'Key': 'ReservationId',
-                #                                'Value': context.remote_reservation.reservation_id}])
-                #
-                # # Attach the new Volume to the instance and delete the old volume
-                # new_volume.attach_to_instance(InstanceId=instance.id, Device=root_device_mapping)
-                # volume_waiter = ec2_client.get_waiter('volume_in_use')
-                # volume_waiter.wait(VolumeIds=[new_volume.id])
-                # instance_root_volume.delete()
-                #
-                # # if the original instance state was Powered On, return it to this state.
-                # if current_instance_state == "running":
-                #     instance.start()
-                #     instance.wait_until_running()
-                #     instance_ok_waiter = ec2_client.get_waiter('instance_status_ok')
-                #     instance_ok_waiter.wait(InstanceIds=[instance.id])
-
-    def save_app(self, context, cancellation_context, snapshot_prefix):
+    def save_app(self, context, cancellation_context):
         """
         :param context:
         :param cancellation_context:
-        :param snapshot_prefix:
         :return:
         """
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
@@ -573,7 +514,7 @@ class AWSShell(object):
                                                         ec2_session=shell_context.aws_api.ec2_session,
                                                         instance_id=data_holder.vmdetails.uid,
                                                         deployed_app_name=resource_fullname,
-                                                        snapshot_prefix=snapshot_prefix,
+                                                        snapshot_prefix="",
                                                         no_reboot=True)
 
                 return json.dumps({"AWS EC2 Instance.AWS AMI Id": image_id})
@@ -671,3 +612,21 @@ class AWSShell(object):
                     cloudshell=shell_context.cloudshell_session)
 
                 return results
+
+    def assign_additional_private_ipv4s(self, context, vnic_id, new_ips):
+        with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
+            with ErrorHandlingContext(shell_context.logger):
+                shell_context.logger.info('Assign additional IP Addresses')
+
+                ips = map(str.strip, new_ips.split(";"))
+                try:
+                    response = shell_context.aws_api.ec2_client.assign_private_ip_addresses(
+                                AllowReassignment=True,
+                                NetworkInterfaceId=vnic_id,
+                                PrivateIpAddresses=ips)
+                    assigned_ips_response = response.get("AssignedPrivateIpAddresses", [])
+                    return ";".join(
+                        [ip.get("PrivateIpAddress") for ip in assigned_ips_response if ip.get("PrivateIpAddress")])
+                except Exception as e:
+                    shell_context.logger.error("Failed to add ips", exc_info=1)
+                    return None

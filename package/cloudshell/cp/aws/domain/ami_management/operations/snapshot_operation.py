@@ -1,5 +1,6 @@
 import copy
 import logging
+import uuid
 
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
 from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
@@ -33,13 +34,14 @@ class SnapshotOperation(object):
         if not no_reboot:
             pass  # todo - stop instance and change live status icon
 
-        image_name = "{}{}".format(snapshot_prefix, deployed_app_name)
+        # image_name = "{}{}".format(snapshot_prefix, deployed_app_name)
+        image_name = uuid.uuid4().hex[:8]
 
         # save image from instance
         image = instance.create_image(Name=image_name)
 
         # prepare tags from the original image
-        image_tags = self._prepare_tags(instance, image_name, snapshot_prefix)
+        image_tags = self._prepare_tags(instance, image_name, deployed_app_name)
         image.create_tags(Tags=image_tags)
 
         # wait for the image to be ready
@@ -51,14 +53,15 @@ class SnapshotOperation(object):
 
         return image.id
 
-    def _prepare_tags(self, instance, image_name, snapshot_prefix):
+    def _prepare_tags(self, instance, image_name, deployed_app_name):
         image_tags = copy.deepcopy(instance.tags)
         for tag in image_tags:
             tag['Key'] = self._format_source_key_name(tag['Key'])
 
-        if snapshot_prefix:
-            image_tags.append({'Key': 'SnapshotPrefix', 'Value': snapshot_prefix})
+        if deployed_app_name:
+            image_tags.append({'Key': 'DeployedAppName', 'Value': deployed_app_name})
 
+        image_tags.append({'Key': 'Name', 'Value': image_name})
         image_tags.append({'Key': 'Name', 'Value': image_name})
 
         return image_tags
@@ -76,8 +79,8 @@ class SnapshotOperation(object):
 
         return '\n'.join(result)
 
-    def get_snapshots(self, ec2_session, instance_id, snapshot_name):
-        instance_id_filter = {'Name': 'tag:InstanceId', 'Values': instance_id}
+    def get_snapshots(self, ec2_session, instance_id, snapshot_name=None):
+        instance_id_filter = {'Name': 'tag:InstanceId', 'Values': [instance_id]}
         instance_snapshots = [x for x in ec2_session.snapshots.filter(Filters=[instance_id_filter])]
         result = []
         for snapshot in instance_snapshots:
@@ -87,8 +90,8 @@ class SnapshotOperation(object):
                 if key == "Name" and value:
                     if snapshot_name and snapshot_name == value:
                         return snapshot
-                else:
-                    result.append(value)
+                    else:
+                        result.append(value)
 
     def restore_snapshot(self, ec2_client, ec2_session, instance_id, snapshot_name, tags):
         instance = self.instance_service.get_instance_by_id(ec2_session, instance_id)
@@ -119,7 +122,6 @@ class SnapshotOperation(object):
 
         # Tag the new Volume
         tags.append({'Key': "InstanceId", 'Value': instance_id})
-        tags.append({'Key': "Name", 'Value': snapshot_name})
         ec2_session.create_tags(tags)
 
         # Attach the new Volume to the instance and delete the old volume
@@ -138,8 +140,8 @@ class SnapshotOperation(object):
     def save_snapshot(self, ec2_client, ec2_session, instance_id, snapshot_name, tags):
         instance = self.instance_service.get_instance_by_id(ec2_session, instance_id)
         root_device_volume_id = instance.block_device_mappings[0]["Ebs"]["VolumeId"]
-        tags.append({'Key': "InstanceId", 'Value': instance_id})
-        tags.append({'Key': "Name", 'Value': snapshot_name})
+        # {'Key': key, 'Value': value}
+        tags.append({"Key": "InstanceId", "Value": str(instance_id)})
 
         # Snapshot the Volume
         create_snapshot_result = ec2_client.create_snapshot(VolumeId=root_device_volume_id)

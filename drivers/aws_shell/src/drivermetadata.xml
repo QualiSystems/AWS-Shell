@@ -39,7 +39,15 @@
                 </Parameters>
             </Command>
             <Command Description="" DisplayName="Get Snapshots" EnableCancellation="false" Name="remote_get_snapshots" Tags="remote_connectivity,allow_unreserved" />
-            <Command Description="Create Image of instance and return the new image ami." DisplayName="Create New Image" Name="save_app" Tags="remote_connectivity" Visibility="AdminOnly" />
+            <Command Description="Create Image of instance and return the new image ami." DisplayName="Create New Image" Name="save_app" Tags="remote_connectivity,allow_unreserved,allow_shared" Visibility="AdminOnly" />
+            <Command Description="" DisplayName="Assign IPv4 Addresses" EnableCancellation="false" Name="assign_additional_private_ipv4s" Tags="remote_connectivity">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="Please enter vnic id" DisplayName="Vnic ID" Mandatory="False" Name="vnic_id" Type="String" />
+                    <Parameter DefaultValue="" Description="List of IPs to add" DisplayName="List of IPs" Mandatory="False" Name="new_ips" Type="String" />
+                </Parameters>
+            </Command>
+            <Command Description="" DisplayName="Orchestration Power On" EnableCancellation="false" Name="orchestration_power_on" Tags="remote_connectivity,allow_unreserved,allow_shared" />
+            <Command Description="" DisplayName="Orchestration Power Off" EnableCancellation="false" Name="orchestration_power_off" Tags="remote_connectivity,allow_unreserved,allow_shared" />
         </Category>
         <Category Name="Power">
             <Command Description="" DisplayName="Power On" Name="PowerOn" Tags="power" />

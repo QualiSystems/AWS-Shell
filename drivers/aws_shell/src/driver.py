@@ -54,6 +54,12 @@ class AWSShellDriver(ResourceDriverInterface):
     def PowerOff(self, context, ports):
         return self.aws_shell.power_off_ami(context)
 
+    def orchestration_power_on(self, context, ports):
+        return self.aws_shell.power_on_ami(context)
+
+    def orchestration_power_off(self, context, ports):
+        return self.aws_shell.power_off_ami(context)
+
     def PowerCycle(self, context, ports, delay):
         pass
 
@@ -98,8 +104,8 @@ class AWSShellDriver(ResourceDriverInterface):
     def AddCustomTags(self, context, request, ports):
         return self.aws_shell.add_custom_tags(context, request)
 
-    def save_app(self, context, cancellation_context, snapshot_prefix, ports):
-        return self.aws_shell.save_app(context, cancellation_context, snapshot_prefix)
+    def save_app(self, context, cancellation_context, ports):
+        return self.aws_shell.save_app(context, cancellation_context)
 
     # def remote_save_snapshot(self, context, cancellation_context, snapshot_prefix, ports):
     #     return self.aws_shell.remote_save_snapshot(context, cancellation_context, snapshot_prefix)
@@ -146,3 +152,6 @@ class AWSShellDriver(ResourceDriverInterface):
         :return: list
         """
         return self.aws_shell.remote_get_snapshots(context)
+
+    def assign_additional_private_ipv4s(self, context, ports, vnic_id, new_ips):
+        return self.aws_shell.assign_additional_private_ipv4s(context, vnic_id, new_ips)
