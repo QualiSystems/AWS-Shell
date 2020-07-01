@@ -62,7 +62,7 @@ def main():
         if obj.key in uploaded_keys:
             # Make all the uploaded files public
             obj.Acl().put(ACL='public-read')
-            print "https://s3.amazonaws.com/{}/{}".format(bucket_name, obj.key)
+            print "https://{}.s3.amazonaws.com/{}".format(bucket_name, obj.key)
 
 
 def get_s3_key(folder, specs_file):
