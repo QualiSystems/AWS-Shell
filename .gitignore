@@ -100,3 +100,4 @@ cloudformation/deploy_execution_server_by_selected_version/*
 */.aws/*
 .aws/*
 /local/
+/drivers/aws_shell/src/test_*
