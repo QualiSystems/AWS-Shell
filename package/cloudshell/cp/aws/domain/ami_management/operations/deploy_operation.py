@@ -2,8 +2,6 @@ import traceback
 import uuid
 from multiprocessing import TimeoutError
 
-from typing import Dict
-
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
@@ -479,11 +477,9 @@ class DeployAMIOperation(object):
         :param str subnet_cidr:
         :return:
         """
-        private_ip = None
         if subnet_cidr and ami_deployment_model.private_ip_addresses_dict and \
                 subnet_cidr in ami_deployment_model.private_ip_addresses_dict:
-            private_ip = ami_deployment_model.private_ip_addresses_dict[subnet_cidr]
-        return private_ip
+            return ami_deployment_model.private_ip_addresses_dict.get(subnet_cidr)
 
     def _validate_network_interfaces_request(self, ami_deployment_model, network_actions, logger):
         self._validate_public_ip_with_multiple_subnets(ami_deployment_model, network_actions, logger)

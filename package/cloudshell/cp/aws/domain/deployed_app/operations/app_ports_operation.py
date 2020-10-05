@@ -142,9 +142,7 @@ class DeployedAppPortsOperation(object):
             if cidr:
                 cidrs.append(cidr)
 
-        result = ', '.join(cidrs)
-
-        return result
+        return ', '.join(cidrs)
 
     def _port_rule_to_string(self, port_rule):
         """

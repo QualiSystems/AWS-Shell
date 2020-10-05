@@ -25,16 +25,19 @@ class AutoloadOperation(object):
     def _validate_management_security_group(self, cloud_provider_model, ec2_client, logger):
         logger.info('Validate management security group')
         management_sg_id = cloud_provider_model.aws_management_sg_id
-        if management_sg_id =='':
+        if management_sg_id == '':
             return
         try:
             response = ec2_client.describe_security_groups(
                 GroupIds=[management_sg_id])
             security_groups = response['SecurityGroups']
-            management_sg_id_found = next((True for sg in security_groups if sg['GroupId']==management_sg_id), False)
+            # management_sg_id_found = next((True for sg in security_groups if sg['GroupId'] == management_sg_id), False)
+            management_sg_id_found = any(sg.get('GroupId')
+                                         for sg in security_groups
+                                         if sg.get('GroupId') == management_sg_id)
             if not management_sg_id_found:
                 raise AutoloadException('Was not able to find the AWS management security group with id {}'.format(
-                management_sg_id))
+                    management_sg_id))
             logger.info(response)
 
         except ClientError as e:

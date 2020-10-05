@@ -188,7 +188,8 @@ class SubnetActionHelper(object):
         # if in VPC static mode and its a single subnet mode, use VPC CIDR
         # if in VPC static mode and its multi subnet mode, we must assume its manual subnets and use action CIDR
         # else, use action CIDR
-        alias = prepare_subnet_params.alias if hasattr(prepare_subnet_params, 'alias') else 'Default Subnet'
+        # alias = prepare_subnet_params.alias if hasattr(prepare_subnet_params, 'alias') else 'Default Subnet'
+        alias = getattr(prepare_subnet_params, 'alias', 'Default Subnet')
 
         if aws_cp_model.is_static_vpc_mode and aws_cp_model.vpc_cidr != '' and not is_multi_subnet_mode:
             self._cidr = aws_cp_model.vpc_cidr

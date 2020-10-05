@@ -3,7 +3,7 @@ import logging
 import uuid
 
 from cloudshell.cp.aws.domain.services.ec2.instance import InstanceService
-from cloudshell.cp.aws.domain.services.waiters.subnet import SubnetWaiter
+from cloudshell.cp.aws.domain.services.waiters.ami import AMIWaiter
 
 NAME_TAG_KEY = 'Name'
 
@@ -13,7 +13,7 @@ class SnapshotOperation(object):
     def __init__(self, instance_service, image_waiter):
         """
         :param InstanceService instance_service:
-        :param SubnetWaiter image_waiter
+        :param AMIWaiter image_waiter
         """
         self.instance_service = instance_service
         self.image_waiter = image_waiter
@@ -46,7 +46,7 @@ class SnapshotOperation(object):
 
         # wait for the image to be ready
         logger.info("Waiting for the image to be ready")
-        self.image_waiter.wait(image, SubnetWaiter.AVAILABLE)
+        self.image_waiter.wait(image, AMIWaiter.AVAILABLE)
 
         logger.info("Create image from deployed app '{}'. New image id: '{}'"
                     .format(deployed_app_name, image.id))
