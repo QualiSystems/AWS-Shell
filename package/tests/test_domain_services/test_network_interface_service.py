@@ -66,4 +66,5 @@ class TestNetworkInterfaceService(TestCase):
                 subnet_id=subnet_id_mock,
                 device_index=0,
                 groups=security_group_ids,
-                public_ip=add_public_ip)
+                public_ip=add_public_ip,
+                private_ip=None)

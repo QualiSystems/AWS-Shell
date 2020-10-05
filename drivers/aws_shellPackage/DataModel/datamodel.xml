@@ -36,6 +36,32 @@
     <AttributeInfo DefaultValue="" Description="" IsReadOnly="false" Name="Generic Input" Type="String">
       <Rules/>
     </AttributeInfo>
+
+    <AttributeInfo Name="VPC Mode" DefaultValue="" IsReadOnly="false" Type="String"
+    Description="Every sandbox with AWS apps deploys a VPC to AWS. This setting determines how the sandbox VPC will chose a CIDR block. In Dynamic Mode, the CIDR block is chosen by Cloudshell Server. In Static Mode, the CIDR block for all sandboxes allocated will be taken from VPC CIDR attribute on AWS cloud provider."
+    >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+    <AttributeInfo Name="VPC CIDR" DefaultValue="" IsReadOnly="false" Type="String"
+    Description="The CIDR used for sandbox VPC when VPC Mode is Static." >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+    <AttributeInfo Name="Private IP" DefaultValue="" Description="When the VPC is in static mode this attribute is used to set a static private IP for the deployed app. To set static private IPs in multi subnet mode the expected value is a json string that maps the subnet request CIDR to the requested static private IP. Example: {\&quot;10.0.0.0/28\&quot;: \&quot;10.0.0.6\&quot;}" IsReadOnly="false" Type="String">
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+
+
     <AttributeInfo DefaultValue="" Description="If empty the role that is configured on the Execution Server instance in the Management VPC is used." IsReadOnly="false" Name="AWS Access Key ID" Type="Password">
       <Rules>
         <Rule Name="Configuration" />
@@ -72,7 +98,7 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
-    <AttributeInfo  Description="Ports and protocol to open inbound traffic from outside of the sandbox. The syntax is port[single/range]:protocol [tcp(default)/udp] with semi-colon separation, for example: 80;443:tcp;200-220:udp." IsReadOnly="false" Name="Inbound Ports"  Type="String">
+    <AttributeInfo  Description="Ports, protocol and source to open inbound traffic from outside of the sandbox. The syntax is port[single/range]:protocol[tcp(default)/udp]:source[cidr] with semi-colon separation. The default source cidr, if not specified, is any (0.0.0.0/0). For example: 80;443:tcp:10.0.0.0/24;200-220:udp." IsReadOnly="false" Name="Inbound Ports"  Type="String">
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -115,6 +141,24 @@
       </Rules>
     </AttributeInfo>
     <AttributeInfo Name="IAM Role Name" Type="String" DefaultValue="" Description="Provide the IAM role name to be used in this instance." IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo Name="Custom Tags" Type="String" DefaultValue="" Description="Custom tags per EC2 instance, Comma separated values e.g: tag_name:ec2_instance,tag_name2:ec2_instance2" IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo Name="User Data URL" Type="String" DefaultValue="" Description="The URL of the user data script" IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
+    <AttributeInfo Name="User Data Parameters" Type="String" DefaultValue="" Description="Parameters to execute the script e.g: 'param1 param2 ' will end in running the command like this :'./file.sh param1 param2' " IsReadOnly="false" >
       <Rules>
         <Rule Name="Configuration" />
         <Rule Name="Setting" />
@@ -196,6 +240,18 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt SG ID">
               <AllowedValues />
             </AttachedAttribute>
+
+            <AttachedAttribute Name="VPC Mode" IsLocal="true" IsOverridable="true">
+              <AllowedValues>
+                <AllowedValue>Dynamic</AllowedValue>
+                <AllowedValue>Static</AllowedValue>
+              </AllowedValues>
+            </AttachedAttribute>
+
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="VPC CIDR">
+              <AllowedValues />
+            </AttachedAttribute>
+
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="AWS Mgmt VPC ID">
               <AllowedValues />
             </AttachedAttribute>
@@ -279,6 +335,15 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="IAM Role Name" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Custom Tags" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User Data URL" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User Data Parameters" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -318,6 +383,9 @@
               </AllowedValues>
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Root Volume Name" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Private IP" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>
