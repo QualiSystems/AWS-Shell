@@ -1,4 +1,3 @@
-from cloudshell.shell.core.driver_context import AutoLoadDetails
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.core import DriverRequestParser
@@ -6,7 +5,6 @@ from cloudshell.cp.core.models import DeployApp, DriverResponse
 from cloudshell.cp.core.utils import single
 from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.core.models import ConnectSubnet
-
 
 
 class AWSShellDriver(ResourceDriverInterface):
@@ -32,7 +30,6 @@ class AWSShellDriver(ResourceDriverInterface):
         deployment_name = deploy_action.actionParams.deployment.deploymentPath
         self.parse_vnicename(actions)
 
-
         if deployment_name in self.deployments.keys():
             deploy_method = self.deployments[deployment_name]
             deploy_result = deploy_method(context, actions, cancellation_context)
@@ -57,6 +54,12 @@ class AWSShellDriver(ResourceDriverInterface):
     def PowerOff(self, context, ports):
         return self.aws_shell.power_off_ami(context)
 
+    def orchestration_power_on(self, context, ports):
+        return self.aws_shell.power_on_ami(context)
+
+    def orchestration_power_off(self, context, ports):
+        return self.aws_shell.power_off_ami(context)
+
     def PowerCycle(self, context, ports, delay):
         pass
 
@@ -79,7 +82,7 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.get_application_ports(context)
 
     def get_inventory(self, context):
-        return AutoLoadDetails([], [])
+        return self.aws_shell.get_inventory(command_context=context)
 
     def GetAccessKey(self, context, ports):
         return self.aws_shell.get_access_key(context)
@@ -97,3 +100,58 @@ class AWSShellDriver(ResourceDriverInterface):
     def RemoveTrafficMirroring(self, context, request):
         action_results = self.aws_shell.remove_traffic_mirroring(context, request)
         return DriverResponse(action_results).to_driver_response_json()
+
+    def AddCustomTags(self, context, request, ports):
+        return self.aws_shell.add_custom_tags(context, request)
+
+    def save_app(self, context, cancellation_context, ports):
+        return self.aws_shell.save_app(context, cancellation_context)
+
+    # def remote_save_snapshot(self, context, cancellation_context, snapshot_prefix, ports):
+    #     return self.aws_shell.remote_save_snapshot(context, cancellation_context, snapshot_prefix)
+    #
+    # def remote_get_snapshots(self, context, ports):
+    #     return self.aws_shell.remote_get_snapshots(context)
+
+    def remote_save_snapshot(self, context, ports, snapshot_name, save_memory):
+        """
+        Saves virtual machine to a snapshot
+        :param context: resource context of the vCenterShell
+        :type context: models.QualiDriverModels.ResourceCommandContext
+        :param ports:list[string] ports: the ports of the connection between the remote resource and the local resource
+        :type ports: list[string]
+        :param snapshot_name: snapshot name to save to
+        :type snapshot_name: str
+        :param save_memory: Snapshot the virtual machine's memory. Lookup, Yes / No
+        :type save_memory: str
+        :return:
+        """
+
+        self.aws_shell.remote_save_snapshot(context, snapshot_name)
+
+    def remote_restore_snapshot(self, context, ports, snapshot_name):
+        """
+        Restores virtual machine from a snapshot
+        :param context: resource context of the vCenterShell
+        :type context: models.QualiDriverModels.ResourceCommandContext
+        :param ports:list[string] ports: the ports of the connection between the remote resource and the local resource
+        :type ports: list[string]
+        :param snapshot_name: Snapshot name to restore from
+        :type snapshot_name: str
+        :return:
+        """
+        self.aws_shell.remote_restore_snapshot(context, snapshot_name)
+
+    def remote_get_snapshots(self, context, ports):
+        """
+        Returns list of snapshots
+        :param context: resource context of the vCenterShell
+        :type context: models.QualiDriverModels.ResourceCommandContext
+        :param ports:list[string] ports: the ports of the connection between the remote resource and the local resource
+        :type ports: list[string]
+        :return: list
+        """
+        return self.aws_shell.remote_get_snapshots(context)
+
+    def assign_additional_private_ipv4s(self, context, ports, vnic_id, new_ips):
+        return self.aws_shell.assign_additional_private_ipv4s(context, vnic_id, new_ips)

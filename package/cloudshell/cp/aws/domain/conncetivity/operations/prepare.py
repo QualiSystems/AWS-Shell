@@ -3,7 +3,8 @@ import traceback
 import jsonpickle
 from cloudshell.shell.core.driver_context import CancellationContext
 
-from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor
+from cloudshell.cp.aws.domain.conncetivity.operations.prepare_subnet_executor import PrepareSubnetExecutor, \
+    SubnetActionHelper
 from cloudshell.cp.aws.domain.services.ec2.tags import *
 from cloudshell.cp.aws.domain.services.waiters.vpc_peering import VpcPeeringConnectionWaiter
 from cloudshell.cp.core.models import PrepareCloudInfra
@@ -76,6 +77,7 @@ class PrepareSandboxInfraOperation(object):
             raise ValueError("Actions list must contain a PrepareCloudInfraAction.")
         if not create_keys_action:
             raise ValueError("Actions list must contain a CreateKeys.")
+
         try:
             result = self._prepare_network(ec2_client, ec2_session, reservation, aws_ec2_datamodel,
                                            network_action, cancellation_context, logger)
@@ -84,7 +86,8 @@ class PrepareSandboxInfraOperation(object):
             logger.error("Error in prepare connectivity. Error: {0}".format(traceback.format_exc()))
             results.append(self._create_fault_action_result(network_action, e))
         try:
-            result = self._prepare_key(ec2_session, s3_session, aws_ec2_datamodel, reservation, create_keys_action, logger)
+            result = self._prepare_key(ec2_session, s3_session, aws_ec2_datamodel, reservation, create_keys_action,
+                                       logger)
             results.append(result)
         except Exception as e:
             logger.error("Error in prepare key. Error: {0}".format(traceback.format_exc()))
@@ -121,11 +124,11 @@ class PrepareSandboxInfraOperation(object):
                                                   reservation_id=reservation.reservation_id)
         return self._create_prepare_create_keys_result(action, access_key)
 
-    def _prepare_network(self, ec2_client, ec2_session, reservation, aws_ec2_datamodel, action, cancellation_context, logger):
+    def _prepare_network(self, ec2_client, ec2_session, reservation, aws_ec2_datamodel, action, cancellation_context,
+                         logger):
         """
         :param ec2_client:
         :param ec2_session:
-        :param s3_session:
         :param reservation:
         :param aws_ec2_datamodel:
         :param PrepareCloudInfra action: NetworkAction
@@ -136,7 +139,7 @@ class PrepareSandboxInfraOperation(object):
         logger.info("PrepareCloudInfra")
 
         # will get cidr form action params
-        cidr = action.actionParams.cidr
+        cidr = self._get_vpc_cidr(action, aws_ec2_datamodel, logger) or action.actionParams.cidr
         logger.info("Received CIDR {0} from server".format(cidr))
 
         # will get or create a vpc for the reservation
@@ -155,25 +158,53 @@ class PrepareSandboxInfraOperation(object):
         internet_gateway_id = self._create_and_attach_internet_gateway(ec2_session, vpc, reservation)
 
         # will try to peer sandbox VPC to mgmt VPC if not exist
-        self.cancellation_service.check_if_cancelled(cancellation_context)
-        logger.info("Create VPC Peering with management vpc")
-        self._peer_vpcs(ec2_client=ec2_client,
-                        ec2_session=ec2_session,
-                        management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
-                        vpc_id=vpc.id,
-                        sandbox_vpc_cidr=cidr,
-                        internet_gateway_id=internet_gateway_id,
-                        reservation_model=reservation,
-                        logger=logger)
+        # note, if vpc_mode == static, will not create peering
+        self._peer_to_mgmt_if_needed(aws_ec2_datamodel, cancellation_context, cidr, ec2_client, ec2_session,
+                                     internet_gateway_id, logger, reservation, vpc)
 
         # will get or create default Security Group
         self.cancellation_service.check_if_cancelled(cancellation_context)
         logger.info("Get or create default Security Group")
-        security_groups = self._get_or_create_default_security_groups(ec2_session=ec2_session,
-                                                                      reservation=reservation,
-                                                                      vpc=vpc,
-                                                                      management_sg_id=aws_ec2_datamodel.aws_management_sg_id)
+        security_groups = \
+            self._get_or_create_default_security_groups(ec2_session=ec2_session,
+                                                        reservation=reservation,
+                                                        vpc=vpc,
+                                                        management_sg_id=aws_ec2_datamodel.aws_management_sg_id,
+                                                        need_management_access=not aws_ec2_datamodel.is_static_vpc_mode)
         return self._create_prepare_network_result(action, security_groups, vpc)
+
+    def _get_vpc_cidr(self, action, aws_ec2_datamodel, logger):
+        if aws_ec2_datamodel.is_static_vpc_mode and aws_ec2_datamodel.vpc_cidr != '':
+            cidr = aws_ec2_datamodel.vpc_cidr
+            logger.info('Decided to use VPC CIDR {} as defined on cloud provider for sandbox VPC'
+                        .format(cidr))
+        else:
+            cidr = action.actionParams.cidr
+            logger.info("Received CIDR {0} from server".format(cidr))
+        return cidr
+
+    def _peer_to_mgmt_if_needed(self, aws_ec2_datamodel, cancellation_context, cidr, ec2_client, ec2_session,
+                                internet_gateway_id, logger, reservation, vpc):
+        self.cancellation_service.check_if_cancelled(cancellation_context)
+
+        self.route_to_internet_gateway(ec2_session, internet_gateway_id, reservation, vpc.id)
+
+        # add route in sandbox *private* route table to the management vpc
+        sandbox_private_route_table = self.vpc_service.get_or_create_private_route_table(ec2_session, reservation,
+                                                                                         vpc.id)
+
+        if not aws_ec2_datamodel.is_static_vpc_mode:
+            logger.info("Create VPC Peering with management vpc")
+            self._peer_vpcs(ec2_client=ec2_client,
+                            ec2_session=ec2_session,
+                            management_vpc_id=aws_ec2_datamodel.aws_management_vpc_id,
+                            vpc_id=vpc.id,
+                            sandbox_vpc_cidr=cidr,
+                            reservation_model=reservation,
+                            logger=logger,
+                            sandbox_private_route_table=sandbox_private_route_table)
+        else:
+            logger.info("We are using static VPC mode, not creating VPC peering with management vpc")
 
     @retry(stop_max_attempt_number=30, wait_fixed=1000)
     def _enable_dns_hostnames(self, ec2_client, vpc_id):
@@ -207,14 +238,13 @@ class PrepareSandboxInfraOperation(object):
         return private_key
 
     def _peer_vpcs(self, ec2_client, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
-                   reservation_model, logger):
+                   sandbox_private_route_table, reservation_model, logger):
         """
         :param ec2_client
         :param ec2_session:
         :param management_vpc_id:
         :param vpc_id:
         :param sandbox_vpc_cidr:
-        :param internet_gateway_id:
         :param reservation_model:
         :param logging.Logger logger:
         :return:
@@ -250,7 +280,7 @@ class PrepareSandboxInfraOperation(object):
 
         # add route in sandbox route table to the management vpc
         sandbox_main_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
-                                                                            vpc_id=vpc_id)
+                                                                                 vpc_id=vpc_id)
         self._update_route_to_peered_vpc(peer_connection_id=vpc_peer_connection_id,
                                          route_table=sandbox_main_route_table,
                                          target_vpc_cidr=mgmt_cidr,
@@ -268,9 +298,13 @@ class PrepareSandboxInfraOperation(object):
                                          ec2_session=ec2_session,
                                          ec2_client=ec2_client)
 
+    def route_to_internet_gateway(self, ec2_session, internet_gateway_id, reservation_model, vpc_id):
         # add route in sandbox route table to the internet gateway
         # ***DO NOT ADD IT TO sandbox_private_route_table!***
-        route_igw = self.route_table_service.find_first_route(sandbox_main_route_table, {'gateway_id': internet_gateway_id})
+        sandbox_main_route_table = self.route_table_service.get_main_route_table(ec2_session=ec2_session,
+                                                                                 vpc_id=vpc_id)
+        route_igw = self.route_table_service.find_first_route(sandbox_main_route_table,
+                                                              {'gateway_id': internet_gateway_id})
         if not route_igw:
             self.route_table_service.add_route_to_internet_gateway(route_table=sandbox_main_route_table,
                                                                    target_internet_gateway_id=internet_gateway_id)
@@ -304,7 +338,7 @@ class PrepareSandboxInfraOperation(object):
                 return  # the existing route is correct, we dont need to do anything
 
             logger.info("found existing route to {0}, replacing it".format(
-                    route.destination_cidr_block if hasattr(route, "destination_cidr_block") else ''))
+                route.destination_cidr_block if hasattr(route, "destination_cidr_block") else ''))
             self.route_table_service.replace_route(route_table=route_table,
                                                    route=route,
                                                    peer_connection_id=peer_connection_id,
@@ -315,14 +349,19 @@ class PrepareSandboxInfraOperation(object):
                                                              target_peering_id=peer_connection_id,
                                                              target_vpc_cidr=target_vpc_cidr)
 
-    def _get_or_create_default_security_groups(self, ec2_session, reservation, vpc, management_sg_id):
+    def _get_or_create_default_security_groups(self, ec2_session, reservation, vpc, management_sg_id,
+                                               need_management_access):
 
-        isolated_sg =self._get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation, vpc)
-        default_sg = self._get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc, isolated_sg=isolated_sg)
+        isolated_sg = self._get_or_create_sandbox_isolated_security_group(ec2_session, management_sg_id, reservation,
+                                                                          vpc, need_management_access)
+        default_sg = self._get_or_create_sandbox_default_security_group(ec2_session, management_sg_id, reservation, vpc,
+                                                                        isolated_sg=isolated_sg,
+                                                                        need_management_access=need_management_access)
 
-        return [isolated_sg , default_sg]
+        return [isolated_sg, default_sg]
 
-    def _get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc, isolated_sg):
+    def _get_or_create_sandbox_default_security_group(self, ec2_session, management_sg_id, reservation, vpc,
+                                                      isolated_sg, need_management_access):
         sg_name = self.security_group_service.sandbox_default_sg_name(reservation.reservation_id)
 
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
@@ -339,11 +378,13 @@ class PrepareSandboxInfraOperation(object):
 
             self.security_group_service.set_shared_reservation_security_group_rules(security_group=security_group,
                                                                                     management_sg_id=management_sg_id,
-                                                                                    isolated_sg=isolated_sg)
+                                                                                    isolated_sg=isolated_sg,
+                                                                                    need_management_sg=need_management_access)
 
         return security_group
 
-    def _get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc):
+    def _get_or_create_sandbox_isolated_security_group(self, ec2_session, management_sg_id, reservation, vpc,
+                                                       need_management_access):
         sg_name = self.security_group_service.sandbox_isolated_sg_name(reservation.reservation_id)
 
         security_group = self.security_group_service.get_security_group_by_name(vpc=vpc, name=sg_name)
@@ -359,7 +400,8 @@ class PrepareSandboxInfraOperation(object):
             self.tag_service.set_ec2_resource_tags(security_group, tags)
 
             self.security_group_service.set_isolated_security_group_rules(security_group=security_group,
-                                                                          management_sg_id=management_sg_id)
+                                                                          management_sg_id=management_sg_id,
+                                                                          need_management_access=need_management_access)
 
         return security_group
 
@@ -371,6 +413,7 @@ class PrepareSandboxInfraOperation(object):
                                                               reservation=reservation,
                                                               cidr=cidr)
         return vpc
+
     def _create_prepare_create_keys_result(self, action, access_key):
         action_result = CreateKeysActionResult()
         action_result.actionId = action.actionId
