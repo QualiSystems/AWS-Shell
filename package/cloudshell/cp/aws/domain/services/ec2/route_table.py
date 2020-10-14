@@ -79,16 +79,16 @@ class RouteTablesService(object):
                 try:
                     route.delete()
                 except Exception as e:
-                    if 'InvalidRoute.NotFound' in "{}".format(e):
+                    if 'InvalidRoute.NotFound' in str(e):
                         # ignore this error if the route was not found
                         pass
                     else:
                         raise e
-            if ec2_client and type(route) is dict and 'State' in route and route['State'] == 'blackhole':
+            if ec2_client and isinstance(route, dict) and route.get('State') == 'blackhole':
                 try:
                     ec2_client.delete_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'])
                 except Exception as e:
-                    if 'InvalidRoute.NotFound' in "{}".format(e):
+                    if 'InvalidRoute.NotFound' in str(e):
                         # ignore this error if the route was not found
                         pass
                     else:
