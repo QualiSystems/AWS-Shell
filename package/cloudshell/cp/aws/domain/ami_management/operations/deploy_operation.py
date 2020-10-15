@@ -2,6 +2,9 @@ import traceback
 import uuid
 from multiprocessing import TimeoutError
 
+import ipaddress
+from typing import List, Dict
+
 from cloudshell.cp.aws.domain.common.cancellation_service import CommandCancellationService
 from cloudshell.cp.aws.domain.common.list_helper import first_or_default
 from cloudshell.cp.aws.domain.common.vm_details_provider import VmDetailsProvider
@@ -23,6 +26,7 @@ from cloudshell.cp.aws.domain.services.ec2.network_interface import NetworkInter
 from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
 from cloudshell.cp.core.models import ConnectToSubnetActionResult, ConnectToSubnetParams, ConnectSubnet, DeployAppResult
 from cloudshell.cp.core.utils import convert_dict_to_attributes_list
+from cloudshell.cp.core.requested_ips.mapper import RequestedIPsMapper
 
 
 class DeployAMIOperation(object):
@@ -170,11 +174,13 @@ class DeployAMIOperation(object):
 
         deploy_app_result = DeployAppResult(vmName=self._get_name_from_tags(instance),
                                             vmUuid=instance.instance_id,
-                                            deployedAppAttributes=convert_dict_to_attributes_list(deployed_app_attributes),
+                                            deployedAppAttributes=convert_dict_to_attributes_list(
+                                                deployed_app_attributes),
                                             deployedAppAddress=instance.private_ip_address,
                                             vmDetailsData=vm_details_data,
-                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports,
-                                                                       'public_ip': instance.public_ip_address})
+                                            deployedAppAdditionalData={
+                                                'inbound_ports': ami_deployment_model.inbound_ports,
+                                                'public_ip': instance.public_ip_address})
         deploy_app_result.actionId = ami_deploy_action.actionId
         network_actions_results_dtos.append(deploy_app_result)
         return network_actions_results_dtos
@@ -279,7 +285,7 @@ class DeployAMIOperation(object):
                                                                           cancellation_context=cancellation_context)
             except TimeoutError:
                 logger.info(
-                        "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
+                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
         else:
             return None if self._get_deployed_app_resource_user_attribute(ami_deploy_action) else \
@@ -298,7 +304,7 @@ class DeployAMIOperation(object):
         :return:
         """
         attribute_names_in_deployed_resource = ami_deploy_action.actionParams.appResource.attributes.keys()
-        return next((attr for attr in attribute_names_in_deployed_resource if attr.split('.')[-1]=='User'))
+        return next((attr for attr in attribute_names_in_deployed_resource if attr.split('.')[-1] == 'User'))
 
     @staticmethod
     def _get_name_from_tags(result):
@@ -412,20 +418,16 @@ class DeployAMIOperation(object):
         """
         :param vpc: The reservation VPC
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
-        :param cloudshell.cp.core.models.ConnectSubnet network_actions:
+        :param List[cloudshell.cp.core.models.ConnectSubnet] network_actions:
         :param [str] security_group_ids:
-        :param list[DeployNetworkingResultModel] network_config_results: list of network configuration result objects
+        :param List[DeployNetworkingResultModel] network_config_results: list of network configuration result objects
         :param logging.Logger logger:
         :return:
         """
         if not network_actions:
             logger.info("Single subnet mode detected")
-            network_config_results[0].device_index = 0
-            return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                    add_public_ip=ami_deployment_model.add_public_ip,
-                    security_group_ids=security_group_ids,
-                    vpc=vpc,
-                    private_ip=ami_deployment_model.private_ip_address)]
+            return self._prepare_nic_for_single_subnet(ami_deployment_model, network_config_results, security_group_ids,
+                                                       vpc)
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
 
@@ -436,23 +438,26 @@ class DeployAMIOperation(object):
         logger.info("Applying device index strategy")
         self.device_index_strategy.apply(network_actions)
 
+        logger.info("Mapping network CIDRs to requested IPs")
+        cidr_to_requested_ips = RequestedIPsMapper(ami_deployment_model.private_ip_addresses_list)\
+            .map_network_to_requested_ips(network_actions)
+
         logger.info("Building network interface dtos")
         for net_config in network_actions:
             if not isinstance(net_config.actionParams, ConnectToSubnetParams):
                 continue
 
             device_index = net_config.actionParams.vnicName
-            private_ip = self._get_private_ip_for_subnet(ami_deployment_model,
-                                                         net_config.actionParams.cidr)
+            private_ips = self._get_private_ips_for_subnet(net_config.actionParams.cidr, cidr_to_requested_ips)
 
             net_interfaces.append(
-                    # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
-                    self.network_interface_service.build_network_interface_dto(
-                            subnet_id=net_config.actionParams.subnetId,
-                            device_index=device_index,
-                            groups=security_group_ids,  # todo: set groups by subnet id
-                            public_ip=public_ip_prop_value,
-                            private_ip=private_ip))
+                # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
+                self.network_interface_service.build_network_interface_dto(
+                    subnet_id=net_config.actionParams.subnetId,
+                    device_index=device_index,
+                    groups=security_group_ids,  # todo: set groups by subnet id
+                    public_ip=public_ip_prop_value,
+                    private_ips=private_ips))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.actionId)
@@ -460,26 +465,39 @@ class DeployAMIOperation(object):
 
         if len(net_interfaces) == 0:
             logger.info("No network interface dto was created, switching back to single subnet mode")
-            network_config_results[0].device_index = 0
-            return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                    add_public_ip=ami_deployment_model.add_public_ip,
-                    security_group_ids=security_group_ids,
-                    vpc=vpc,
-                    private_ip=ami_deployment_model.private_ip_address)]
+            return self._prepare_nic_for_single_subnet(ami_deployment_model, network_config_results, security_group_ids,
+                                                       vpc)
 
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
         return net_interfaces
 
-    def _get_private_ip_for_subnet(self, ami_deployment_model, subnet_cidr):
+    def _prepare_nic_for_single_subnet(self, ami_deployment_model, network_config_results, security_group_ids, vpc):
         """
+        :param vpc: The reservation VPC
         :param DeployAWSEc2AMIInstanceResourceModel ami_deployment_model:
-        :param str subnet_cidr:
-        :return:
+        :param [str] security_group_ids:
+        :param list[DeployNetworkingResultModel] network_config_results: list of network configuration result objects
+        :rtype: List[dict]
         """
-        if subnet_cidr and ami_deployment_model.private_ip_addresses_dict and \
-                subnet_cidr in ami_deployment_model.private_ip_addresses_dict:
-            return ami_deployment_model.private_ip_addresses_dict.get(subnet_cidr)
+        self._validate_private_ip_addresses_for_single_subnet_mode(ami_deployment_model)
+        network_config_results[0].device_index = 0
+        return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
+            add_public_ip=ami_deployment_model.add_public_ip,
+            security_group_ids=security_group_ids,
+            vpc=vpc,
+            private_ips=ami_deployment_model.private_ip_addresses_list[0])]
+
+    def _get_private_ips_for_subnet(self, subnet_cidr, cidr_to_requested_ips):
+        """
+        :param str subnet_cidr:
+        :param Dict[str, List[str]] cidr_to_requested_ips:
+        :rtype: List[str]
+        """
+        if subnet_cidr and cidr_to_requested_ips:
+            return cidr_to_requested_ips.get(subnet_cidr, None)
+
+        return None
 
     def _validate_network_interfaces_request(self, ami_deployment_model, network_actions, logger):
         self._validate_public_ip_with_multiple_subnets(ami_deployment_model, network_actions, logger)
@@ -490,6 +508,11 @@ class DeployAMIOperation(object):
         if ami_deployment_model.add_public_ip and len(network_actions) > 1:
             logger.error("Requested public ip with multiple subnets")
             raise ValueError("Public IP option is not supported with multiple subnets")
+
+    def _validate_private_ip_addresses_for_single_subnet_mode(self, ami_deployment_model):
+        if ami_deployment_model.private_ip_addresses_list and len(ami_deployment_model.private_ip_addresses_list) != 1:
+            raise ValueError('Value in Private IP attribute is invalid. Expected IP request for a single subnet but '
+                             'instead detected request for multiple subnets.')
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
         return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
@@ -656,7 +679,8 @@ class DeployAMIOperation(object):
         return res
 
     def _get_user_data(self, user_data_url, user_data_run_parameters):
-        data = "#!/bin/bash\n" + "curl --retry 10 --max-time 5 --retry-max-time 180 {0}  > cs.sh \n".format(user_data_url) \
+        data = "#!/bin/bash\n" + "curl --retry 10 --max-time 5 --retry-max-time 180 {0}  > cs.sh \n".format(
+            user_data_url) \
                + "chmod +x cs.sh \n" \
                + "./cs.sh {0}".format(user_data_run_parameters)
         return data

@@ -103,3 +103,4 @@ cloudformation/deploy_execution_server_by_selected_version/*
 /drivers/aws_shell/src/test_*
 
 /aws_venv
+/venv/*
