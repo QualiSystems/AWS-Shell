@@ -4,6 +4,7 @@ from mock import Mock, call, MagicMock
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
+from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
 from cloudshell.cp.core.models import ConnectToSubnetParams, PrepareCloudInfra, ConnectSubnet
 
@@ -419,12 +420,12 @@ class TestDeployOperation(TestCase):
                           network_config_results=Mock(),
                           logger=self.logger)
 
-    def test_create_deployment_parameters_single_subnet(self):
+    def test_create_deployment_parameters_single_subnet_no_requested_ips(self):
         image = Mock()
         image.state = 'available'
         ec2_session = Mock()
         ec2_session.Image = Mock(return_value=image)
-        ami_model = Mock()
+        ami_model = Mock(private_ip_addresses_list=None, private_ip_address=None)
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
         ami_model.iam_role = ""
@@ -456,7 +457,7 @@ class TestDeployOperation(TestCase):
         image.state = 'available'
         ec2_session = Mock()
         ec2_session.Image = Mock(return_value=image)
-        ami_model = Mock()
+        ami_model = Mock(private_ip_addresses_list=None, private_ip_address=None)
         ami_model.iam_role = ""
         ami_model.custom_tags = ""
         network_actions = None
@@ -482,7 +483,7 @@ class TestDeployOperation(TestCase):
         image.state = 'available'
         ec2_session = Mock()
         ec2_session.Image = Mock(return_value=image)
-        ami_model = Mock()
+        ami_model = Mock(private_ip_addresses_list=None, private_ip_address=None)
         ami_model.iam_role = "admin_role"
         ami_model.custom_tags = ""
 
@@ -509,8 +510,8 @@ class TestDeployOperation(TestCase):
         image.state = 'available'
         ec2_session = Mock()
         ec2_session.Image = Mock(return_value=image)
-        ami_model = Mock()
         network_actions = None
+        ami_model = Mock(private_ip_addresses_list=None, private_ip_address=None)
         ami_model.iam_role = "arn:aws:iam::admin_role"
         ami_model.custom_tags = ""
         vpc = Mock()
@@ -545,7 +546,7 @@ class TestDeployOperation(TestCase):
                                                               network_config_results=MagicMock(),
                                                               logger=self.logger)
 
-    def test_prepare_network_interfaces_multi_subnets(self):
+    def test_prepare_network_interfaces_multi_subnets_no_requested_ips(self):
         def build_network_interface_handler(*args, **kwargs):
             return {'SubnetId': kwargs['subnet_id']}
 
@@ -566,7 +567,7 @@ class TestDeployOperation(TestCase):
         action2.actionParams.subnetId = 'sub2'
         action2.actionParams.vnicName = 1
 
-        ami_model = Mock()
+        ami_model = Mock(private_ip_addresses_list=None, private_ip_address=None)
         network_actions = [action1, action2]
         ami_model.add_public_ip = False
 

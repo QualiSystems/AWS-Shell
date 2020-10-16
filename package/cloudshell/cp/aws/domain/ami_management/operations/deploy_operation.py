@@ -482,11 +482,13 @@ class DeployAMIOperation(object):
         """
         self._validate_private_ip_addresses_for_single_subnet_mode(ami_deployment_model)
         network_config_results[0].device_index = 0
+        private_ips = ami_deployment_model.private_ip_addresses_list[0] if \
+            ami_deployment_model.private_ip_addresses_list else None
         return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
             add_public_ip=ami_deployment_model.add_public_ip,
             security_group_ids=security_group_ids,
             vpc=vpc,
-            private_ips=ami_deployment_model.private_ip_addresses_list[0])]
+            private_ips=private_ips)]
 
     def _get_private_ips_for_subnet(self, subnet_cidr, cidr_to_requested_ips):
         """
