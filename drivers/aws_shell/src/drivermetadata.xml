@@ -1,4 +1,4 @@
-<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.4.3">
+<Driver Description="This driver orchestrate all the command that will be executed on AWS" MainClass="driver.AWSShellDriver" Name="AWS Shell Driver" Version="2.5.0">
     <Layout>
         <Category Name="Deployment">
             <Command Description="" DisplayName="Deploy From AMI" EnableCancellation="true" Name="deploy_ami" Tags="allow_unreserved" />
@@ -10,6 +10,7 @@
             <Command Description="" DisplayName="Cleanup Connectivity" EnableCancellation="true" Name="CleanupSandboxInfra" Tags="allow_unreserved" />
         </Category>
         <Category Name="Hidden Commands">
+            <Command Description="" DisplayName="Add Custom tags" Name="AddCustomTags" Tags="remote_add_custom_tags" />
             <Command Description="" DisplayName="Power Cycle" Name="PowerCycle" Tags="power" />
             <Command Description="" DisplayName="Delete VM Only" Name="DeleteInstance" Tags="remote_app_management,allow_shared" />
             <Command Description="" DisplayName="GetAccessKey" Name="GetAccessKey" Tags="remote_app_management" />
@@ -27,8 +28,27 @@
                     <Parameter DefaultValue="" Description="A well formed request to remove traffic mirroring; Parameters are ActionId, SessionId (optional), Target NIC Id(optional)" DisplayName="Request" Mandatory="True" Name="request" Type="String" />
                 </Parameters>
             </Command>
+            <Command Description="" DisplayName="Save Snapshot" EnableCancellation="true" Name="remote_save_snapshot" Tags="remote_connectivity,allow_unreserved">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="Please enter desired Snapshot Name" DisplayName="Snapshot Name" Mandatory="False" Name="snapshot_name" Type="String" />
+                </Parameters>
+            </Command>
+            <Command Description="" DisplayName="Restore Snapshot" EnableCancellation="true" Name="remote_restore_snapshot" Tags="remote_connectivity,allow_unreserved">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="Please enter Snapshot Name to restore" DisplayName="Snapshot Name" Mandatory="False" Name="snapshot_name" Type="String" />
+                </Parameters>
+            </Command>
+            <Command Description="" DisplayName="Get Snapshots" EnableCancellation="false" Name="remote_get_snapshots" Tags="remote_connectivity,allow_unreserved" />
+            <Command Description="Create Image of instance and return the new image ami." DisplayName="Create New Image" Name="save_app" Tags="remote_connectivity,allow_unreserved,allow_shared" Visibility="AdminOnly" />
+            <Command Description="" DisplayName="Assign IPv4 Addresses" EnableCancellation="false" Name="assign_additional_private_ipv4s" Tags="remote_connectivity">
+                <Parameters>
+                    <Parameter DefaultValue="" Description="Please enter vnic id" DisplayName="Vnic ID" Mandatory="False" Name="vnic_id" Type="String" />
+                    <Parameter DefaultValue="" Description="List of IPs to add" DisplayName="List of IPs" Mandatory="False" Name="new_ips" Type="String" />
+                </Parameters>
+            </Command>
+            <Command Description="" DisplayName="Orchestration Power On" EnableCancellation="false" Name="orchestration_power_on" Tags="remote_connectivity,allow_unreserved,allow_shared" />
+            <Command Description="" DisplayName="Orchestration Power Off" EnableCancellation="false" Name="orchestration_power_off" Tags="remote_connectivity,allow_unreserved,allow_shared" />
         </Category>
-
         <Category Name="Power">
             <Command Description="" DisplayName="Power On" Name="PowerOn" Tags="power" />
             <Command Description="" DisplayName="Power Off" Name="PowerOff" Tags="power" />

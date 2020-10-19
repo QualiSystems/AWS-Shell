@@ -428,6 +428,8 @@ class TestDeployOperation(TestCase):
         ami_model.aws_ami_id = 'asd'
         ami_model.storage_size = '0'
         ami_model.iam_role = ""
+        ami_model.custom_tags= ""
+
         network_actions = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
@@ -456,6 +458,7 @@ class TestDeployOperation(TestCase):
         ec2_session.Image = Mock(return_value=image)
         ami_model = Mock()
         ami_model.iam_role = ""
+        ami_model.custom_tags = ""
         network_actions = None
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
@@ -481,6 +484,8 @@ class TestDeployOperation(TestCase):
         ec2_session.Image = Mock(return_value=image)
         ami_model = Mock()
         ami_model.iam_role = "admin_role"
+        ami_model.custom_tags = ""
+
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
         network_actions = None
@@ -507,6 +512,7 @@ class TestDeployOperation(TestCase):
         ami_model = Mock()
         network_actions = None
         ami_model.iam_role = "arn:aws:iam::admin_role"
+        ami_model.custom_tags = ""
         vpc = Mock()
         self.deploy_operation._get_block_device_mappings = Mock()
 

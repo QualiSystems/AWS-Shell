@@ -18,6 +18,7 @@ class TestInstanceService(TestCase):
         self.instance.instance_id = 'id'
         self.default_tags = ['tag1', 'tag2']
         self.tag_service.get_default_tags = Mock(return_value=self.default_tags)
+        self.tag_service.get_custom_tags = Mock(return_value=[])
         self.ec2_session.create_instances = Mock(return_value=[self.instance])
         self.ec2_session.Instance = Mock(return_value=self.instance)
         self.instance_service = InstanceService(self.tag_service, self.instance_waiter)
@@ -25,6 +26,7 @@ class TestInstanceService(TestCase):
     # @Mock.Patch('cloudshell.cp.aws.domain.services.ec2.instance.create_instances')
     def test_create_instance(self):
         ami_dep = Mock()
+        ami_dep.custom_tags = ""
         cancellation_context = Mock()
         new_instance = Mock()
         new_instance.instance_id = 'id'
@@ -51,7 +53,8 @@ class TestInstanceService(TestCase):
                                                                   IamInstanceProfile=ami_dep.iam_role,
                                                                   KeyName=ami_dep.aws_key,
                                                                   BlockDeviceMappings=ami_dep.block_device_mappings,
-                                                                  NetworkInterfaces=ami_dep.network_interfaces)
+                                                                  NetworkInterfaces=ami_dep.network_interfaces,
+                                                                  UserData=ami_dep.user_data)
 
         self.instance_waiter.wait.assert_called_once_with(instance=new_instance,
                                                           state=self.instance_waiter.RUNNING,
