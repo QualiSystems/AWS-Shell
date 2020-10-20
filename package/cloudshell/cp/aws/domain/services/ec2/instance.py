@@ -43,12 +43,6 @@ class InstanceService(object):
                 UserData=ami_deployment_info.user_data
         )[0]
 
-        self.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
-                                             instance=instance,
-                                             wait_for_status_check=wait_for_status_check,
-                                             cancellation_context=cancellation_context,
-                                             logger=logger)
-
         self._set_tags(instance, name, reservation, ami_deployment_info.custom_tags)
 
         # Reload the instance attributes
