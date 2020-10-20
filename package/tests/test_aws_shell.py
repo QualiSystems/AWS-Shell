@@ -242,7 +242,8 @@ class TestAWSShell(TestCase):
 
     def test_refresh_ip(self):
         self.aws_shell.model_parser.get_private_ip_from_connected_resource_details = Mock(return_value='private_ip')
-        self.aws_shell.model_parser.get_public_ip_from_connected_resource_details = Mock(return_value='public_ip')
+        self.aws_shell.model_parser.get_public_ip_attr_from_connected_resource_details = Mock(return_value=('public_ip',
+                                                                                                       "public_ip"))
         self.aws_shell.model_parser.try_get_deployed_connected_resource_instance_id = Mock(return_value='instance_id')
         self.aws_shell.model_parser.get_connectd_resource_fullname = Mock(return_value='resource_name')
         self.aws_shell.refresh_ip_operation.refresh_ip = Mock()
