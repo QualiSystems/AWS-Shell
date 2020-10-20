@@ -1,5 +1,3 @@
-from cloudshell.api.cloudshell_api import CloudShellAPISession
-
 class RefreshIpOperation(object):
     PUBLIC_IP = "Public IP"
 
@@ -17,7 +15,7 @@ class RefreshIpOperation(object):
         :param resource_fullname:
         :param deployed_instance_id:
         :param private_ip_on_resource:
-        :param CloudShellAPISession cloudshell_session:
+        :param cloudshell_session: CloudShellAPISession
         :param ec2_session : ec2_session
         """
 
@@ -34,12 +32,10 @@ class RefreshIpOperation(object):
                 if "Association" in net and "PublicIp" in net["Association"] and net["Association"]["PublicIp"]:
                     public_ip_on_aws = net["Association"]["PublicIp"]
                     break
-        resource_details = cloudshell_session.GetResourceDetails(resource_fullname)
-        public_ip_attr = [x for x in resource_details.ResourceAttributes if x.Name == "{}.{}".format(resource_details.ResourceModelName, RefreshIpOperation.PUBLIC_IP) or RefreshIpOperation.PUBLIC_IP == x.Name]
-        if len(public_ip_attr) == 1:
-            if public_ip_on_aws and public_ip_on_aws != public_ip_on_resource:
-                cloudshell_session.SetAttributeValue(resource_fullname, public_ip_attr[0].Name,
-                                                     public_ip_on_aws if public_ip_on_aws is not None else "")
+
+        if public_ip_on_aws and public_ip_on_aws != public_ip_on_resource:
+            cloudshell_session.SetAttributeValue(resource_fullname, RefreshIpOperation.PUBLIC_IP,
+                                                 public_ip_on_aws if public_ip_on_aws is not None else "")
 
         if private_ip_on_aws != private_ip_on_resource:
             cloudshell_session.UpdateResourceAddress(resource_fullname, private_ip_on_aws)

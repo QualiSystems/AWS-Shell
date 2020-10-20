@@ -76,23 +76,9 @@ class RouteTablesService(object):
         """
         for route in route_table.routes:
             if hasattr(route, 'state') and route.state == 'blackhole':
-                try:
-                    route.delete()
-                except Exception as e:
-                    if 'InvalidRoute.NotFound' in str(e):
-                        # ignore this error if the route was not found
-                        pass
-                    else:
-                        raise e
-            if ec2_client and isinstance(route, dict) and route.get('State') == 'blackhole':
-                try:
-                    ec2_client.delete_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'])
-                except Exception as e:
-                    if 'InvalidRoute.NotFound' in str(e):
-                        # ignore this error if the route was not found
-                        pass
-                    else:
-                        raise e
+                route.delete()
+            if ec2_client and type(route) is dict and 'State' in route and route['State'] == 'blackhole':
+                ec2_client.delete_route(RouteTableId=route_table.id, DestinationCidrBlock=route['DestinationCidrBlock'])
 
     def replace_route(self, route_table, route, peer_connection_id, ec2_client):
         if type(route) is dict:
