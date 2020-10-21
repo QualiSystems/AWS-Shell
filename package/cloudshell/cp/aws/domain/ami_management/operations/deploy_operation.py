@@ -113,13 +113,15 @@ class DeployAMIOperation(object):
                                                                      network_config_results=network_config_results,
                                                                      logger=logger)
 
-            instance = self.instance_service.create_instance(ec2_session=ec2_session,
-                                                             name=name,
-                                                             reservation=reservation,
-                                                             ami_deployment_info=ami_deployment_info,
-                                                             ec2_client=ec2_client,
-                                                             cancellation_context=cancellation_context,
-                                                             logger=logger)
+            instance = self.instance_service.create_instance(
+                ec2_session=ec2_session,
+                name=name,
+                reservation=reservation,
+                ami_deployment_info=ami_deployment_info,
+                ec2_client=ec2_client,
+                wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                cancellation_context=cancellation_context,
+                logger=logger)
 
             logger.info("Instance created, populating results with interface data")
             self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
@@ -345,9 +347,17 @@ class DeployAMIOperation(object):
 
         return security_group
 
-    def _create_deployment_parameters(self, ec2_session, aws_ec2_resource_model, ami_deployment_model, network_actions,
+    def _create_deployment_parameters(self,
+                                      ec2_session,
+                                      aws_ec2_resource_model,
+                                      ami_deployment_model,
+                                      network_actions,
                                       vpc,
-                                      security_group, key_pair, reservation, network_config_results, logger):
+                                      security_group,
+                                      key_pair,
+                                      reservation,
+                                      network_config_results,
+                                      logger):
         """
         :param ec2_session:
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
@@ -427,10 +437,10 @@ class DeployAMIOperation(object):
             logger.info("Single subnet mode detected")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                    add_public_ip=ami_deployment_model.add_public_ip,
-                    security_group_ids=security_group_ids,
-                    vpc=vpc,
-                    private_ip=ami_deployment_model.private_ip_address)]
+                add_public_ip=ami_deployment_model.add_public_ip,
+                security_group_ids=security_group_ids,
+                vpc=vpc,
+                private_ip=ami_deployment_model.private_ip_address)]
 
         self._validate_network_interfaces_request(ami_deployment_model, network_actions, logger)
 
@@ -451,13 +461,13 @@ class DeployAMIOperation(object):
                                                          net_config.actionParams.cidr)
 
             net_interfaces.append(
-                    # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
-                    self.network_interface_service.build_network_interface_dto(
-                            subnet_id=net_config.actionParams.subnetId,
-                            device_index=device_index,
-                            groups=security_group_ids,  # todo: set groups by subnet id
-                            public_ip=public_ip_prop_value,
-                            private_ip=private_ip))
+                # todo: maybe add fallback to find subnet by cidr if subnet id doesnt exist?
+                self.network_interface_service.build_network_interface_dto(
+                    subnet_id=net_config.actionParams.subnetId,
+                    device_index=device_index,
+                    groups=security_group_ids,  # todo: set groups by subnet id
+                    public_ip=public_ip_prop_value,
+                    private_ip=private_ip))
 
             # set device index on action result object
             res = first_or_default(network_config_results, lambda x: x.action_id == net_config.actionId)
@@ -467,10 +477,10 @@ class DeployAMIOperation(object):
             logger.info("No network interface dto was created, switching back to single subnet mode")
             network_config_results[0].device_index = 0
             return [self.network_interface_service.get_network_interface_for_single_subnet_mode(
-                    add_public_ip=ami_deployment_model.add_public_ip,
-                    security_group_ids=security_group_ids,
-                    vpc=vpc,
-                    private_ip=ami_deployment_model.private_ip_address)]
+                add_public_ip=ami_deployment_model.add_public_ip,
+                security_group_ids=security_group_ids,
+                vpc=vpc,
+                private_ip=ami_deployment_model.private_ip_address)]
 
         logger.info("Created dtos for {} network interfaces".format(len(net_interfaces)))
 
@@ -497,7 +507,9 @@ class DeployAMIOperation(object):
             raise ValueError("Public IP option is not supported with multiple subnets")
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
-        return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
+        return ami_deployment_model.instance_type \
+            if ami_deployment_model.instance_type \
+            else aws_ec2_resource_model.instance_type
 
     def _get_security_group_param(self, reservation, security_group, vpc, allow_sandbox_traffic):
         security_group_ids = []
@@ -661,7 +673,8 @@ class DeployAMIOperation(object):
         return res
 
     def _get_user_data(self, user_data_url, user_data_run_parameters):
-        data = "#!/bin/bash\n" + "curl --retry 10 --max-time 5 --retry-max-time 180 {0}  > cs.sh \n".format(user_data_url) \
+        data = "#!/bin/bash\n" + "curl --retry 10 --max-time 5 --retry-max-time 180 {0}  > cs.sh \n".format(
+            user_data_url) \
                + "chmod +x cs.sh \n" \
                + "./cs.sh {0}".format(user_data_run_parameters)
         return data

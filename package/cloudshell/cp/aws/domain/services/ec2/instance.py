@@ -1,8 +1,3 @@
-import traceback
-
-from botocore.exceptions import WaiterError
-from cloudshell.shell.core.driver_context import CancellationContext
-
 from cloudshell.cp.aws.common import retry_helper
 
 
@@ -17,7 +12,7 @@ class InstanceService(object):
         self.instance_waiter = instance_waiter
         self.tags_creator_service = tags_creator_service
 
-    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client,
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check,
                         cancellation_context, logger):
         """
         Deploys an AMI
