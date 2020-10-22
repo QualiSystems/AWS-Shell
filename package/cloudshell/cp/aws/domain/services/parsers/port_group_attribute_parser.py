@@ -6,6 +6,10 @@ from cloudshell.cp.aws.models.port_data import PortData
 
 
 class PortGroupAttributeParser(object):
+    PORT_DATA_MATCH = re.compile(r"^(?P<from_port>\d+)"
+                                 r"(-(?P<to_port>\d+))?"
+                                 r"(:(?P<protocol>(udp|tcp|icmp)))?"
+                                 r"(:(?P<destination>\S+))?$", re.IGNORECASE)
 
     @staticmethod
     def parse_security_group_rules_to_port_data(rules):
@@ -41,84 +45,18 @@ class PortGroupAttributeParser(object):
     @staticmethod
     def _single_port_parse(ports_attribute):
         destination = "0.0.0.0/0"
-        from_port = 'from_port'
-        to_port = 'to_port'
-        protocol = 'protocol'
-        tcp = 'tcp'
+        protocol = "tcp"
 
-        # # 4000-5000:tcp:10.0.0.20 or 4000-5000:tcp:10.0.0.0/24
-        # regex_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)):(?P<source>.+))$",
-        #                        ports_attribute,
-        #                        flags=re.IGNORECASE)
-        # if regex_match:
-        #     from_port = regex_match.group(from_port)
-        #     to_port = regex_match.group(to_port)
-        #     protocol = regex_match.group(protocol).lower()
-        #     req_source = regex_match.group(source)
-        #     if PortGroupAttributeParser._is_valid_source(req_source):
-        #         return PortData(from_port, to_port, protocol, req_source)
-        #
-        # # 4000:tcp:10.0.0.20 or 4000:tcp:10.0.0.0/24
-        # regex_match = re.match(r"^((?P<from_port>\d+):(?P<protocol>(udp|tcp)):(?P<source>.+))$",
-        #                        ports_attribute,
-        #                        flags=re.IGNORECASE)
-        # if regex_match:
-        #     from_port = regex_match.group(from_port)
-        #     to_port = from_port
-        #     protocol = regex_match.group(protocol).lower()
-        #     req_source = regex_match.group(source)
-        #     if PortGroupAttributeParser._is_valid_source(req_source):
-        #         return PortData(from_port, to_port, protocol, req_source)
-        #
-        # # 80-50000:udp
-        # regex_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
-        #                        ports_attribute,
-        #                        flags=re.IGNORECASE)
-        # if regex_match:
-        #     from_port = regex_match.group(from_port)
-        #     to_port = regex_match.group(to_port)
-        #     protocol = regex_match.group(protocol).lower()
-        #     return PortData(from_port, to_port, protocol, default_source)
-
-        from_to_protocol_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+):(?P<protocol>(udp|tcp)))$",
-                                          ports_attribute,
-                                          flags=re.IGNORECASE)
-
-        # 80-50000:udp
+        from_to_protocol_match = PortGroupAttributeParser.PORT_DATA_MATCH.search(ports_attribute)
         if from_to_protocol_match:
-            from_port = from_to_protocol_match.group(from_port)
-            to_port = from_to_protocol_match.group(to_port)
-            protocol = from_to_protocol_match.group(protocol).lower()
-            return PortData(from_port, to_port, protocol, destination)
-
-        from_protocol_match = re.match(r"^((?P<from_port>\d+):(?P<protocol>(udp|tcp)))$",
-                                       ports_attribute,
-                                       flags=re.IGNORECASE)
-
-        # 80:udp
-        if from_protocol_match:
-            from_port = from_protocol_match.group(from_port)
-            to_port = from_port
-            protocol = from_protocol_match.group(protocol).lower()
-            return PortData(from_port, to_port, protocol, destination)
-
-        from_to_match = re.match(r"^((?P<from_port>\d+)-(?P<to_port>\d+))$", ports_attribute)
-
-        # 20-80
-
-        if from_to_match:
-            from_port = from_to_match.group(from_port)
-            to_port = from_to_match.group(to_port)
-            protocol = tcp
-            return PortData(from_port, to_port, protocol, destination)
-
-        port_match = re.match(r"^((?P<from_port>\d+))$", ports_attribute)
-        # 80
-        if port_match:
-            from_port = port_match.group(from_port)
-            to_port = from_port
-            protocol = tcp
-            return PortData(from_port, to_port, protocol, destination)
+            port_data_params = from_to_protocol_match.groupdict()
+            if not port_data_params.get("to_port"):
+                port_data_params["to_port"] = port_data_params.get("from_port")
+            if not port_data_params.get("destination"):
+                port_data_params["destination"] = destination
+            if not port_data_params.get("protocol"):
+                port_data_params["protocol"] = protocol
+            return PortData(**port_data_params)
 
         raise ValueError("The value '{0}' is not a valid ports rule".format(ports_attribute))
 
