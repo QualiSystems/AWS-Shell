@@ -7,7 +7,8 @@ class AutoloadOperation(object):
     def get_inventory(self, cloud_provider_model, logger, ec2_client, ec2_session, s3_session):
         """Check that all needed resources are valid and present on the Azure
 
-        :param cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel cloud_provider_model:  instance
+        :param cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model.AWSEc2CloudProviderResourceModel
+                cloud_provider_model:  instance
         :param logger: logging.Logger instance
         :return: cloudshell.shell.core.driver_context.AutoLoadDetails instance
         """
@@ -29,11 +30,10 @@ class AutoloadOperation(object):
             return
         try:
             response = ec2_client.describe_security_groups(
-                GroupIds=[management_sg_id])
-            security_groups = response['SecurityGroups']
+                GroupIds=[unicode(management_sg_id)])
             # management_sg_id_found = next((True for sg in security_groups if sg['GroupId'] == management_sg_id), False)
             management_sg_id_found = any(sg.get('GroupId')
-                                         for sg in security_groups
+                                         for sg in response.get('SecurityGroups', [])
                                          if sg.get('GroupId') == management_sg_id)
             if not management_sg_id_found:
                 raise AutoloadException('Was not able to find the AWS management security group with id {}'.format(

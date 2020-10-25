@@ -1,5 +1,4 @@
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
-from cloudshell.shell.core.context import ResourceCommandContext
 
 
 class AwsResourceModelContext(object):

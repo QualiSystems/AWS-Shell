@@ -1,17 +1,13 @@
 from unittest import TestCase
 
-import jsonpickle
 from cloudshell.cp.core.models import DeployApp
-from mock import Mock, patch, mock
+from mock import Mock, patch
 
 from cloudshell.cp.aws.aws_shell import AWSShell
 from cloudshell.cp.aws.common.deploy_data_holder import DeployDataHolder
 from cloudshell.cp.aws.domain.context.aws_shell import AwsShellContextModel
 from cloudshell.cp.aws.models.aws_ec2_cloud_provider_resource_model import AWSEc2CloudProviderResourceModel
-from cloudshell.cp.aws.models.deploy_aws_ec2_ami_instance_resource_model import DeployAWSEc2AMIInstanceResourceModel
 from cloudshell.cp.aws.models.reservation_model import ReservationModel
-from cloudshell.cp.core import DriverRequestParser
-
 
 
 class TestAWSShell(TestCase):
