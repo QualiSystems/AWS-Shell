@@ -9,7 +9,7 @@ install:
   - pip install "cloudshell-core>=2.2.0,<2.3.0"
   - pip install "cloudshell-shell-core>=3.1.0,<3.2.0"
   - pip install "cloudshell-automation-api>=8.3.0.0,<8.3.1.0" --extra-index-url https://testpypi.python.org/simple
-  - pip install "cloudshell-cp-core>=1.0.0,<1.1.0" --extra-index-url https://test.pypi.org/simple
+  - pip install "cloudshell-cp-core>=1.1.0,<1.2.0" --extra-index-url https://test.pypi.org/simple
 script:
     - pushd package
     - python setup.py develop

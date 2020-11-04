@@ -1,11 +1,9 @@
 import json
 
-from typing import Dict
-
-import cloudshell
-from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
-
+from typing import Dict, List
+from cloudshell.cp.core.requested_ips.parser import RequestedIPsParser
 from cloudshell.cp.aws.common.converters import convert_to_bool
+from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 
 
 class DeployAWSEc2AMIInstanceResourceModel(object):
@@ -28,7 +26,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.iam_role = ''  # type: str
         self.security_group_ids = None  # type: str
         self.private_ip_address = ""  # type: str
-        self.private_ip_addresses_dict = None  # type: Dict
+        self.private_ip_addresses_list = None  # type: Dict
         self.root_volume_name = ''  # type: str
         self.delete_on_termination = True  # type: bool
         self.auto_power_off = False  # type: bool
@@ -63,20 +61,23 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.user_data_url = attributes['User Data URL']
         self.user_data_run_parameters = attributes['User Data Parameters']
 
-        private_ip_att_value = attributes['Private IP']
-        self.private_ip_address = self._get_primary_private_ip_address(private_ip_att_value)
-        self.private_ip_addresses_dict = self._get_private_ip_addresses_dict(private_ip_att_value)
+        self.private_ip_addresses_list = self._get_private_ip_addresses(attributes)
+        self.private_ip_address = self._get_primary_private_ip_address(self.private_ip_addresses_list)
 
-    def _get_private_ip_addresses_dict(self, private_ip_address):
-        try:
-            # if dict of private ip address then we take the first as the primary
-            return json.loads(private_ip_address)
-        except:
-            return None
+    def _get_private_ip_addresses(self, attributes):
+        """
+        :param dict attributes:
+        :rtype: List[List[str]]
+        """
+        if attributes:
+            return RequestedIPsParser.parse(attributes)
+        return None
 
-    def _get_primary_private_ip_address(self, private_ip_address):
-        try:
-            # if dict of private ip address then we take the first as the primary
-            return json.loads(private_ip_address).values()[0]
-        except:
-            return private_ip_address or None
+    def _get_primary_private_ip_address(self, private_ip_addresses_list):
+        """
+        :param List[List[str]] private_ip_addresses_list:
+        :rtype: str
+        """
+        if private_ip_addresses_list:
+            return private_ip_addresses_list[0][0]
+        return None

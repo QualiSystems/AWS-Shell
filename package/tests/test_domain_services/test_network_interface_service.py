@@ -67,4 +67,4 @@ class TestNetworkInterfaceService(TestCase):
                 device_index=0,
                 groups=security_group_ids,
                 public_ip=add_public_ip,
-                private_ip=None)
+                private_ips=None)

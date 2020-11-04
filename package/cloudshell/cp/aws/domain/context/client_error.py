@@ -12,5 +12,4 @@ class ClientErrorWrapper(object):
             yield
         except ClientError as e:
             raise type(e), \
-                type(e)('AWS API Error. Please consider retrying the operation. ' + e.message), \
-                sys.exc_info()[2]
+                type(e)('AWS API Error. Please consider retrying the operation. ' + e.message, sys.exc_info()[2])
