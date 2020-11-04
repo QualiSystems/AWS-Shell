@@ -367,6 +367,7 @@ class DeployAMIOperation(object):
         :param network_config_results: list of network configuration result objects
         :type network_config_results: list[DeployNetworkingResultModel]
         :param logging.Logger logger:
+        :rtype: AMIDeploymentModel
         """
         aws_model = AMIDeploymentModel()
         if not ami_deployment_model.aws_ami_id:

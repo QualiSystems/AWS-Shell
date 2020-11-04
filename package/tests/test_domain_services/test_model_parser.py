@@ -199,6 +199,8 @@ class TestModelParser(TestCase):
         self.assertFalse(model.actionParams.deployment.customModel.wait_for_credentials)
         self.assertFalse(model.actionParams.deployment.customModel.add_public_ip)
         self.assertTrue(model.actionParams.deployment.customModel.allocate_elastic_ip)
+        self.assertIsNone(model.actionParams.deployment.customModel.private_ip_addresses_list)
+        self.assertIsNone(model.actionParams.deployment.customModel.private_ip_address)
 
     def test_convert_to_deployment_resource_model_with_network(self):
         json = '{'\
@@ -261,7 +263,22 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Allow all Sandbox Traffic",'\
                                 '"attributeValue": "True",'\
                                 '"type": "attribute"'\
-                              '},'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Custom Tags",' \
+                                '"attributeValue": "custom_tags",' \
+                                '"type": "attribute"' \
+                              '},' \
+                              '{' \
+                               '"attributeName": "User Data URL",' \
+                               '"attributeValue": "user_data_url",' \
+                               '"type": "attribute"' \
+                              '},' \
+                              '{' \
+                               '"attributeName": "User Data Parameters",' \
+                               '"attributeValue": "user_data_parameters",' \
+                               '"type": "attribute"' \
+                              '},' \
                               '{'\
                                 '"attributeName": "Wait for IP",'\
                                 '"attributeValue": "False",'\
@@ -321,8 +338,13 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Inbound Ports",'\
                                 '"attributeValue": "",'\
                                 '"type": "attribute"'\
-                              '}'\
-                            '],'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Private IP",' \
+                                '"attributeValue": "10.0.1.6, 10.0.1.8",' \
+                                '"type": "attribute"' \
+                              '}' \
+                           '],'\
                             '"type": "deployAppDeploymentInfo"'\
                           '},'\
                           '"appResource": {'\
@@ -366,6 +388,8 @@ class TestModelParser(TestCase):
         self.assertEquals(len(model.actionParams.subnetServiceAttributes), 6)
         self.assertEquals(model.actionParams.subnetServiceAttributes["Public"], 'True')
         self.assertTrue(isinstance(model.actionParams, ConnectToSubnetParams))
+        self.assertEqual(model.actionParams.deployment.customModel.private_ip_addresses_list, ['10.0.1.6', '10.0.1.8'])
+        self.assertIsNone(model.actionParams.deployment.customModel.private_ip_address, '10.0.1.6')
 
     def test_subnet_connection_params_check_is_public_subnet_true(self):
         # arrange

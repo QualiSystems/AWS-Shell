@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock, call, MagicMock
+from mock import Mock, call, MagicMock, ANY, patch
 
 from cloudshell.cp.aws.domain.ami_management.operations.deploy_operation import DeployAMIOperation
 from cloudshell.cp.aws.domain.common.exceptions import CancellationException
@@ -452,6 +452,43 @@ class TestDeployOperation(TestCase):
         self.assertTrue(len(aws_model.security_group_ids) == 1)
         self.assertTrue(len(aws_model.network_interfaces) == 1)
 
+    def test_create_deployment_parameters_single_subnet_single_requested_ip(self):
+        image = Mock()
+        image.state = 'available'
+        ec2_session = Mock()
+        ec2_session.Image = Mock(return_value=image)
+        ami_model = Mock()
+        private_ip_request = Mock()
+        ami_model.private_ip_address = private_ip_request
+        ami_model.private_ip_addresses_list = [[private_ip_request]]
+        ami_model.aws_ami_id = 'asd'
+        ami_model.storage_size = '0'
+        ami_model.iam_role = ""
+        ami_model.custom_tags = ""
+
+        network_actions = None
+        vpc = Mock()
+        self.deploy_operation._get_block_device_mappings = Mock()
+
+        aws_model = self.deploy_operation._create_deployment_parameters(ec2_session=ec2_session,
+                                                                        aws_ec2_resource_model=self.ec2_datamodel,
+                                                                        ami_deployment_model=ami_model,
+                                                                        network_actions=network_actions,
+                                                                        vpc=vpc,
+                                                                        security_group=None,
+                                                                        key_pair='keypair',
+                                                                        reservation=Mock(),
+                                                                        network_config_results=MagicMock(),
+                                                                        logger=self.logger)
+
+        self.assertEquals(aws_model.min_count, 1)
+        self.assertEquals(aws_model.max_count, 1)
+        self.assertEquals(aws_model.aws_key, 'keypair')
+        self.assertTrue(len(aws_model.security_group_ids) == 1)
+        self.assertTrue(len(aws_model.network_interfaces) == 1)
+        self.network_interface_service.get_network_interface_for_single_subnet_mode.assert_called_once_with(
+            add_public_ip=ANY, security_group_ids=ANY, vpc=ANY, private_ips=[private_ip_request])
+
     def test_create_deployment_parameters_no_iam_role(self):
         image = Mock()
         image.state = 'available'
@@ -531,7 +568,7 @@ class TestDeployOperation(TestCase):
         # if instance has iam role, but not in the form of arn, will return dict with iam role name
         self.assertTrue(aws_model.iam_role['Arn'] == ami_model.iam_role)
 
-    def test_prepare_network_interfaces_multi_subnets_with_public_ip(self):
+    def test_prepare_network_interfaces_multi_subnets_with_public_ip_throws(self):
         ami_model = Mock()
         ami_model.add_public_ip = True
         ami_model.network_configurations = [Mock(), Mock()]
@@ -593,6 +630,72 @@ class TestDeployOperation(TestCase):
         self.assertEquals(len(net_interfaces), 2)
         self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
         self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
+
+    @patch('cloudshell.cp.aws.domain.ami_management.operations.deploy_operation.RequestedIPsMapper')
+    def test_prepare_network_interfaces_multi_subnets_with_requested_ips(self, requested_ips_mapper_class_mock):
+        def build_network_interface_handler(*args, **kwargs):
+            return {'SubnetId': kwargs['subnet_id'],
+                    'PrivateIpAddresses': kwargs['private_ips']}
+
+        # arrange
+        vpc = Mock()
+        security_group_ids = MagicMock()
+
+        action1 = ConnectSubnet()
+        action1.actionId = 'action1'
+        action1.actionParams = ConnectToSubnetParams()
+        action1.actionParams.subnetId = 'sub1'
+        action1.actionParams.vnicName = 0
+        action1.actionParams.isPublic = True
+        action1.actionParams.cidr = 'cidr1'
+
+        action2 = ConnectSubnet()
+        action2.actionId = 'action2'
+        action2.actionParams = ConnectToSubnetParams()
+        action2.actionParams.subnetId = 'sub2'
+        action2.actionParams.vnicName = 1
+        action2.actionParams.cidr = 'cidr2'
+
+        ami_model = Mock()
+        ami_model.private_ip_addresses_list = MagicMock()
+        # ami_model.private_ip_address=Mock()
+        network_actions = [action1, action2]
+        ami_model.add_public_ip = False
+
+        res_model_1 = DeployNetworkingResultModel('action1')
+        res_model_2 = DeployNetworkingResultModel('action2')
+        network_config_results = [res_model_1, res_model_2]
+
+        self.deploy_operation.network_interface_service.build_network_interface_dto = \
+            Mock(side_effect=build_network_interface_handler)
+
+        cidr1_requested_ip = MagicMock()
+        cidr2_requested_ip = MagicMock()
+
+        requested_ips_mapper_instance_mock = Mock()
+        requested_ips_mapper_instance_mock.map_network_to_requested_ips.return_value = {
+            'cidr1': cidr1_requested_ip,
+            'cidr2': cidr2_requested_ip
+        }
+        requested_ips_mapper_class_mock.return_value = requested_ips_mapper_instance_mock
+
+        # act
+        net_interfaces = self.deploy_operation._prepare_network_interfaces(ami_deployment_model=ami_model,
+                                                                           network_actions=network_actions,
+                                                                           vpc=vpc,
+                                                                           security_group_ids=security_group_ids,
+                                                                           network_config_results=network_config_results,
+                                                                           logger=self.logger)
+
+        # assert
+        # print res_model_1.device_index
+        self.assertEquals(res_model_1.device_index, 0)
+        self.assertEquals(res_model_2.device_index, 1)
+        self.assertEquals(len(net_interfaces), 2)
+        self.assertEquals(net_interfaces[0]['SubnetId'], 'sub1')
+        self.assertEquals(net_interfaces[0]['PrivateIpAddresses'], cidr1_requested_ip)
+        self.assertEquals(net_interfaces[1]['SubnetId'], 'sub2')
+        self.assertEquals(net_interfaces[1]['PrivateIpAddresses'], cidr2_requested_ip)
 
     def test_prepare_network_config_results_dto_returns_empty_array_when_no_network_config(self):
         # arrange
@@ -673,7 +776,7 @@ class TestDeployOperation(TestCase):
                                     cancellation_context=Mock(),
                                     logger=self.logger)
 
-    def test__prepare_network_result_models_returns_empty_model_when_no_network_config(self):
+    def test_prepare_network_result_models_returns_empty_model_when_no_network_config(self):
         # arrange
         network_actions = None
 
@@ -685,7 +788,7 @@ class TestDeployOperation(TestCase):
         self.assertEquals(models[0].action_id, '')
         self.assertTrue(isinstance(models[0], DeployNetworkingResultModel))
 
-    def test__prepare_network_result_models_returns_result_model_per_action(self):
+    def test_prepare_network_result_models_returns_result_model_per_action(self):
         # arrange
         action1 = Mock(spec=PrepareCloudInfra, actionId=Mock(spec=str))
         action1.actionParams = Mock(spec=ConnectToSubnetParams)
