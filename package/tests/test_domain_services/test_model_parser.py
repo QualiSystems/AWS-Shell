@@ -1,7 +1,8 @@
 from unittest import TestCase
 
 from cloudshell.cp.core import DriverRequestParser
-from cloudshell.cp.core.models import PrepareSubnetParams, PrepareCloudInfra, ConnectToSubnetParams
+from cloudshell.cp.core.models import PrepareSubnetParams, PrepareCloudInfra, ConnectToSubnetParams, \
+    ConnectToSubnetActionResult, ConnectSubnet, DeployApp
 from mock import Mock
 
 from cloudshell.cp.aws.common.converters import convert_to_bool
@@ -381,15 +382,19 @@ class TestModelParser(TestCase):
         # Act
         self.request_parser = DriverRequestParser()
         self.request_parser.add_deployment_model(deployment_model_cls=DeployAWSEc2AMIInstanceResourceModel)
-        model = self.request_parser.convert_driver_request_to_actions(json)[0]
+        results = self.request_parser.convert_driver_request_to_actions(json)
 
         # Assert
-        self.assertEquals(model.actionId, "some_id")
-        self.assertEquals(len(model.actionParams.subnetServiceAttributes), 6)
-        self.assertEquals(model.actionParams.subnetServiceAttributes["Public"], 'True')
-        self.assertTrue(isinstance(model.actionParams, ConnectToSubnetParams))
-        self.assertEqual(model.actionParams.deployment.customModel.private_ip_addresses_list, ['10.0.1.6', '10.0.1.8'])
-        self.assertIsNone(model.actionParams.deployment.customModel.private_ip_address, '10.0.1.6')
+        connect_subnet_action = next(iter(filter(lambda x: isinstance(x, ConnectSubnet), results)), None)
+        self.assertEquals(connect_subnet_action.actionId, "some_id")
+        self.assertEquals(len(connect_subnet_action.actionParams.subnetServiceAttributes), 6)
+        self.assertEquals(connect_subnet_action.actionParams.subnetServiceAttributes["Public"], 'True')
+        self.assertTrue(isinstance(connect_subnet_action.actionParams, ConnectToSubnetParams))
+
+        deployment_action = next(iter(filter(lambda x: isinstance(x, DeployApp), results)), None)
+        self.assertEqual([['10.0.1.6', '10.0.1.8']],
+                         deployment_action.actionParams.deployment.customModel.private_ip_addresses_list)
+        self.assertEquals(deployment_action.actionParams.deployment.customModel.private_ip_address, '10.0.1.6')
 
     def test_subnet_connection_params_check_is_public_subnet_true(self):
         # arrange
