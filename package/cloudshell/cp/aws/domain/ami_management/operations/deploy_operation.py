@@ -117,16 +117,23 @@ class DeployAMIOperation(object):
                                                                      network_config_results=network_config_results,
                                                                      logger=logger)
 
-            instance = self.instance_service.create_instance(ec2_session=ec2_session,
-                                                             name=name,
-                                                             reservation=reservation,
-                                                             ami_deployment_info=ami_deployment_info,
-                                                             ec2_client=ec2_client,
-                                                             wait_for_status_check=ami_deployment_model.wait_for_status_check,
-                                                             cancellation_context=cancellation_context,
-                                                             logger=logger)
+            instance = self.instance_service.create_instance(
+                ec2_session=ec2_session,
+                name=name,
+                reservation=reservation,
+                ami_deployment_info=ami_deployment_info,
+                ec2_client=ec2_client,
+                wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                cancellation_context=cancellation_context,
+                logger=logger)
 
             logger.info("Instance created, populating results with interface data")
+            self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
+                                                 instance=instance,
+                                                 wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                                                 cancellation_context=cancellation_context,
+                                                 logger=logger)
+
             self._populate_network_config_results_with_interface_data(instance=instance,
                                                                       network_config_results=network_config_results)
 
@@ -346,9 +353,17 @@ class DeployAMIOperation(object):
 
         return security_group
 
-    def _create_deployment_parameters(self, ec2_session, aws_ec2_resource_model, ami_deployment_model, network_actions,
+    def _create_deployment_parameters(self,
+                                      ec2_session,
+                                      aws_ec2_resource_model,
+                                      ami_deployment_model,
+                                      network_actions,
                                       vpc,
-                                      security_group, key_pair, reservation, network_config_results, logger):
+                                      security_group,
+                                      key_pair,
+                                      reservation,
+                                      network_config_results,
+                                      logger):
         """
         :param ec2_session:
         :param aws_ec2_resource_model: The resource model of the AMI deployment option
@@ -518,7 +533,9 @@ class DeployAMIOperation(object):
                              'instead detected request for multiple subnets.')
 
     def _get_instance_item(self, ami_deployment_model, aws_ec2_resource_model):
-        return ami_deployment_model.instance_type if ami_deployment_model.instance_type else aws_ec2_resource_model.instance_type
+        return ami_deployment_model.instance_type \
+            if ami_deployment_model.instance_type \
+            else aws_ec2_resource_model.instance_type
 
     def _get_security_group_param(self, reservation, security_group, vpc, allow_sandbox_traffic):
         security_group_ids = []

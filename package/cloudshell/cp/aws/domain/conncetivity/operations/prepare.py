@@ -201,8 +201,7 @@ class PrepareSandboxInfraOperation(object):
                             vpc_id=vpc.id,
                             sandbox_vpc_cidr=cidr,
                             reservation_model=reservation,
-                            logger=logger,
-                            sandbox_private_route_table=sandbox_private_route_table)
+                            logger=logger)
         else:
             logger.info("We are using static VPC mode, not creating VPC peering with management vpc")
 
@@ -237,8 +236,14 @@ class PrepareSandboxInfraOperation(object):
 
         return private_key
 
-    def _peer_vpcs(self, ec2_client, ec2_session, management_vpc_id, vpc_id, sandbox_vpc_cidr, internet_gateway_id,
-                   sandbox_private_route_table, reservation_model, logger):
+    def _peer_vpcs(self,
+                   ec2_client,
+                   ec2_session,
+                   management_vpc_id,
+                   vpc_id,
+                   sandbox_vpc_cidr,
+                   reservation_model,
+                   logger):
         """
         :param ec2_client
         :param ec2_session:

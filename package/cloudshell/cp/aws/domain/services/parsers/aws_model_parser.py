@@ -103,6 +103,21 @@ class AWSModelsParser(object):
         return None
 
     @staticmethod
+    def get_attribute_tuple_ignoring_namespace(attributes, name):
+        """
+        Finds the attribute value by name ignoring attribute namespaces.
+        :param dict attributes: Attributes key value dict to search on.
+        :param str name: Attribute name to search for.
+        :return: Attribute str value. None if not found.
+        :rtype: str
+        """
+        for key, val in attributes.iteritems():
+            last_part = key.split(".")[-1]  # get last part of namespace.
+            if name == last_part:
+                return key, val
+        return None
+
+    @staticmethod
     def get_allow_all_storage_traffic_from_connected_resource_details(resource_context):
         allow_traffic_on_resource = ""
         allow_all_storage_traffic = 'Allow all Sandbox Traffic'
@@ -121,6 +136,15 @@ class AWSModelsParser(object):
             public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
                 resource_context.remote_endpoints[0].attributes, public_ip)
         return public_ip_on_resource
+
+    @staticmethod
+    def get_public_ip_attr_from_connected_resource_details(resource_context):
+        public_ip_on_resource = ""
+        public_ip_attr = 'Public IP'
+        if resource_context.remote_endpoints is not None:
+            public_ip_attr, public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+                resource_context.remote_endpoints[0].attributes, public_ip_attr)
+        return public_ip_attr, public_ip_on_resource
 
     @staticmethod
     def get_private_ip_from_connected_resource_details(resource_context):

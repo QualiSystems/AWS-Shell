@@ -176,18 +176,18 @@ class AWSShell(object):
         """
 
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
-                shell_context.logger.info('Cleanup Connectivity')
+            shell_context.logger.info('Cleanup Connectivity')
 
-                result = self.clean_up_operation \
-                    .cleanup(ec2_client=shell_context.aws_api.ec2_client,
-                             ec2_session=shell_context.aws_api.ec2_session,
-                             s3_session=shell_context.aws_api.s3_session,
-                             aws_ec2_data_model=shell_context.aws_ec2_resource_model,
-                             reservation_id=command_context.reservation.reservation_id,
-                             actions=actions,
-                             logger=shell_context.logger)
-                return self.command_result_parser.set_command_result(
-                    {'driverResponse': {'actionResults': [result]}})
+            result = self.clean_up_operation \
+                .cleanup(ec2_client=shell_context.aws_api.ec2_client,
+                         ec2_session=shell_context.aws_api.ec2_session,
+                         s3_session=shell_context.aws_api.s3_session,
+                         aws_ec2_data_model=shell_context.aws_ec2_resource_model,
+                         reservation_id=command_context.reservation.reservation_id,
+                         actions=actions,
+                         logger=shell_context.logger)
+            return self.command_result_parser.set_command_result(
+                {'driverResponse': {'actionResults': [result]}})
 
     def prepare_connectivity(self, command_context, actions, cancellation_context):
         """
@@ -351,7 +351,8 @@ class AWSShell(object):
             private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
                 command_context)
             # Get Public IP on deployed resource
-            public_ip_on_resource = self.model_parser.get_public_ip_from_connected_resource_details(
+            public_ip_attr_name, public_ip_on_resource = \
+                self.model_parser.get_public_ip_attr_from_connected_resource_details(
                 command_context)
             # Get instance id
             deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
@@ -364,6 +365,7 @@ class AWSShell(object):
                                                  deployed_instance_id=deployed_instance_id,
                                                  private_ip_on_resource=private_ip_on_resource,
                                                  public_ip_on_resource=public_ip_on_resource,
+                                                 public_ip_attribute_name=public_ip_attr_name,
                                                  resource_fullname=resource_fullname)
 
     def get_access_key(self, command_context):

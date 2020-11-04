@@ -1,8 +1,3 @@
-import traceback
-
-from botocore.exceptions import WaiterError
-from cloudshell.shell.core.driver_context import CancellationContext
-
 from cloudshell.cp.aws.common import retry_helper
 
 

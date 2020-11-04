@@ -6,7 +6,6 @@ from cloudshell.cp.aws.domain.context.aws_api import AwsApiSessionContext
 from cloudshell.cp.aws.domain.context.aws_resource_model import AwsResourceModelContext
 from cloudshell.cp.aws.domain.services.parsers.aws_model_parser import AWSModelsParser
 from cloudshell.cp.aws.domain.services.session_providers.aws_session_provider import AWSSessionProvider
-from cloudshell.shell.core.context import ResourceCommandContext
 
 
 class AwsShellContext(object):
