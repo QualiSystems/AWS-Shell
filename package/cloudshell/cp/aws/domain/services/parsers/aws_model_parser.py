@@ -96,7 +96,7 @@ class AWSModelsParser(object):
         :return: Attribute str value. None if not found.
         :rtype: str
         """
-        for key, val in attributes.iteritems():
+        for key, val in attributes.items():
             last_part = key.split(".")[-1]  # get last part of namespace.
             if name == last_part:
                 return val
@@ -142,7 +142,7 @@ class AWSModelsParser(object):
         public_ip_on_resource = ""
         public_ip_attr = 'Public IP'
         if resource_context.remote_endpoints is not None:
-            public_ip_attr, public_ip_on_resource = AWSModelsParser.get_attribute_value_by_name_ignoring_namespace(
+            public_ip_attr, public_ip_on_resource = AWSModelsParser.get_attribute_tuple_ignoring_namespace(
                 resource_context.remote_endpoints[0].attributes, public_ip_attr)
         return public_ip_attr, public_ip_on_resource
 
