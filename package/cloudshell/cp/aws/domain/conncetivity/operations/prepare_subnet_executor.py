@@ -80,6 +80,9 @@ class PrepareSubnetExecutor(object):
 
         # create new subnet for the non-existing ones
         for item in action_items:
+            if item.action.actionParams and item.action.actionParams.subnetServiceAttributes and 'Availability Zone' in\
+                    item.action.actionParams.subnetServiceAttributes:
+                availability_zone = item.action.actionParams.subnetServiceAttributes['Availability Zone']
             self._step_create_new_subnet_if_needed(item, vpc, availability_zone, is_multi_subnet_mode)
 
         # wait for the new ones to be available
