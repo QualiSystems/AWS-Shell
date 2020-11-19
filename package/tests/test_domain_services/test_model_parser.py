@@ -136,7 +136,17 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Root Volume Name",'\
                                 '"attributeValue": "root_vol_name",'\
                                 '"type": "attribute"'\
-                              '},'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Enable Source Dest Check",' \
+                                '"attributeValue": "True",' \
+                                '"type": "attribute"' \
+                              '},' \
+                              '{' \
+                                '"attributeName": "User Data",' \
+                                '"attributeValue": "",' \
+                                '"type": "attribute"' \
+                              '},' \
                               '{'\
                                 '"attributeName": "IAM Role Name",'\
                                 '"attributeValue": "top secret",'\
@@ -321,6 +331,11 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Inbound Ports",'\
                                 '"attributeValue": "",'\
                                 '"type": "attribute"'\
+                              '},' \
+                              '{' \
+                                '"attributeName": "Enable Source Dest Check",' \
+                                '"attributeValue": "True",' \
+                                '"type": "attribute"' \
                               '}'\
                             '],'\
                             '"type": "deployAppDeploymentInfo"'\

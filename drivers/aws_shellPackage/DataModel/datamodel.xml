@@ -212,6 +212,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo Name="Enable Source Dest Check"  Type="Boolean" DefaultValue="true" Description="Indicates whether source/destination checking is enabled. A value of true means checking is enabled, and false means checking is disabled. This value must be false for Virtual Appliance instances like virtual firewalls/routers" IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
   </Attributes>
   <ResourceFamilies>
     <ResourceFamily Description="" IsAdminOnly="true" IsSearchable="false" Name="Cloud Provider" AllowRemoteConnection="false">
@@ -344,6 +350,9 @@
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="User Data Parameters" UserInput="true">
               <AllowedValues />
             </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Enable Source Dest Check" UserInput="false">
+              <AllowedValues />
+            </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Storage Size" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
@@ -395,6 +404,7 @@
             <AttributeValue Name="Wait for Credentials" Value="true"/>
             <AttributeValue Name="Storage Type" Value="auto"/>
             <AttributeValue Name="Public IP Options" Value="No Public IP"/>
+            <AttributeValue Name="Enable Source Dest Check" Value="true"/>
           </AttributeValues>
           <ParentModels />
           <Drivers />
