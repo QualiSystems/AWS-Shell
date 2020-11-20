@@ -218,6 +218,12 @@
         <Rule Name="Setting" />
       </Rules>
     </AttributeInfo>
+    <AttributeInfo Name="Status Check Timeout"  Type="Numeric" DefaultValue="0" Description="Timeout in seconds for AWS status checks to pass. If set to 0 then the default timeout will be used." IsReadOnly="false" >
+      <Rules>
+        <Rule Name="Configuration" />
+        <Rule Name="Setting" />
+      </Rules>
+    </AttributeInfo>
   </Attributes>
   <ResourceFamilies>
     <ResourceFamily Description="" IsAdminOnly="true" IsSearchable="false" Name="Cloud Provider" AllowRemoteConnection="false">
@@ -395,6 +401,9 @@
               <AllowedValues />
             </AttachedAttribute>
             <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Private IP" UserInput="true">
+              <AllowedValues />
+            </AttachedAttribute>
+            <AttachedAttribute IsLocal="true" IsOverridable="true" Name="Status Check Timeout" UserInput="false">
               <AllowedValues />
             </AttachedAttribute>
           </AttachedAttributes>

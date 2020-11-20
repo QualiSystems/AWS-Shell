@@ -116,7 +116,12 @@ class TestModelParser(TestCase):
                                 '"attributeName": "Wait for Status Check",'\
                                 '"attributeValue": "True",'\
                                 '"type": "attribute"'\
-                              '},'\
+                              '},' \
+                              '{' \
+                               '"attributeName": "Status Check Timeout",' \
+                               '"attributeValue": "0",' \
+                               '"type": "attribute"' \
+                               '},' \
                               '{'\
                                 '"attributeName": "Autoload",'\
                                 '"attributeValue": "False",'\

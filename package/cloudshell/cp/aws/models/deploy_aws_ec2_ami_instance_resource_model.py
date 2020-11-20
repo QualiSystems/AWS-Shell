@@ -55,6 +55,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.root_volume_name = attributes['Root Volume Name']
         self.wait_for_ip = convert_to_bool(attributes['Wait for IP'])
         self.wait_for_status_check = convert_to_bool(attributes['Wait for Status Check'])
+        self.status_check_timeout = int(attributes['Status Check Timeout'])
         self.autoload = convert_to_bool(attributes['Autoload'])
         self.inbound_ports = attributes['Inbound Ports']
         self.wait_for_credentials = convert_to_bool(attributes['Wait for Credentials'])

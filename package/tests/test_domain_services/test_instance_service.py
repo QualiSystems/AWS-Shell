@@ -138,6 +138,7 @@ class TestInstanceService(TestCase):
         self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
                                                               instance=instance,
                                                               wait_for_status_check=True,
+                                                              status_check_timeout=0,
                                                               cancellation_context=cancellation_context,
                                                               logger=logger)
 
@@ -149,5 +150,6 @@ class TestInstanceService(TestCase):
         self.instance_service.instance_waiter.wait_status_ok.assert_called_once_with(
                 ec2_client=ec2_client,
                 instance=instance,
+                status_check_timeout=0,
                 logger=logger,
                 cancellation_context=cancellation_context)
