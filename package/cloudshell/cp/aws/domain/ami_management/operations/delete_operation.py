@@ -81,3 +81,28 @@ class DeleteAMIOperation(object):
                     self.security_group_service.delete_security_group(security_group)
 
         return True
+
+    def delete_ami(self, logger, ec2_session, instance_ami_id):
+        """
+        Will terminate the instance safely
+        :param logging.Logger logger:
+        :param ec2_session: ec2 sessoion
+        :param instance_id: the id if the instance
+        :type instance_id: str
+        :return:
+        """
+        try:
+            ec2_session.deregister_image(ImageId=instance_ami_id)
+        except ClientError as clientErr:
+            error = 'Error'
+            code = 'Code'
+            is_malformed = error in clientErr.response and \
+                           code in clientErr.response[error] and \
+                           (clientErr.response[error][code] == 'InvalidInstanceID.Malformed' or
+                            clientErr.response[error][code] == 'InvalidInstanceID.NotFound')
+
+            if not is_malformed:
+                raise
+            else:
+                logger.info("Aws AMI {0} was already terminated".format(instance_ami_id))
+                return
