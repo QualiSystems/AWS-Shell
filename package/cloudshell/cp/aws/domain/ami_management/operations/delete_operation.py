@@ -91,18 +91,5 @@ class DeleteAMIOperation(object):
         :type instance_id: str
         :return:
         """
-        try:
-            ec2_session.deregister_image(ImageId=instance_ami_id)
-        except ClientError as clientErr:
-            error = 'Error'
-            code = 'Code'
-            is_malformed = error in clientErr.response and \
-                           code in clientErr.response[error] and \
-                           (clientErr.response[error][code] == 'InvalidInstanceID.Malformed' or
-                            clientErr.response[error][code] == 'InvalidInstanceID.NotFound')
 
-            if not is_malformed:
-                raise
-            else:
-                logger.info("Aws AMI {0} was already terminated".format(instance_ami_id))
-                return
+        ec2_session.deregister_image(ImageId=instance_ami_id)
