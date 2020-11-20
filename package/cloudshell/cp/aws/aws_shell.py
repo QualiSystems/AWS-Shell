@@ -481,7 +481,7 @@ class AWSShell(object):
                                                   snapshot_name=snapshot_name,
                                                   tags=tags)
 
-    def save_app(self, context, cancellation_context):
+    def create_app_image(self, context, cancellation_context, delete_old_image):
         """
         :param context:
         :param cancellation_context:
@@ -495,12 +495,23 @@ class AWSShell(object):
             data_holder = self.model_parser.convert_app_resource_to_deployed_app(resource)
             resource_fullname = self.model_parser.get_connectd_resource_fullname(context)
 
+            instance_ami_id = self.instance_service.get_instance_by_id(shell_context.aws_api.ec2_session,
+                                                                       data_holder.vmdetails.uid).image_id
+
             image_id = self.snapshot_operation.save(logger=shell_context.logger,
                                                     ec2_session=shell_context.aws_api.ec2_session,
                                                     instance_id=data_holder.vmdetails.uid,
                                                     deployed_app_name=resource_fullname,
                                                     snapshot_prefix="",
                                                     no_reboot=True)
+
+            if delete_old_image:
+                try:
+                    self.delete_ami_operation.delete_ami(logger=shell_context.logger,
+                                                         ec2_session=shell_context.aws_api.ec2_session,
+                                                         instance_ami_id=instance_ami_id)
+                except Exception as e:
+                    shell_context.logger.warning("Failed to delete old AMI")
 
             return json.dumps({"AWS EC2 Instance.AWS AMI Id": image_id})
 
