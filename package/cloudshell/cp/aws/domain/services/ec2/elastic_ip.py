@@ -1,4 +1,3 @@
-from botocore.exceptions import ClientError
 from retrying import retry
 
 from cloudshell.cp.aws.common.retry_helper import retry_if_client_error

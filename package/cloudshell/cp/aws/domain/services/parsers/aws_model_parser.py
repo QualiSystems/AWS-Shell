@@ -96,7 +96,7 @@ class AWSModelsParser(object):
         :return: Attribute str value. None if not found.
         :rtype: str
         """
-        for key, val in attributes.iteritems():
+        for key, val in attributes.items():
             last_part = key.split(".")[-1]  # get last part of namespace.
             if name == last_part:
                 return val

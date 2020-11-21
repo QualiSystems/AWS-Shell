@@ -81,3 +81,15 @@ class DeleteAMIOperation(object):
                     self.security_group_service.delete_security_group(security_group)
 
         return True
+
+    def delete_ami(self, logger, ec2_session, instance_ami_id):
+        """
+        Will terminate the instance safely
+        :param logging.Logger logger:
+        :param ec2_session: ec2 sessoion
+        :param instance_id: the id if the instance
+        :type instance_id: str
+        :return:
+        """
+
+        ec2_session.deregister_image(ImageId=instance_ami_id)

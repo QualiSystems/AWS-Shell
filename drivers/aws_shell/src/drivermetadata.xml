@@ -39,7 +39,11 @@
                 </Parameters>
             </Command>
             <Command Description="" DisplayName="Get Snapshots" EnableCancellation="false" Name="remote_get_snapshots" Tags="remote_connectivity,allow_unreserved" />
-            <Command Description="Create Image of instance and return the new image ami." DisplayName="Create New Image" Name="save_app" Tags="remote_connectivity,allow_unreserved,allow_shared" Visibility="AdminOnly" />
+            <Command Description="Create Image of instance and return the new image ami." DisplayName="Create New Image" Name="create_app_image" Tags="remote_connectivity,allow_unreserved,allow_shared" Visibility="AdminOnly">
+                <Parameters>
+                    <Parameter DefaultValue="False" Description="Delete Old AMI?" DisplayName="Delete Old AMI?" Mandatory="True" Name="delete_old_image" Type="String" />
+                </Parameters>
+            </Command>
             <Command Description="" DisplayName="Assign IPv4 Addresses" EnableCancellation="false" Name="assign_additional_private_ipv4s" Tags="remote_connectivity">
                 <Parameters>
                     <Parameter DefaultValue="" Description="Please enter vnic id" DisplayName="Vnic ID" Mandatory="False" Name="vnic_id" Type="String" />
