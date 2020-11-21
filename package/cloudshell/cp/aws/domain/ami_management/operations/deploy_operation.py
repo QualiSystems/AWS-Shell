@@ -80,8 +80,6 @@ class DeployAMIOperation(object):
         :rtype: list[RequestActionBase]
         """
         ami_deployment_model = ami_deploy_action.actionParams.deployment.customModel
-        import jsonpickle
-        logger.info(str(jsonpickle.dumps(ami_deployment_model)))
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
                                                         reservation_id=reservation.reservation_id)
         if not vpc:
