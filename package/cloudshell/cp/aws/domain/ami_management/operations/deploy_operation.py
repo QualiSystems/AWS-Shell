@@ -80,6 +80,8 @@ class DeployAMIOperation(object):
         :rtype: list[RequestActionBase]
         """
         ami_deployment_model = ami_deploy_action.actionParams.deployment.customModel
+        import jsonpickle
+        logger.info(str(jsonpickle.dumps(ami_deployment_model)))
         vpc = self.vpc_service.find_vpc_for_reservation(ec2_session=ec2_session,
                                                         reservation_id=reservation.reservation_id)
         if not vpc:
@@ -124,8 +126,8 @@ class DeployAMIOperation(object):
 
             self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
                                                  instance=instance,
-                                                 wait_for_status_check=ami_deployment_info.wait_for_status_check,
-                                                 status_check_timeout=ami_deployment_info.status_check_timeout,
+                                                 wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                                                 status_check_timeout=ami_deployment_model.status_check_timeout,
                                                  cancellation_context=cancellation_context,
                                                  logger=logger)
             logger.info("Instance created, populating results with interface data")
