@@ -513,7 +513,7 @@ class AWSShell(object):
                                                          instance_ami_id=instance_ami_id)
                 except Exception as e:
                     shell_context.logger.warning("Failed to delete old AMI: " + e.message)
-                    shell_context.logger.exception()
+                    shell_context.logger.exception("Exception: {}".format(e))
 
             return json.dumps({"AWS EC2 Instance.AWS AMI Id": image_id})
 
