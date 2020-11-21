@@ -43,6 +43,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.allocate_elastic_ip = False  # type: bool
         self.network_configurations = None  # type: list[NetworkAction]
         self.allow_all_sandbox_traffic = True  # type: bool
+        self.enable_source_dest_check = True  # type: bool
 
         self.aws_ami_id = attributes["AWS AMI Id"]
         self.allow_all_sandbox_traffic = convert_to_bool(attributes['Allow all Sandbox Traffic'])
@@ -54,6 +55,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
         self.root_volume_name = attributes['Root Volume Name']
         self.wait_for_ip = convert_to_bool(attributes['Wait for IP'])
         self.wait_for_status_check = convert_to_bool(attributes['Wait for Status Check'])
+        self.status_check_timeout = int(attributes['Status Check Timeout'])
         self.autoload = convert_to_bool(attributes['Autoload'])
         self.inbound_ports = attributes['Inbound Ports']
         self.wait_for_credentials = convert_to_bool(attributes['Wait for Credentials'])
@@ -61,6 +63,7 @@ class DeployAWSEc2AMIInstanceResourceModel(object):
             AWSModelsParser.parse_public_ip_options_attribute(attributes['Public IP Options'])
         self.custom_tags = attributes['Custom Tags']
         self.user_data_url = attributes['User Data URL']
+        self.enable_source_dest_check = convert_to_bool(attributes['Enable Source Dest Check'])
         self.user_data_run_parameters = attributes['User Data Parameters']
 
         private_ip_att_value = attributes['Private IP']

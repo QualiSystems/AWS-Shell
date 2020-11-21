@@ -124,12 +124,6 @@ class DeployAMIOperation(object):
                 logger=logger)
 
             logger.info("Instance created, populating results with interface data")
-            self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
-                                                 instance=instance,
-                                                 wait_for_status_check=ami_deployment_model.wait_for_status_check,
-                                                 cancellation_context=cancellation_context,
-                                                 logger=logger)
-
             self._populate_network_config_results_with_interface_data(instance=instance,
                                                                       network_config_results=network_config_results)
 
@@ -385,6 +379,8 @@ class DeployAMIOperation(object):
         self._validate_image_available(image, ami_deployment_model.aws_ami_id)
 
         aws_model.custom_tags = self._get_custom_tags(custom_tags=ami_deployment_model.custom_tags)
+        aws_model.source_dest_check = ami_deployment_model.enable_source_dest_check
+        aws_model.status_check_timeout = ami_deployment_model.status_check_timeout
         aws_model.user_data = self._get_user_data(user_data_url=ami_deployment_model.user_data_url,
                                                   user_data_run_parameters=ami_deployment_model.user_data_run_parameters)
 

@@ -14,3 +14,5 @@ class AMIDeploymentModel(object):
         self.aws_key = ''  # type: str
         self.custom_tags = {}  # type: dict
         self.user_data = ''  # type: str
+        self.source_dest_check = True  # type: bool
+        self.status_check_timeout = 0  # type: int

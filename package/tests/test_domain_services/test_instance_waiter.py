@@ -110,6 +110,7 @@ class TestInstanceWaiter(TestCase):
         # act
         instance_state = self.instance_waiter.wait_status_ok(ec2_client=ec2_client,
                                                              instance=instance,
+                                                             status_check_timeout=20,
                                                              logger=self.logger)
 
         # assert

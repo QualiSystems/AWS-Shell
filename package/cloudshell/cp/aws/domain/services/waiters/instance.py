@@ -77,25 +77,31 @@ class InstanceWaiter(object):
 
         return instances
 
-    def wait_status_ok(self, ec2_client, instance, logger, cancellation_context=None):
+    def wait_status_ok(self, ec2_client, instance, logger, status_check_timeout=0, cancellation_context=None):
         """
 
         :param logging.Logger logger:
         :param instance: Instance
         :param ec2_client: EC2 client
+        :param int status_check_timeout: status check timeout
         :param CancellationContext cancellation_context:
         :return:
         """
         if not instance:
             raise ValueError('Instance cannot be null')
 
+        timeout = self.timeout if not status_check_timeout else status_check_timeout
         start_time = time.time()
 
         instance_status = self._get_instance_status(ec2_client, instance)
         while not self._is_instance_status_ok(instance_status):
-            if time.time() - start_time >= self.timeout:
+            if time.time() - start_time >= timeout:
                 raise TimeoutError('Timeout: Waiting for instance status check to be OK')
-            if self._is_instance_status_impaired(instance_status):
+
+            # if status check timeout is provided we want to wait until status check is OK or timeout is reached. We
+            # dont want to stop the waiter if the instance is impaired. Thats because some virtual appliances might take
+            # 40+ minutes to be OK and AWS will show them as impaired after about 20 minutes until it begins to work
+            if not status_check_timeout and self._is_instance_status_impaired(instance_status):
                 logger.error("Instance status check is not OK: {}".format(instance_status))
                 raise ValueError('Instance status check is not OK. Check the log and aws console for more details')
 
