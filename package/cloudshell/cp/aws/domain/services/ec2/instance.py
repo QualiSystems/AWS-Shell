@@ -15,9 +15,8 @@ class InstanceService(object):
         self.tags_creator_service = tags_creator_service
         self.network_interface_service = network_interface_service
 
-    # todo - wait_for_status_check prop should be moved to ami_deployment_info object
-    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, wait_for_status_check,
-                        cancellation_context, logger):
+    def create_instance(self, ec2_session, name, reservation, ami_deployment_info, ec2_client, cancellation_context,
+                        logger):
         """
         Deploys an AMI
         :param wait_for_status_check: bool
@@ -41,13 +40,6 @@ class InstanceService(object):
                 IamInstanceProfile=ami_deployment_info.iam_role,
                 UserData=ami_deployment_info.user_data
         )[0]
-
-        self.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
-                                             instance=instance,
-                                             wait_for_status_check=wait_for_status_check,
-                                             status_check_timeout=ami_deployment_info.status_check_timeout,
-                                             cancellation_context=cancellation_context,
-                                             logger=logger)
 
         self._set_tags(instance, name, reservation, ami_deployment_info.custom_tags)
 

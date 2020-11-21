@@ -123,6 +123,12 @@ class DeployAMIOperation(object):
                 cancellation_context=cancellation_context,
                 logger=logger)
 
+            self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
+                                                 instance=instance,
+                                                 wait_for_status_check=ami_deployment_info.wait_for_status_check,
+                                                 status_check_timeout=ami_deployment_info.status_check_timeout,
+                                                 cancellation_context=cancellation_context,
+                                                 logger=logger)
             logger.info("Instance created, populating results with interface data")
             self._populate_network_config_results_with_interface_data(instance=instance,
                                                                       network_config_results=network_config_results)
