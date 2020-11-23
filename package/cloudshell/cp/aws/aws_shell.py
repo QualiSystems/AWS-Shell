@@ -509,7 +509,7 @@ class AWSShell(object):
             if delete_old_image:
                 try:
                     self.delete_ami_operation.delete_ami(logger=shell_context.logger,
-                                                         ec2_session=shell_context.aws_api.ec2_session,
+                                                         ec2_session=shell_context.aws_api.ec2_client,
                                                          instance_ami_id=instance_ami_id)
                 except Exception as e:
                     shell_context.logger.warning("Failed to delete old AMI: " + e.message)
