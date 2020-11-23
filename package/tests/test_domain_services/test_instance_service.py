@@ -43,7 +43,6 @@ class TestInstanceService(TestCase):
                                                     reservation=self.reservation_id,
                                                     ami_deployment_info=ami_dep,
                                                     ec2_client=self.ec2_client,
-                                                    wait_for_status_check=False,
                                                     cancellation_context=cancellation_context,
                                                     logger=Mock())
 
@@ -56,10 +55,6 @@ class TestInstanceService(TestCase):
                                                                   BlockDeviceMappings=ami_dep.block_device_mappings,
                                                                   NetworkInterfaces=ami_dep.network_interfaces,
                                                                   UserData=ami_dep.user_data)
-
-        self.instance_waiter.wait.assert_called_once_with(instance=new_instance,
-                                                          state=self.instance_waiter.RUNNING,
-                                                          cancellation_context=cancellation_context)
 
         self.tag_service.get_default_tags.assert_called_with(self.name + ' ' + new_instance.instance_id,self.reservation_id)
 
@@ -85,7 +80,6 @@ class TestInstanceService(TestCase):
                                                     reservation=self.reservation_id,
                                                     ami_deployment_info=ami_dep,
                                                     ec2_client=self.ec2_client,
-                                                    wait_for_status_check=False,
                                                     cancellation_context=cancellation_context,
                                                     logger=Mock())
 

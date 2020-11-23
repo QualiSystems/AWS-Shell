@@ -91,5 +91,4 @@ class DeleteAMIOperation(object):
         :type instance_id: str
         :return:
         """
-
         ec2_session.deregister_image(ImageId=instance_ami_id)

@@ -119,16 +119,17 @@ class DeployAMIOperation(object):
                 reservation=reservation,
                 ami_deployment_info=ami_deployment_info,
                 ec2_client=ec2_client,
-                wait_for_status_check=ami_deployment_model.wait_for_status_check,
                 cancellation_context=cancellation_context,
                 logger=logger)
 
-            self.instance_service.wait_for_instance_to_run_in_aws(ec2_client=ec2_client,
-                                                 instance=instance,
-                                                 wait_for_status_check=ami_deployment_info.wait_for_status_check,
-                                                 status_check_timeout=ami_deployment_info.status_check_timeout,
-                                                 cancellation_context=cancellation_context,
-                                                 logger=logger)
+            self.instance_service.wait_for_instance_to_run_in_aws(
+                ec2_client=ec2_client,
+                instance=instance,
+                wait_for_status_check=ami_deployment_model.wait_for_status_check,
+                status_check_timeout=ami_deployment_model.status_check_timeout,
+                cancellation_context=cancellation_context,
+                logger=logger)
+
             logger.info("Instance created, populating results with interface data")
             self._populate_network_config_results_with_interface_data(instance=instance,
                                                                       network_config_results=network_config_results)
@@ -177,11 +178,13 @@ class DeployAMIOperation(object):
 
         deploy_app_result = DeployAppResult(vmName=self._get_name_from_tags(instance),
                                             vmUuid=instance.instance_id,
-                                            deployedAppAttributes=convert_dict_to_attributes_list(deployed_app_attributes),
+                                            deployedAppAttributes=convert_dict_to_attributes_list(
+                                                deployed_app_attributes),
                                             deployedAppAddress=instance.private_ip_address,
                                             vmDetailsData=vm_details_data,
-                                            deployedAppAdditionalData={'inbound_ports': ami_deployment_model.inbound_ports,
-                                                                       'public_ip': instance.public_ip_address})
+                                            deployedAppAdditionalData={
+                                                'inbound_ports': ami_deployment_model.inbound_ports,
+                                                'public_ip': instance.public_ip_address})
         deploy_app_result.actionId = ami_deploy_action.actionId
         network_actions_results_dtos.append(deploy_app_result)
         return network_actions_results_dtos
@@ -286,7 +289,7 @@ class DeployAMIOperation(object):
                                                                           cancellation_context=cancellation_context)
             except TimeoutError:
                 logger.info(
-                        "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
+                    "Timeout when waiting for windows credentials. Traceback: {0}".format(traceback.format_exc()))
                 return None
         else:
             return None if self._get_deployed_app_resource_user_attribute(ami_deploy_action) else \
@@ -305,7 +308,7 @@ class DeployAMIOperation(object):
         :return:
         """
         attribute_names_in_deployed_resource = ami_deploy_action.actionParams.appResource.attributes.keys()
-        return next((attr for attr in attribute_names_in_deployed_resource if attr.split('.')[-1]=='User'))
+        return next((attr for attr in attribute_names_in_deployed_resource if attr.split('.')[-1] == 'User'))
 
     @staticmethod
     def _get_name_from_tags(result):
@@ -386,7 +389,7 @@ class DeployAMIOperation(object):
 
         aws_model.custom_tags = self._get_custom_tags(custom_tags=ami_deployment_model.custom_tags)
         aws_model.source_dest_check = ami_deployment_model.enable_source_dest_check
-        aws_model.status_check_timeout = ami_deployment_model.status_check_timeout
+        aws_model.wait = ami_deployment_model.wait_for_status_check
         aws_model.user_data = self._get_user_data(user_data_url=ami_deployment_model.user_data_url,
                                                   user_data_run_parameters=ami_deployment_model.user_data_run_parameters)
 

@@ -485,6 +485,7 @@ class AWSShell(object):
     def create_app_image(self, context, cancellation_context, delete_old_image):
         """
         :param context:
+        :param bool delete_old_image:
         :param cancellation_context:
         :return:
         """
@@ -509,11 +510,10 @@ class AWSShell(object):
             if delete_old_image:
                 try:
                     self.delete_ami_operation.delete_ami(logger=shell_context.logger,
-                                                         ec2_session=shell_context.aws_api.ec2_session,
+                                                         ec2_session=shell_context.aws_api.ec2_client,
                                                          instance_ami_id=instance_ami_id)
-                except Exception as e:
-                    shell_context.logger.warning("Failed to delete old AMI")
-                    shell_context.logger.exception("Failed to delete old AMI. Exception:")
+                except Exception:
+                    shell_context.logger.exception("Failed to delete old AMI")
 
             return json.dumps({"AWS EC2 Instance.AWS AMI Id": image_id})
 

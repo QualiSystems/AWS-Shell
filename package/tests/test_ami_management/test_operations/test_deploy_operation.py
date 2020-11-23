@@ -105,6 +105,7 @@ class TestDeployOperation(TestCase):
         instance = self._create_instance()
         network_config_results = [Mock(device_index=0, public_ip=instance.public_ip_address)]
         self.instance_service.create_instance = Mock(return_value=instance)
+        self.instance_service.wait_for_instance_to_run_in_aws = Mock()
         sg = Mock()
         self.security_group_service.create_security_group = Mock(return_value=sg)
 
@@ -158,9 +159,14 @@ class TestDeployOperation(TestCase):
                                                                       reservation=reservation,
                                                                       ami_deployment_info=ami_deployment_info,
                                                                       ec2_client=self.ec2_client,
-                                                                      wait_for_status_check=ami_datamodel.wait_for_status_check,
                                                                       cancellation_context=cancellation_context,
                                                                       logger=self.logger)
+        self.instance_service.wait_for_instance_to_run_in_aws.assert_called_once_with(ec2_client=self.ec2_client,
+            instance=instance,
+            wait_for_status_check=ami_datamodel.wait_for_status_check,
+            status_check_timeout=ami_datamodel.status_check_timeout,
+            cancellation_context=cancellation_context,
+            logger=self.logger)
 
         self.deploy_operation.elastic_ip_service.set_elastic_ips.assert_called_once_with(
                 ec2_session=self.ec2_session,
@@ -229,7 +235,6 @@ class TestDeployOperation(TestCase):
                                                                       reservation=reservation,
                                                                       ami_deployment_info=ami_deployment_info,
                                                                       ec2_client=self.ec2_client,
-                                                                      wait_for_status_check=ami_datamodel.wait_for_status_check,
                                                                       cancellation_context=cancellation_context,
                                                                       logger=self.logger)
 

@@ -105,7 +105,7 @@ class AWSShellDriver(ResourceDriverInterface):
         return self.aws_shell.add_custom_tags(context, request)
 
     def create_app_image(self, context, cancellation_context, ports, delete_old_image='False'):
-        return self.aws_shell.create_app_image(context, cancellation_context, delete_old_image == 'True')
+        return self.aws_shell.create_app_image(context, cancellation_context, delete_old_image.lower() == 'true')
 
     # def remote_save_snapshot(self, context, cancellation_context, snapshot_prefix, ports):
     #     return self.aws_shell.remote_save_snapshot(context, cancellation_context, snapshot_prefix)
