@@ -29,7 +29,7 @@ class AutoloadOperation(object):
         if management_sg_id == '':
             return
         emsg = (
-            "Was not able to find the AWS management security group with id {} in the "
+            "Failed to find the AWS management security group {} in the "
             "{} region".format(management_sg_id, cloud_provider_model.region)
         )
         try:
