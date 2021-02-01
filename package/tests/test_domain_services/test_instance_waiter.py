@@ -103,6 +103,7 @@ class TestInstanceWaiter(TestCase):
 
             return result
 
+        time.time.return_value = 0
         ec2_client = Mock()
         ec2_client.describe_instance_status = Mock(side_effect=describe_instance_status_handler)
         instance = Mock()
@@ -132,6 +133,7 @@ class TestInstanceWaiter(TestCase):
 
             return result
 
+        time.time.return_value = 0
         ec2_client = Mock()
         ec2_client.describe_instance_status = Mock(side_effect=describe_instance_status_handler)
         instance = Mock()

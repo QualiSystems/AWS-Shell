@@ -133,11 +133,11 @@ class TestElasticIpService(TestCase):
                                            logger=Mock())
 
         # assert
-        elastic_ip_service.allocate_elastic_address.assert_called_once_with(ec2_client=ec2_client)
+        elastic_ip_service.allocate_elastic_address.assert_called_once_with(ec2_client)
         self.assertEquals(network_config_result_mock.public_ip, allocated_elastic_ip)
-        elastic_ip_service.associate_elastic_ip_to_instance.assert_called_once_with(ec2_session=ec2_session,
-                                                                                    instance=instance,
-                                                                                    elastic_ip=allocated_elastic_ip)
+        elastic_ip_service.associate_elastic_ip_to_instance.assert_called_once_with(
+            ec2_session, instance, allocated_elastic_ip
+        )
         instance.network_interfaces_attribute.all.assert_not_called()
 
     def test_set_elastic_ips_multiple_subnets_with_2_public_1_private(self):
@@ -194,8 +194,8 @@ class TestElasticIpService(TestCase):
         self.assertEquals(elastic_ip_service.allocate_elastic_address.call_count, 2)
         self.assertEquals(elastic_ip_service.associate_elastic_ip_to_network_interface.call_count, 2)
         elastic_ip_service.associate_elastic_ip_to_network_interface.assert_has_calls(
-                [call(ec2_session=ec2_session, interface_id="netif0", elastic_ip=allocated_elastic_ip),
-                 call(ec2_session=ec2_session, interface_id="netif2", elastic_ip=allocated_elastic_ip)])
+                [call(ec2_session, "netif0", allocated_elastic_ip),
+                 call(ec2_session, "netif2", allocated_elastic_ip)])
         self.assertEquals(result_mock1.public_ip, allocated_elastic_ip)
         self.assertEquals(result_mock3.public_ip, allocated_elastic_ip)
         self.assertFalse(hasattr(result_mock2, 'public_ip'))  # to make sure public_ip wasnt set on result_mock2
