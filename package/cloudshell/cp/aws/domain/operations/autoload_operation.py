@@ -28,6 +28,10 @@ class AutoloadOperation(object):
         management_sg_id = cloud_provider_model.aws_management_sg_id
         if management_sg_id == '':
             return
+        emsg = (
+            "Failed to find the AWS management security group {} in the "
+            "{} region".format(management_sg_id, cloud_provider_model.region)
+        )
         try:
             response = ec2_client.describe_security_groups(
                 GroupIds=[unicode(management_sg_id)])
@@ -36,14 +40,12 @@ class AutoloadOperation(object):
                                          for sg in response.get('SecurityGroups', [])
                                          if sg.get('GroupId') == management_sg_id)
             if not management_sg_id_found:
-                raise AutoloadException('Was not able to find the AWS management security group with id {}'.format(
-                    management_sg_id))
+                raise AutoloadException(emsg)
             logger.info(response)
 
         except ClientError as e:
             logger.exception(e)
-            raise AutoloadException('Was not able to find the AWS management security group with id {}'.format(
-                management_sg_id))
+            raise AutoloadException(emsg)
 
     def _validate_keypair_location_in_s3(self, cloud_provider_model, logger, s3_session):
         logger.info("Checking if keypair storage in S3 exists")
