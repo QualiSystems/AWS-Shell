@@ -134,10 +134,9 @@ class TestDeployOperation(TestCase):
         self.assertEqual(res[0].vmName, 'my name')
         self.assertEqual(res[0].deployedAppAdditionalData["inbound_ports"], ami_datamodel.inbound_ports)
         self.assertEqual(res[0].vmUuid, instance.instance_id)
-        self.assertEqual(res[0].deployedAppAttributes[0].attributeName, 'Password')
-        self.assertEqual(res[0].deployedAppAttributes[0].attributeValue, ami_credentials.password)
-        self.assertEqual(res[0].deployedAppAttributes[1].attributeName, 'User')
-        self.assertEqual(res[0].deployedAppAttributes[1].attributeValue, ami_credentials.user_name)
+        attributes = {attr.attributeName: attr.attributeValue for attr in res[0].deployedAppAttributes}
+        self.assertEqual(attributes['Password'], ami_credentials.password)
+        self.assertEqual(attributes['User'], ami_credentials.user_name)
         self.assertTrue(self.tag_service.get_security_group_tags.called)
         self.assertTrue(self.security_group_service.create_security_group.called)
         self.assertTrue(self.instance_service.set_ec2_resource_tags.called_with(
