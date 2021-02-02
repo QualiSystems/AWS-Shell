@@ -1,0 +1,48 @@
+name: shell CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  create-gh-release:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./drivers/aws_shell
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      - name: Install dependencies
+        run: |
+          sudo apt-get -y install jq
+          python -m pip install pip -U
+          pip install tox yq
+      - name: Pack and download dependencies
+        run: tox
+      - name: Set envs
+        run: |
+          version="$(yq -r .metadata.template_version shell-definition.yaml)"
+          repo_owner=${{ github.repository }}
+          index=`expr index "$repo_owner" /`
+          repo=${repo_owner:index}
+          echo "TAG=$version" >> $GITHUB_ENV
+          echo "REPO=$repo" >> $GITHUB_ENV
+      - name: Rename dependencies
+        run: |
+          mv dist/dependencies-win32.zip dist/cloudshell-$REPO-dependencies-win32-package-$TAG.zip
+          mv dist/dependencies-linux.zip dist/cloudshell-$REPO-dependencies-linux-package-$TAG.zip
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          artifacts: "dist/*"
+          draft: true
+          name: ${{ env.REPO }} ${{ env.TAG }}
+          tag: ${{ env.TAG }}
+          commit: master
