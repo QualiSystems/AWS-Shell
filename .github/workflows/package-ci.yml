@@ -72,30 +72,3 @@ jobs:
         env:
           TOXENV: build
         run: tox
-  deploy-to-pypi:
-    needs: [tests, build]
-    if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./package
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-      - name: Set up Python 2.7
-        uses: actions/setup-python@v2
-        with:
-          python-version: 2.7
-      - name: Install dependencies
-        run: |
-          python -m pip install pip -U
-          pip install tox
-      - name: Build
-        env:
-          TOXENV: build
-        run: tox
-      - name: Publish
-        uses: pypa/gh-action-pypi-publish@v1.4.1
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_TOKEN }}
