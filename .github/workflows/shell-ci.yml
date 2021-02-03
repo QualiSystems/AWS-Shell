@@ -23,8 +23,8 @@ jobs:
           sudo apt-get -y install jq
           python -m pip install pip -U
           pip install tox yq
-      - name: Pack and download dependencies
-        run: tox
+      - name: Pack
+        run: tox -e pack
       - name: Set envs
         run: |
           version="$(yq -r .metadata.template_version shell-definition.yaml)"
@@ -33,10 +33,6 @@ jobs:
           repo=${repo_owner:index}
           echo "TAG=$version" >> $GITHUB_ENV
           echo "REPO=$repo" >> $GITHUB_ENV
-      - name: Rename dependencies
-        run: |
-          mv dist/dependencies-win32.zip dist/cloudshell-$REPO-dependencies-win32-package-$TAG.zip
-          mv dist/dependencies-linux.zip dist/cloudshell-$REPO-dependencies-linux-package-$TAG.zip
       - name: Create GitHub release
         uses: ncipollo/release-action@v1
         with:
