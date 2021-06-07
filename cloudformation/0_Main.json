@@ -159,7 +159,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/1_VPC.json",
+				"TemplateURL": "https://github.com/QualiSystems/AWS-Shell/blob/Feature/test-cf/cloudformation/1_VPC.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
