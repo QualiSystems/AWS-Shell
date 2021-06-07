@@ -14,6 +14,11 @@ TEST_INSTANCE_TYPE = '"t2.small"'
 TEST_MAIN_JSON = '0_Main_test.json'
 TEST_MAIN_EX_JSON = '0_Main_EX_test.json'
 
+VPC_JSON = '1_VPC.json'
+VPC_EX_JSON = '1_VPC_EX.json'
+TEST_VPC_JSON = '1_VPC_test.json'
+TEST_VPC_EX_JSON = '1_VPC_EX_test.json'
+
 
 def main():
     set_working_dir()
@@ -26,12 +31,28 @@ def main():
     ec2_ex_data = ec2_ex_data.replace(PROD_INSTANCE_TYPE, TEST_INSTANCE_TYPE)
     write_file_to_test_dir(ec2_ex_data, TEST_EC2_EX_JSON)
 
+    vpc_data = read_file_data(VPC_JSON)
+    write_file_to_test_dir(vpc_data, TEST_VPC_JSON)
+
+    vpc_ex_data = read_file_data(VPC_EX_JSON)
+    write_file_to_test_dir(vpc_ex_data, TEST_VPC_EX_JSON)
+
+    ec2_data = read_file_data(EC2_JSON)
+    ec2_data = ec2_data.replace(PROD_INSTANCE_TYPE, TEST_INSTANCE_TYPE)
+    write_file_to_test_dir(ec2_data, TEST_EC2_JSON)
+
+    ec2_ex_data = read_file_data(EC2_EX_JSON)
+    ec2_ex_data = ec2_ex_data.replace(PROD_INSTANCE_TYPE, TEST_INSTANCE_TYPE)
+    write_file_to_test_dir(ec2_ex_data, TEST_EC2_EX_JSON)
+
     main_data = read_file_data('0_Main.json')
     main_data = main_data.replace(EC2_JSON, '' + TEST_EC2_JSON)
+    main_data = main_data.replace(VPC_JSON, '' + TEST_VPC_JSON)
     write_file_to_test_dir(main_data, TEST_MAIN_JSON)
 
     main_ex_data = read_file_data('0_Main_EX.json')
     main_ex_data = main_ex_data.replace(EC2_EX_JSON, '' + TEST_EC2_EX_JSON)
+    main_ex_data = main_ex_data.replace(VPC_EX_JSON, '' + TEST_VPC_EX_JSON)
     write_file_to_test_dir(main_ex_data, TEST_MAIN_EX_JSON)
 
 

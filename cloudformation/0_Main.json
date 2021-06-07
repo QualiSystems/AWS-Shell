@@ -126,6 +126,12 @@
             "Default": "True",
             "AllowedValues": ["True", "False"]
         },
+		"10UseTransitGateway": {
+            "Type": "String",
+            "Description": "",
+            "Default": "True",
+            "AllowedValues": ["True", "False"]
+        },
 		"ZUsername": {
 			"Type": "String",
 			"Description": "Username for CloudShell server"
@@ -201,6 +207,9 @@
 							"Ref": "AWS::Region"
 						},
 						"NatAMI"]
+					},
+					"UseTransitGateway": {
+						"Ref": "10UseTransitGateway"
 					}
 				}
 			}
