@@ -129,7 +129,7 @@
 		"10UseTransitGateway": {
             "Type": "String",
             "Description": "",
-            "Default": "True",
+            "Default": "False",
             "AllowedValues": ["True", "False"]
         },
 		"ZUsername": {
@@ -159,7 +159,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://github.com/QualiSystems/AWS-Shell/blob/Feature/test-cf/cloudformation/1_VPC.json",
+				"TemplateURL": "https://kyrylo-test.s3-eu-west-1.amazonaws.com/1_VPC.json",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
