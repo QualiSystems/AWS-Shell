@@ -149,7 +149,7 @@
 		"AMILookup": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/AMI_Lookup.json",
+				"TemplateURL": "https://kyrylo-test.s3-eu-west-1.amazonaws.com/AMI_Lookup.json",
 				"Parameters": {
 					"LookupLatestWindowsServerAmi": "False",
 					"LookupLatestCentosAmi": "True"
@@ -159,7 +159,7 @@
 		"VPCNAT": {
 			"Type": "AWS::CloudFormation::Stack",
 			"Properties": {
-				"TemplateURL": "https://kyrylo-test.s3-eu-west-1.amazonaws.com/1_VPC.json",
+				"TemplateURL": "https://kyrylo-test.s3-eu-west-1.amazonaws.com/1_VPC.yaml",
 				"Parameters": {
 					"VPCCIDR": {
 						"Ref": "1VPCCIDR"
@@ -274,7 +274,7 @@
 						"Ref": "8InstanceType"
 					}
 				},
-				"TemplateURL": "https://cf-dynamic-execution-server.s3.amazonaws.com/2_EC2.json"
+				"TemplateURL": "https://kyrylo-test.s3-eu-west-1.amazonaws.com/2_EC2.json"
 			}
 		}
 	},
