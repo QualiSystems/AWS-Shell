@@ -193,8 +193,9 @@ Resources:
         QualixAMI: !GetAtt
           - AMILookup
           - Outputs.CentosAMI
-#       fixme
-        ESAMI: ami-06a9feec6378b9907
+        ESAMI: !GetAtt
+          - AMILookup
+          - Outputs.CentosAMI
         KeyPair: !Ref 7KeyPair
         ESInstance2Profile: !GetAtt
           - VPCNAT

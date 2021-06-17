@@ -1,0 +1,244 @@
+Parameters:
+  QualixSN:
+    Type: String
+  ESInstanceSN1:
+    Type: String
+  ESInstanceSN2:
+    Type: String
+  QualiXInstanceProfile:
+    Type: String
+  ESInstanceProfile:
+    Type: String
+  SG2id:
+    Type: String
+  SG1id:
+    Type: String
+  ESAMI:
+    Type: String
+  QualixAMI:
+    Type: String
+  KeyPair:
+    Type: String
+  ESInstance2Profile:
+    Type: String
+  ServerIP:
+    Type: String
+  ZUsername:
+    Type: String
+  ZPassword:
+    Type: String
+  InstanceSize:
+    Type: String
+Conditions:
+  IsHighAvailabilityMode: !Not
+    - !Equals
+      - !Ref ESInstanceSN2
+      - 'NULL'
+Resources:
+  QualixInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceSize
+      IamInstanceProfile: !Ref QualiXInstanceProfile
+      SubnetId: !Ref QualixSN
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: QualiX
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref QualixAMI
+      SecurityGroupIds:
+        - !Ref SG1id
+        - !Ref SG2id
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 4.4.4.4' >> /etc/resolv.conf
+            - >
+              curl
+              https://s3-us-west-2.amazonaws.com/qualix-ova/guacamole-quali-install.sh
+              -s -o guacamole-quali-install.sh
+            - |
+              chmod +x guacamole-quali-install.sh
+            - ./guacamole-quali-install.sh
+  ESInstance1a:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref ESInstanceSN1
+      IamInstanceProfile: !Ref ESInstanceProfile
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: es-shells
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !Ref ServerIP
+            - ' '
+            - !Ref ZUsername
+            - ' '
+            - !Ref ZPassword
+            - ' ES-Shells-'
+            - !Ref 'AWS::Region'
+  ESInstance2a:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId: !Ref ESInstanceSN1
+      IamInstanceProfile: !Ref ESInstance2Profile
+      KeyName: !Ref KeyPair
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !Ref ServerIP
+            - ' '
+            - !Ref ZUsername
+            - ' '
+            - !Ref ZPassword
+            - ' ES-Commands-'
+            - !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: es-commands
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+  ESInstance1b:
+    Type: 'AWS::EC2::Instance'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      SubnetId: !Ref ESInstanceSN2
+      IamInstanceProfile: !Ref ESInstanceProfile
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: es-shells-b
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !Ref ServerIP
+            - ' '
+            - !Ref ZUsername
+            - ' '
+            - !Ref ZPassword
+            - ' ES-Shells-B-'
+            - !Ref 'AWS::Region'
+  ESInstance2b:
+    Type: 'AWS::EC2::Instance'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      SubnetId: !Ref ESInstanceSN2
+      IamInstanceProfile: !Ref ESInstance2Profile
+      KeyName: !Ref KeyPair
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !Ref ServerIP
+            - ' '
+            - !Ref ZUsername
+            - ' '
+            - !Ref ZPassword
+            - ' ES-Commands-B-'
+            - !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: es-commands-b
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+Description: EC2 instances - QualiX and ES
+Outputs:
+  QualixInstanceIP:
+    Description: IP of Bastion-NG Host
+    Value: !GetAtt
+      - QualixInstance
+      - PrivateIp
