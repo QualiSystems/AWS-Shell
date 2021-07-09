@@ -41,7 +41,8 @@ Parameters:
     MaxLength: '18'
     Default: 10.0.0.0/28
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: 'must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR'
+    ConstraintDescription: 'ESCIDR was renamed to ESCIDR1. Must be inside VPC CIDR.
+    Subnet in which the shells and commands execution servers are created. '
   2ESCIDR2:
     Type: String
     Description: Must be inside VPC CIDR. Optional when HighAvailabilityMode is False.
@@ -49,7 +50,9 @@ Parameters:
     MaxLength: '18'
     Default: 10.0.0.16/28
     AllowedPattern: '^$|(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: 'must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR'
+    ConstraintDescription: '(Mandatory when HighAvailabilityMode is enabled)
+    Must be inside VPC CIDR. Subnet in which the fallback shells and commands execution
+    servers are created.'
   6VPNAddress:
     Type: String
     Description: IP Address of your router
@@ -106,7 +109,8 @@ Parameters:
       - 'False'
   10UseTransitGateway:
     Type: String
-    Description: ''
+    Description: '(Applies to AWS 2G shell, mandatory for shared VPC mode) Creates the
+    transit gateway. Set to True if you want to work in shared VPC mode.'
     Default: 'False'
     AllowedValues:
       - 'True'
@@ -121,6 +125,27 @@ Parameters:
   ShareAccountId:
     Type: String
     Default: ''
+    Description: '(Applies to AWS 2G shell, mandatory for shared VPC mode) ID of the
+    AWS account to be used for shared VPC deployments. There are two ways to share
+    a transit gateway with the account, by specifying the Account ID here or by
+    manually sharing the Transit Gateway with the account, as explained in this
+    AWS documentation page:
+    https://docs.aws.amazon.com/vpc/latest/tgw/tgw-transit-gateways.html#tgw-sharing.
+    Note: Associating additional shared VPCs with the account is done manually. '
+  UseNAT:
+    Type: String
+    Description: Use NAT or not
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  EnhanceS3BucketSecurity:
+    Type: String
+    Description: Enable encryption for the bucket and block public access
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
 Conditions:
   IsHighAvailabilityMode: !Equals
     - !Ref 9HighAvailabilityMode
@@ -165,6 +190,8 @@ Resources:
           - NatAMI
         UseTransitGateway: !Ref 10UseTransitGateway
         ShareAccountId: !Ref ShareAccountId
+        EnhanceS3BucketSecurity: !Ref EnhanceS3BucketSecurity
+        UseNAT: !Ref UseNAT
   Instances:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -204,7 +231,7 @@ Resources:
         ZUsername: !Ref ZUsername
         ZPassword: !Ref ZPassword
         InstanceSize: !Ref 8InstanceType
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/2_EC2_win.yaml'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/2_EC2.yaml'
 Outputs:
   ManagementVPCID:
     Description: Management VPC ID

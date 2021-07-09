@@ -53,7 +53,7 @@ Parameters:
     MaxLength: '18'
     Default: 172.28.3.0/24
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
-    ConstraintDescription: 'must be a valid IP CFIDR range of the form x.x.x.x/x, inside VPC CIDR'
+    ConstraintDescription: 'must be a valid IP CIDR range of the form x.x.x.x/x, inside VPC CIDR'
   KeyPair:
     Type: 'AWS::EC2::KeyPair::KeyName'
     Description: Choose the Keypair for NAT instance
@@ -78,11 +78,19 @@ Parameters:
   ShareAccountId:
     Type: String
     Default: ''
+  UseNAT:
+    Type: String
+    Default: 'True'
+  EnhanceS3BucketSecurity:
+    Type: String
+    Default: 'False'
 Conditions:
   IsHighAvailabilityMode: !Equals [!Ref HA, "True"]
   ShouldUseTransitGateway: !Equals [!Ref UseTransitGateway, "True"]
   DoNotUseTransitGateway: !Not [!Equals [!Ref UseTransitGateway, "True"]]
   IsShareAccountId: !Not [!Equals [!Ref ShareAccountId, ""]]
+  IsUseNat: !Equals [!Ref UseNAT, "True"]
+  IsEnhanceS3BucketSecurity: !Equals [!Ref EnhanceS3BucketSecurity, "True"]
 Resources:
   ManagementVPC:
     Type: 'AWS::EC2::VPC'
@@ -229,6 +237,7 @@ Resources:
       AvailabilityZone: !Ref AZ1
   NatSG:
     Type: 'AWS::EC2::SecurityGroup'
+    Condition: IsUseNat
     Properties:
       GroupDescription: SG for NAT instance
       Tags:
@@ -338,6 +347,7 @@ Resources:
       AvailabilityZone: !Ref AZ2
   NatSubnet:
     Type: 'AWS::EC2::Subnet'
+    Condition: IsUseNat
     Properties:
       VpcId: !Ref ManagementVPC
       CidrBlock: !Ref NATCIDR
@@ -352,6 +362,7 @@ Resources:
       AvailabilityZone: !Ref AZ1
   NatRT:
     Type: 'AWS::EC2::RouteTable'
+    Condition: IsUseNat
     Properties:
       VpcId: !Ref ManagementVPC
       Tags:
@@ -363,11 +374,13 @@ Resources:
           Value: CloudShell
   NatRTAssociation:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Condition: IsUseNat
     Properties:
       SubnetId: !Ref NatSubnet
       RouteTableId: !Ref NatRT
   NatRoute:
     Type: 'AWS::EC2::Route'
+    Condition: IsUseNat
     Properties:
       RouteTableId: !Ref NatRT
       GatewayId: !Ref ManagementIGW
@@ -375,6 +388,7 @@ Resources:
     DependsOn: ManagementIGWAttachement
   NatRole:
     Type: 'AWS::IAM::Role'
+    Condition: IsUseNat
     Properties:
       AssumeRolePolicyDocument:
         Version: 2012-10-17
@@ -388,12 +402,14 @@ Resources:
       Path: /
   NatInstanceProfile:
     Type: 'AWS::IAM::InstanceProfile'
+    Condition: IsUseNat
     Properties:
       Path: /
       Roles:
         - !Ref NatRole
   NatInstance:
     Type: 'AWS::EC2::Instance'
+    Condition: IsUseNat
     Properties:
       IamInstanceProfile: !Ref NatInstanceProfile
       SubnetId: !Ref NatSubnet
@@ -431,6 +447,7 @@ Resources:
     DependsOn: ManagementVPNGwAttachement
   ESWWWRoute:
     Type: 'AWS::EC2::Route'
+    Condition: IsUseNat
     Properties:
       RouteTableId: !Ref ESInstanceRT
       InstanceId: !Ref NatInstance
@@ -475,20 +492,9 @@ Resources:
         Statement:
           - Effect: Allow
             Action: 's3:ListBucket'
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::cloudshell-sandboxes-'
-                - !Ref 'AWS::AccountId'
-                - '-'
-                - !Ref 'AWS::Region'
+            Resource: !GetAtt S3Bucket.Arn
           - Effect: Allow
-            Resource: !Join
-              - ''
-              - - 'arn:aws:s3:::cloudshell-sandboxes-'
-                - !Ref 'AWS::AccountId'
-                - '-'
-                - !Ref 'AWS::Region'
-                - /*
+            Resource: !Sub '${S3Bucket.Arn}/*'
             Action:
               - 's3:PutObject'
               - 's3:GetObject'
@@ -518,12 +524,23 @@ Resources:
   S3Bucket:
     Type: 'AWS::S3::Bucket'
     Properties:
-      BucketName: !Join
-        - ''
-        - - cloudshell-sandboxes-2-
-          - !Ref 'AWS::AccountId'
-          - '-'
-          - !Ref 'AWS::Region'
+      PublicAccessBlockConfiguration:
+        !If
+        - IsEnhanceS3BucketSecurity
+        -
+          BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: True
+        - !Ref "AWS::NoValue"
+      BucketName: !Sub 'cloudshell-sandboxes-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        !If
+        - IsEnhanceS3BucketSecurity
+        - ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: 'aws:kms'
+        - !Ref "AWS::NoValue"
       Tags:
         - Key: Name
           Value: SG1
@@ -608,5 +625,8 @@ Outputs:
   TGWid:
     Condition: ShouldUseTransitGateway
     Value: !Ref TransitGW
-  ESRole:
-    Value: !Ref ESRole
+  VPNGWid:
+    Condition: DoNotUseTransitGateway
+    Value: !Ref VPNGw
+  ESRoleArn:
+    Value: !GetAtt ESRole.Arn
