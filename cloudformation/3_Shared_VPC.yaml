@@ -73,12 +73,6 @@ Resources:
             Action:
               - 'sts:AssumeRole'
       Path: /
-  CSExecutionServerInstanceProfile:
-    Type: 'AWS::IAM::InstanceProfile'
-    Properties:
-      Path: /
-      Roles:
-        - !Ref CSExecutionServerRole
   CSExecutionServerRWPolicy:
     Type: 'AWS::IAM::Policy'
     Properties:
