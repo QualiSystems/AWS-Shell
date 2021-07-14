@@ -115,6 +115,7 @@ Resources:
       CidrBlock: !Ref VPCCIDR
   ManagementIGW:
     Type: 'AWS::EC2::InternetGateway'
+    Condition: IsUseNat
     Properties:
       Tags:
         - Key: CreateBy
@@ -123,6 +124,7 @@ Resources:
           Value: Management
   ManagementIGWAttachement:
     Type: 'AWS::EC2::VPCGatewayAttachment'
+    Condition: IsUseNat
     Properties:
       InternetGatewayId: !Ref ManagementIGW
       VpcId: !Ref ManagementVPC
