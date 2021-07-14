@@ -108,7 +108,6 @@ Resources:
           Value: CloudShell_VPNGateway
         - Key: CreateBy
           Value: CloudShell
-    DependsOn: CustomerGateway
   VPNConnectionVGW:
     Type: 'AWS::EC2::VPNConnection'
     Properties:
@@ -126,7 +125,6 @@ Resources:
     Properties:
       VpnGatewayId: !Ref VPNGw
       VpcId: !Ref SharedVPC
-    DependsOn: VPNGw
   CustomerGateway:
     Type: 'AWS::EC2::CustomerGateway'
     Properties:
