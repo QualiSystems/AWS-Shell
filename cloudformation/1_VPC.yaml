@@ -90,6 +90,13 @@ Conditions:
   DoNotUseTransitGateway: !Not [!Equals [!Ref UseTransitGateway, "True"]]
   IsShareAccountId: !Not [!Equals [!Ref ShareAccountId, ""]]
   IsUseNat: !Equals [!Ref UseNAT, "True"]
+  DoNotUseNat: !Not [!Equals [!Ref UseNAT, "True"]]
+  NoNatAndTGW: !And
+    - !Condition DoNotUseNat
+    - !Condition ShouldUseTransitGateway
+  NoNatAndVGW: !And
+    - !Condition DoNotUseNat
+    - !Condition DoNotUseTransitGateway
   IsEnhanceS3BucketSecurity: !Equals [!Ref EnhanceS3BucketSecurity, "True"]
 Resources:
   ManagementVPC:
@@ -453,6 +460,20 @@ Resources:
       InstanceId: !Ref NatInstance
       DestinationCidrBlock: 0.0.0.0/0
     DependsOn: NatInstance
+  ESWWWRouteTGW:
+    Type: 'AWS::EC2::Route'
+    Condition: NoNatAndTGW
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      TransitGatewayId: !Ref TransitGW
+      DestinationCidrBlock: 0.0.0.0/0
+  ESWWWRouteVGW:
+    Type: 'AWS::EC2::Route'
+    Condition: NoNatAndVGW
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      GatewayId: !Ref VPNGw
+      DestinationCidrBlock: 0.0.0.0/0
   ESInstRTAssociation1:
     Type: 'AWS::EC2::SubnetRouteTableAssociation'
     Properties:
