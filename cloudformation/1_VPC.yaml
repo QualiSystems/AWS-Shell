@@ -325,6 +325,14 @@ Resources:
       RouteTableId: !Ref QualixRT
       GatewayId: !Ref VPNGw
     DependsOn: ManagementVPNGwAttachement
+  QualixTGWRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref QualixRT
+      TransitGatewayId: !Ref TransitGW
+    DependsOn: MgmtTransitGWAttachment
   ESInstanceSN1:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -452,6 +460,14 @@ Resources:
       RouteTableId: !Ref ESInstanceRT
       GatewayId: !Ref VPNGw
     DependsOn: ManagementVPNGwAttachement
+  ESTGWRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref ESInstanceRT
+      TransitGatewayId: !Ref TransitGW
+    DependsOn: MgmtTransitGWAttachment
   ESWWWRoute:
     Type: 'AWS::EC2::Route'
     Condition: IsUseNat
