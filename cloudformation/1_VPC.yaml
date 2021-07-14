@@ -625,8 +625,5 @@ Outputs:
   TGWid:
     Condition: ShouldUseTransitGateway
     Value: !Ref TransitGW
-  VPNGWid:
-    Condition: DoNotUseTransitGateway
-    Value: !Ref VPNGw
   ESRoleArn:
     Value: !GetAtt ESRole.Arn

@@ -163,3 +163,6 @@ Outputs:
   SharedVpcRoleArn:
     Description: Shared VPC Role Arn
     Value: !GetAtt CSExecutionServerRole.Arn
+  VPNGWid:
+    Description: VPN gateway ID
+    Value: !Ref VPNGw
