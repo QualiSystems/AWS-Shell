@@ -193,7 +193,6 @@ Resources:
           Value: Management
         - Key: CreateBy
           Value: CloudShell
-    DependsOn: CustomerGateway
   VPNConnectionTGW:
     Type: 'AWS::EC2::VPNConnection'
     Condition: ShouldUseTransitGateway
@@ -230,7 +229,6 @@ Resources:
     Properties:
       VpnGatewayId: !Ref VPNGw
       VpcId: !Ref ManagementVPC
-    DependsOn: VPNGw
   QualixSN:
     Type: 'AWS::EC2::Subnet'
     Properties:
@@ -477,7 +475,6 @@ Resources:
       RouteTableId: !Ref ESInstanceRT
       InstanceId: !Ref NatInstance
       DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: NatInstance
   ESWWWRouteTGW:
     Type: 'AWS::EC2::Route'
     Condition: NoNatAndTGW
