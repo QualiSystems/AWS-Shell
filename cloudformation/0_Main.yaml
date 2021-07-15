@@ -147,9 +147,8 @@ Parameters:
       - 'True'
       - 'False'
 Conditions:
-  IsHighAvailabilityMode: !Equals
-    - !Ref 9HighAvailabilityMode
-    - 'True'
+  IsHighAvailabilityMode: !Equals [!Ref 9HighAvailabilityMode, "True"]
+  ShouldUseTransitGateway: !Equals [!Ref 10UseTransitGateway, "True"]
 Resources:
   AMILookup:
     Type: 'AWS::CloudFormation::Stack'
@@ -235,21 +234,20 @@ Resources:
 Outputs:
   ManagementVPCID:
     Description: Management VPC ID
-    Value: !GetAtt
-      - VPCNAT
-      - Outputs.VPCId
+    Value: !GetAtt VPCNAT.Outputs.VPCId
   SG1id:
-    Description: SG1 ID
-    Value: !GetAtt
-      - VPCNAT
-      - Outputs.SG1id
+    Description: AWS MGMT SG ID
+    Value: !GetAtt VPCNAT.Outputs.SG1id
   S3Name:
-    Description: Name of S3 bucket
-    Value: !GetAtt
-      - VPCNAT
-      - Outputs.S3Name
+    Description: Keypairs location
+    Value: !GetAtt VPCNAT.Outputs.S3Name
   QualixInstanceIP:
     Description: Internal IP of QualiX instance
-    Value: !GetAtt
-      - Instances
-      - Outputs.QualixInstanceIP
+    Value: !GetAtt Instances.Outputs.QualixInstanceIP
+  TGWid:
+    Condition: ShouldUseTransitGateway
+    Description: Transit gateway ID
+    Value: !GetAtt VPCNAT.Outputs.TGWid
+  ESRoleArn:
+    Description: ES Role ARN
+    Value: !GetAtt VPCNAT.Outputs.ESRoleArn

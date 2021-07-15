@@ -201,7 +201,7 @@ Resources:
       StaticRoutesOnly: 'true'
       Tags:
         - Key: Name
-          Value: CloudShell_VPNGateway
+          Value: CloudShell_TransitGateway VPN Connection
         - Key: Role
           Value: Management
         - Key: CreateBy
@@ -216,7 +216,7 @@ Resources:
       StaticRoutesOnly: 'true'
       Tags:
         - Key: Name
-          Value: CloudShell_VPNGateway
+          Value: CloudShell_VPNGateway VPN Connection
         - Key: Role
           Value: Management
         - Key: CreateBy
