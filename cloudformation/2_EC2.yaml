@@ -29,11 +29,12 @@ Parameters:
     Type: String
   InstanceSize:
     Type: String
+  UseElasticIP:
+    Type: String
+    Default: 'False'
 Conditions:
-  IsHighAvailabilityMode: !Not
-    - !Equals
-      - !Ref ESInstanceSN2
-      - 'NULL'
+  IsHighAvailabilityMode: !Not [!Equals [!Ref ESInstanceSN2, 'NULL']]
+  IsUseElasticIP: !Equals [!Ref UseElasticIP, 'True']
 Resources:
   QualixInstance:
     Type: 'AWS::EC2::Instance'
@@ -72,7 +73,19 @@ Resources:
   ESInstance1a:
     Type: 'AWS::EC2::Instance'
     Properties:
-      SubnetId: !Ref ESInstanceSN1
+      SubnetId:
+        !If
+        - IsUseElasticIP
+        - !Ref "AWS::NoValue"
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - IsUseElasticIP
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN1
+            GroupSet:
+              - !Ref SG1id
       IamInstanceProfile: !Ref ESInstanceProfile
       KeyName: !Ref KeyPair
       Tags:
@@ -113,7 +126,19 @@ Resources:
   ESInstance2a:
     Type: 'AWS::EC2::Instance'
     Properties:
-      SubnetId: !Ref ESInstanceSN1
+      SubnetId:
+        !If
+        - IsUseElasticIP
+        - !Ref "AWS::NoValue"
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - IsUseElasticIP
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN1
+            GroupSet:
+              - !Ref SG1id
       IamInstanceProfile: !Ref ESInstance2Profile
       KeyName: !Ref KeyPair
       ImageId: !Ref ESAMI
@@ -155,7 +180,19 @@ Resources:
     Type: 'AWS::EC2::Instance'
     Condition: IsHighAvailabilityMode
     Properties:
-      SubnetId: !Ref ESInstanceSN2
+      SubnetId:
+        !If
+        - IsUseElasticIP
+        - !Ref "AWS::NoValue"
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - IsUseElasticIP
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN2
+            GroupSet:
+              - !Ref SG1id
       IamInstanceProfile: !Ref ESInstanceProfile
       KeyName: !Ref KeyPair
       Tags:
@@ -197,7 +234,19 @@ Resources:
     Type: 'AWS::EC2::Instance'
     Condition: IsHighAvailabilityMode
     Properties:
-      SubnetId: !Ref ESInstanceSN2
+      SubnetId:
+        !If
+        - IsUseElasticIP
+        - !Ref "AWS::NoValue"
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - IsUseElasticIP
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN2
+            GroupSet:
+              - !Ref SG1id
       IamInstanceProfile: !Ref ESInstance2Profile
       KeyName: !Ref KeyPair
       ImageId: !Ref ESAMI
@@ -235,10 +284,18 @@ Resources:
           Value: CloudShell
         - Key: Role
           Value: Management
+  QualixInstanceEIP:
+    Type: 'AWS::EC2::EIP'
+    Condition: IsUseElasticIP
+    Properties:
+      InstanceId: !Ref QualixInstance
+      Domain: vpc
+    DependsOn: QualixInstance
 Description: EC2 instances - QualiX and ES
 Outputs:
   QualixInstanceIP:
     Description: IP of Bastion-NG Host
-    Value: !GetAtt
-      - QualixInstance
-      - PrivateIp
+    Value: !GetAtt QualixInstance.PrivateIp
+  QualixInstanceEIP:
+    Description: Qualix Instance Elastic IP
+    Value: !Ref QualixInstanceEIP

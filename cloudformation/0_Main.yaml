@@ -146,14 +146,22 @@ Parameters:
     AllowedValues:
       - 'True'
       - 'False'
+  UseElasticIP:
+    Type: String
+    Description: Use Elastic IP
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
 Conditions:
   IsHighAvailabilityMode: !Equals [!Ref 9HighAvailabilityMode, "True"]
   ShouldUseTransitGateway: !Equals [!Ref 10UseTransitGateway, "True"]
+  IsUseElasticIP: !Equals [!Ref UseElasticIP, "True"]
 Resources:
   AMILookup:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/AMI_Lookup.json'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/AMI_Lookup.yaml'
       Parameters:
         LookupLatestWindowsServerAmi: 'False'
         LookupLatestCentosAmi: 'True'
@@ -191,6 +199,7 @@ Resources:
         ShareAccountId: !Ref ShareAccountId
         EnhanceS3BucketSecurity: !Ref EnhanceS3BucketSecurity
         UseNAT: !Ref UseNAT
+        UseElasticIP: !Ref UseElasticIP
   Instances:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
@@ -244,6 +253,10 @@ Outputs:
   QualixInstanceIP:
     Description: Internal IP of QualiX instance
     Value: !GetAtt Instances.Outputs.QualixInstanceIP
+  QualixInstanceEIP:
+    Condition: IsUseElasticIP
+    Description: Qualix Instance Elastic IP
+    Value: !GetAtt Instances.Outputs.QualixInstanceEIP
   TGWid:
     Condition: ShouldUseTransitGateway
     Description: Transit gateway ID
