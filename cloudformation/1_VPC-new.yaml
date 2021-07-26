@@ -730,7 +730,7 @@ Resources:
           - !Ref QualiServerInstanceRT
         - - !Ref QualixRT
           - !Ref ESInstanceRT
-      ServiceName: !Sub 'com.amazonaws${AWS::Region}.s3'
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcId: !Ref ManagementVPC
 Outputs:
   VPCId:

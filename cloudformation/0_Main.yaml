@@ -126,6 +126,8 @@ Resources:
     Properties:
       TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/1_VPC-new.yaml'
       Parameters:
+        Network: !Ref Network
+        VPNAttachment: !Ref VPNAttachment
         VPCCIDR: !Ref VPCCIDR
         VPNAddress: !Ref VPNAddress
         OnPremiseCIDR: !Ref OnPremiseCIDR
@@ -142,7 +144,6 @@ Resources:
             - !GetAZs
               Ref: 'AWS::Region'
           - 'NULL'
-        # todo why we don't use AMILookup here??
         NatAMI: !FindInMap
           - AMIFromRegion
           - !Ref 'AWS::Region'
@@ -152,6 +153,7 @@ Resources:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
       Parameters:
+        Network: !Ref Network
         QualixSN: !GetAtt VPCNAT.Outputs.QualixSN
         ESInstanceSN1: !GetAtt VPCNAT.Outputs.ESInstanceSN1
         ESInstanceSN2: !GetAtt VPCNAT.Outputs.ESInstanceSN2
@@ -168,8 +170,8 @@ Resources:
         KeyPair: !Ref KeyPair
         ESInstance2Profile: !GetAtt VPCNAT.Outputs.ESInstance2Profile
         ServerIP: !Ref ServerIP
-        ZUsername: !Ref Username
-        ZPassword: !Ref Password
+        Username: !Ref Username
+        Password: !Ref Password
         InstanceSize: !Ref InstanceType
       TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/2_EC2-new.yaml'
 Outputs:
