@@ -508,6 +508,7 @@ Resources:
       RouteTableId: !Ref ESInstanceRT
       TransitGatewayId: !Ref TransitGW
       DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: MgmtTransitGWAttachment
   ESWWWRouteVGW:
     Type: 'AWS::EC2::Route'
     Condition: EsGwIsVGW
@@ -515,6 +516,7 @@ Resources:
       RouteTableId: !Ref ESInstanceRT
       GatewayId: !Ref VPNGw
       DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: ManagementVPNGwAttachement
   NatRoute:
     Type: 'AWS::EC2::Route'
     Condition: NatNetwork
