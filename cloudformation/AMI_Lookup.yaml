@@ -30,7 +30,7 @@ Resources:
         - AMIInfoFunction
         - Arn
       Region: !Ref 'AWS::Region'
-      OSName: Windows Server 2012 R2 English 64-bit
+      OSName: Windows Server 2019 English 64-bit
   CentosAMIInfo:
     Type: 'Custom::CentosAMIInfo'
     Condition: ShouldLookupCentos
@@ -49,12 +49,12 @@ Resources:
 
           - - // Map display OS names to AMI name patterns
             - 'var osNameToPattern = {'
-            - '  ''Windows Server 2012 R2 English 64-bit'': ''Windows_Server-2012*English*Base*'','
+            - '  ''Windows Server 2019 English 64-bit'': ''Windows_Server-2019*English*Full*Base*'','
             - '   ''CentOS 7.4 Latest'': ''CentOS Linux 7 x86_64 HVM EBS ENA*'''
             - '};'
             - // Map display OS names to owner
             - 'var osNameToFilterData = {'
-            - '  ''Windows Server 2012 R2 English 64-bit'': {'
+            - '  ''Windows Server 2019 English 64-bit'': {'
             - '                                            ''owner'': ''amazon'', '
             - '                                            ''filterValue'': ''801119661308'', // amazon web services'
             - '                                            ''filterName'': ''owner-id'' // amazon web services'
