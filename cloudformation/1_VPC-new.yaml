@@ -698,7 +698,6 @@ Resources:
             Action: 'ec2:*'
             Resource: '*'
       Roles:
-        - !Ref QualiXRole
         - !Ref ESRole
   S3Policy:
     Type: 'AWS::IAM::Policy'
@@ -717,7 +716,6 @@ Resources:
               - 's3:GetObject'
               - 's3:DeleteObject'
       Roles:
-        - !Ref QualiXRole
         - !Ref ESRole
 
   # VPC Endpoints
@@ -727,11 +725,9 @@ Resources:
       RouteTableIds:
         !If
         - PublicNetworkNoVPN
-        - - !Ref QualixRT
-          - !Ref ESInstanceRT
+        - - !Ref ESInstanceRT
           - !Ref QualiServerInstanceRT
-        - - !Ref QualixRT
-          - !Ref ESInstanceRT
+        - - !Ref ESInstanceRT
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
       VpcId: !Ref ManagementVPC
 Outputs:
