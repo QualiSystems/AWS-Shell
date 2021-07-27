@@ -348,6 +348,27 @@ Resources:
           FromPort: '0'
           ToPort: '65535'
           CidrIp: !Ref VPCCIDR
+  SG4:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: SG4, group for the vpc endpoint
+      Tags:
+        - Key: Name
+          Value: SG4
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      VpcId: !Ref ManagementVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: !Ref VPCCIDR
   NatSG:
     Type: 'AWS::EC2::SecurityGroup'
     Condition: NatNetwork
@@ -729,6 +750,19 @@ Resources:
           - !Ref QualiServerInstanceRT
         - - !Ref ESInstanceRT
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref ManagementVPC
+  StsEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds: !If
+        - IsHighAvailabilityMode
+        - - !Ref ESInstanceSN1
+          - !Ref ESInstanceSN2
+        - - !Ref ESInstanceSN1
+      SecurityGroupIds:
+        - !Ref SG4
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sts'
       VpcId: !Ref ManagementVPC
 Outputs:
   VPCId:
