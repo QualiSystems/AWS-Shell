@@ -764,6 +764,7 @@ Resources:
         - !Ref SG4
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sts'
       VpcId: !Ref ManagementVPC
+      PrivateDnsEnabled: True
 Outputs:
   VPCId:
     Description: VPCId of the newly created VPC
