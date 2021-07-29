@@ -483,14 +483,20 @@ Resources:
       RouteTableId: !Ref QualixRT
       TransitGatewayId: !Ref TransitGW
     DependsOn: MgmtTransitGWAttachment
-  QualixWWWRoute:
+  QualixWWWRouteIGW:
     Type: 'AWS::EC2::Route'
     Condition: PublicNetwork
     Properties:
       RouteTableId: !Ref QualixRT
       GatewayId: !Ref ManagementIGW
       DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: ManagementIGW
+  QualixWWWRouteNat:
+    Type: 'AWS::EC2::Route'
+    Condition: NatNetwork
+    Properties:
+      RouteTableId: !Ref QualixRT
+      InstanceId: !Ref NatInstance
+      DestinationCidrBlock: 0.0.0.0/0
   ESVPNRoute:
     Type: 'AWS::EC2::Route'
     Condition: ShouldUseVGW
@@ -521,7 +527,6 @@ Resources:
       RouteTableId: !Ref ESInstanceRT
       GatewayId: !Ref ManagementIGW
       DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: ManagementIGW
   ESWWWRouteTGW:
     Type: 'AWS::EC2::Route'
     Condition: EsGwIsTGW
@@ -545,7 +550,6 @@ Resources:
       RouteTableId: !Ref NatRT
       GatewayId: !Ref ManagementIGW
       DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: ManagementIGWAttachement
   QSWWWRoute:
     Type: 'AWS::EC2::Route'
     Condition: PublicNetworkNoVPN
@@ -553,7 +557,6 @@ Resources:
       RouteTableId: !Ref QualiServerInstanceRT
       GatewayId: !Ref ManagementIGW
       DestinationCidrBlock: 0.0.0.0/0
-    DependsOn: ManagementIGW
 
   # Roles
   QualiXRole:
@@ -763,6 +766,20 @@ Resources:
       SecurityGroupIds:
         - !Ref SG4
       ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sts'
+      VpcId: !Ref ManagementVPC
+      PrivateDnsEnabled: True
+  Ec2Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds: !If
+        - IsHighAvailabilityMode
+        - - !Ref ESInstanceSN1
+          - !Ref ESInstanceSN2
+        - - !Ref ESInstanceSN1
+      SecurityGroupIds:
+        - !Ref SG4
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2'
       VpcId: !Ref ManagementVPC
       PrivateDnsEnabled: True
 Outputs:
