@@ -756,6 +756,7 @@ Resources:
       VpcId: !Ref ManagementVPC
   StsEndpoint:
     Type: 'AWS::EC2::VPCEndpoint'
+    Condition: LocalNetwork
     Properties:
       VpcEndpointType: Interface
       SubnetIds: !If
@@ -770,6 +771,7 @@ Resources:
       PrivateDnsEnabled: True
   Ec2Endpoint:
     Type: 'AWS::EC2::VPCEndpoint'
+    Condition: LocalNetwork
     Properties:
       VpcEndpointType: Interface
       SubnetIds: !If
