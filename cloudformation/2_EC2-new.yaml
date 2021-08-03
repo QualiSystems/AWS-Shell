@@ -78,7 +78,7 @@ Resources:
               echo 'nameserver 4.4.4.4' >> /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/guacamole-quali-install-docker.sh
+              https://quali-prod-binaries.s3.amazonaws.com/guacamole-quali-install.sh
               -s -o guacamole-quali-install.sh
             - |
               chmod +x guacamole-quali-install.sh
