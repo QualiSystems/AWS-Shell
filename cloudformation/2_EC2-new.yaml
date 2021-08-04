@@ -124,7 +124,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.1.0.1619-181662/ES/cloudshell_es_install_script.sh
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -171,7 +171,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.1.0.1619-181662/ES/cloudshell_es_install_script.sh
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -233,7 +233,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.1.0.1619-181662/ES/cloudshell_es_install_script.sh
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -281,7 +281,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.1.0.1619-181662/ES/cloudshell_es_install_script.sh
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
