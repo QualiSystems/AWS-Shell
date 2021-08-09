@@ -1,4 +1,27 @@
 Description: 'Shared VPC, subnets, security groups'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Parameters:
+        - VPCCIDR
+        - DefaultSubnetCIDR
+        - VPNAddress1
+        - VPNAddress2
+        - TransitGWid
+        - ESRoleArn
+    ParameterLabels:
+      VPCCIDR:
+        default: Shared VPC CIDR
+      DefaultSubnetCIDR:
+        default: Default subnet CIDR
+      VPNAddress1:
+        default: 1st VPN address
+      VPNAddress2:
+        default: 2nd VPN address
+      TransitGWid:
+        default: Transit Gateway Id
+      ESRoleArn:
+        default: Execution Server Role Arn
 Parameters:
   VPCCIDR:
     Type: String
@@ -10,11 +33,8 @@ Parameters:
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
   DefaultSubnetCIDR:
     Type: String
-    Description: 'Default CIDR to be used by CloudShell. This CIDR range must be
-    included in the defined VPC CIDR. Default is 10.1.254.0/24.
-    Note: CloudShell cannot differentiate between this CIDR and the VPC CIDR,
-    which can cause overlap. To avoid this from happening, we recommend specifying a
-    limited default subnet CIDR. For example, “10.1.254.0/24” or “10.1.253.0/24”.'
+    Description: 'The subnet would be used to connect TGW. This CIDR range must be
+    included in the defined VPC CIDR. Default is 10.1.254.0/24.'
     MinLength: '9'
     MaxLength: '18'
     Default: 10.1.254.0/24
@@ -29,7 +49,7 @@ Parameters:
     ConstraintDescription: must be a valid IP address of the form x.x.x.x
   VPNAddress2:
     Type: String
-    Description: The 1st public IP address of the router on the network in which Quali Server resides.
+    Description: The 2nd public IP address of the router on the network in which Quali Server resides.
     MinLength: '7'
     MaxLength: '15'
     AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})'
@@ -37,7 +57,7 @@ Parameters:
   TransitGWid:
     Type: String
     Description: 'ID of the transit gateway. To find the transit gateway id, open the
-    CloudFormation stack that has “VPCNAT” in its name, click the Outputs tab and copy
+    CloudFormation stack that has "VPCNAT" in its name, click the Outputs tab and copy
     the TGWid value.'
   ESRoleArn:
     Type: String
