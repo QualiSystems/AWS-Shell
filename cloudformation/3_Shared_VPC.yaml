@@ -8,6 +8,17 @@ Metadata:
         - VPNAddress
         - TransitGWid
         - ESRoleArn
+    ParameterLabels:
+      VPCCIDR:
+        default: Shared VPC CIDR
+      DefaultSubnetCIDR:
+        default: Default subnet CIDR
+      VPNAddress:
+        default: VPN address
+      TransitGWid:
+        default: Transit Gateway Id
+      ESRoleArn:
+        default: Execution Server Role Arn
 Parameters:
   VPCCIDR:
     Type: String
@@ -36,7 +47,7 @@ Parameters:
   TransitGWid:
     Type: String
     Description: 'ID of the transit gateway. To find the transit gateway id, open the
-    CloudFormation stack that has “VPCNAT” in its name, click the Outputs tab and copy
+    CloudFormation stack that has "VPCNAT" in its name, click the Outputs tab and copy
     the TGWid value.'
   ESRoleArn:
     Type: String

@@ -41,6 +41,29 @@ Metadata:
         - ServerIP
         - Username
         - Password
+    ParameterLabels:
+      VPNAttachment:
+        default: VPN Attachment
+      VPCCIDR:
+        default: Management VPC CIDR
+      KeyPair:
+        default: KeyPair
+      InstanceType:
+        default: Instance type
+      HighAvailabilityMode:
+        default: High availability mode
+      VPNAddress:
+        default: VPN address
+      OnPremiseCIDR:
+        default: On-prem CIDR
+      EnhanceS3BucketSecurity:
+        default: Enhance S3 bucket security
+      ServerIP:
+        default: CloudShell server IP
+      Username:
+        default: CloudShell username
+      Password:
+        default: CloudShell password
 Parameters:
   Network:
     Type: String
@@ -117,14 +140,14 @@ Resources:
   AMILookup:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/AMI_Lookup.yaml'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/AMI_Lookup.yaml'
       Parameters:
         LookupLatestWindowsServerAmi: !If [PublicNetworkNoVPN, 'True', 'False']
         LookupLatestCentosAmi: 'True'
   VPCNAT:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/1_VPC-new.yaml'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/1_VPC.yaml'
       Parameters:
         Network: !Ref Network
         VPNAttachment: !Ref VPNAttachment
@@ -173,7 +196,7 @@ Resources:
         Username: !Ref Username
         Password: !Ref Password
         InstanceSize: !Ref InstanceType
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/2_EC2-new.yaml'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/2_EC2.yaml'
 Outputs:
   ManagementVPCID:
     Description: Management VPC ID
