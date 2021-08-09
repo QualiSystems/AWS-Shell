@@ -174,7 +174,7 @@ class AWSShell(object):
         :return: json string response
         :rtype: str
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
+
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Cleanup Connectivity')
 
@@ -198,7 +198,6 @@ class AWSShell(object):
         :param CancellationContext cancellation_context:
         :rtype: list[ActionResultBase]
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Prepare Connectivity')
 
@@ -220,7 +219,6 @@ class AWSShell(object):
 
         :param command_context: ResourceCommandContext
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         try:
             with AwsShellContext(context=command_context,
                                  aws_session_manager=self.aws_session_manager) as shell_context:
@@ -253,7 +251,6 @@ class AWSShell(object):
         Will power on the ami
         :param ResourceRemoteCommandContext command_context:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Power On')
 
@@ -268,7 +265,6 @@ class AWSShell(object):
         Will power on the ami
         :param ResourceRemoteCommandContext command_context:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Power Off')
 
@@ -283,7 +279,6 @@ class AWSShell(object):
         Will delete the ami instance
         :param ResourceRemoteCommandContext command_context:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Delete instance')
 
@@ -300,7 +295,6 @@ class AWSShell(object):
         :param ResourceRemoteCommandContext command_context:
         :rtype: str
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Get Application Ports')
             resource = command_context.remote_endpoints[0]
@@ -326,7 +320,6 @@ class AWSShell(object):
         :param list[RequestActionBase] actions::
         :param CancellationContext cancellation_context:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Deploying AMI')
 
@@ -351,7 +344,6 @@ class AWSShell(object):
         """
         :param ResourceRemoteCommandContext command_context:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Refresh IP')
 
@@ -382,7 +374,6 @@ class AWSShell(object):
         :param ResourceRemoteCommandContext command_context:
         :rtype str:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=command_context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('GetAccessKey')
             reservation_id = self._get_reservation_id(command_context)
@@ -397,7 +388,6 @@ class AWSShell(object):
         :param request: The json request
         :return:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Set App Security Groups')
 
@@ -420,7 +410,6 @@ class AWSShell(object):
         :type context: ResourceCommandContext
         :rtype str
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         results = []
         vm_details_requests = [VmDetailsRequest(item) for item in
                                DeployDataHolder(jsonpickle.decode(requests_json)).items]
@@ -457,7 +446,6 @@ class AWSShell(object):
     #                                                reservation_id, resource_fullname)
 
     def remote_get_snapshots(self, context):
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Get Snapshots')
 
@@ -468,7 +456,6 @@ class AWSShell(object):
                                                          instance_id=data_holder.vmdetails.uid)
 
     def remote_save_snapshot(self, context, snapshot_name):
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Save Snapshot')
             resource = context.remote_endpoints[0]
@@ -482,7 +469,6 @@ class AWSShell(object):
                                                   tags=tags)
 
     def remote_restore_snapshot(self, context, snapshot_name):
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Save Snapshot')
             resource = context.remote_endpoints[0]
@@ -501,7 +487,6 @@ class AWSShell(object):
         :param cancellation_context:
         :return:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Save Snapshot')
 
@@ -525,7 +510,6 @@ class AWSShell(object):
         :param str request:
         :return:
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Add custom tags')
 
@@ -553,7 +537,6 @@ class AWSShell(object):
         :param CancellationContext cancellation_context:
         :rtype: list[ActionResultBase]
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Create traffic mirroring')
             actions = self._parse_request(request, shell_context)
@@ -596,7 +579,6 @@ class AWSShell(object):
         :return: json string response
         :rtype: list[ActionResultBase]
         """
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Create traffic mirroring')
 
@@ -614,7 +596,6 @@ class AWSShell(object):
             return results
 
     def assign_additional_private_ipv4s(self, context, vnic_id, new_ips):
-        import rpdb; rpdb.set_trace("0.0.0.0")
         with AwsShellContext(context=context, aws_session_manager=self.aws_session_manager) as shell_context:
             shell_context.logger.info('Assign additional IP Addresses')
 
