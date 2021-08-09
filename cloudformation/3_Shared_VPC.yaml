@@ -1,4 +1,13 @@
 Description: 'Shared VPC, subnets, security groups'
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Parameters:
+        - VPCCIDR
+        - DefaultSubnetCIDR
+        - VPNAddress
+        - TransitGWid
+        - ESRoleArn
 Parameters:
   VPCCIDR:
     Type: String
@@ -10,11 +19,8 @@ Parameters:
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
   DefaultSubnetCIDR:
     Type: String
-    Description: 'Default CIDR to be used by CloudShell. This CIDR range must be
-    included in the defined VPC CIDR. Default is 10.1.254.0/24.
-    Note: CloudShell cannot differentiate between this CIDR and the VPC CIDR,
-    which can cause overlap. To avoid this from happening, we recommend specifying a
-    limited default subnet CIDR. For example, “10.1.254.0/24” or “10.1.253.0/24”.'
+    Description: 'The subnet would be used to connect TGW. This CIDR range must be
+    included in the defined VPC CIDR. Default is 10.1.254.0/24.'
     MinLength: '9'
     MaxLength: '18'
     Default: 10.1.254.0/24
