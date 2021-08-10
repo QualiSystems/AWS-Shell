@@ -1,6 +1,6 @@
 from unittest import TestCase
 
-from mock import Mock, MagicMock, call
+from mock import Mock, MagicMock, call, patch
 
 from cloudshell.cp.aws.domain.services.ec2.elastic_ip import ElasticIpService
 from cloudshell.cp.aws.models.network_actions_models import DeployNetworkingResultModel
@@ -133,11 +133,11 @@ class TestElasticIpService(TestCase):
                                            logger=Mock())
 
         # assert
-        elastic_ip_service.allocate_elastic_address.assert_called_once_with(ec2_client=ec2_client)
+        elastic_ip_service.allocate_elastic_address.assert_called_once_with(ec2_client)
         self.assertEquals(network_config_result_mock.public_ip, allocated_elastic_ip)
-        elastic_ip_service.associate_elastic_ip_to_instance.assert_called_once_with(ec2_session=ec2_session,
-                                                                                    instance=instance,
-                                                                                    elastic_ip=allocated_elastic_ip)
+        elastic_ip_service.associate_elastic_ip_to_instance.assert_called_once_with(
+            ec2_session, instance, allocated_elastic_ip
+        )
         instance.network_interfaces_attribute.all.assert_not_called()
 
     def test_set_elastic_ips_multiple_subnets_with_2_public_1_private(self):
@@ -194,8 +194,8 @@ class TestElasticIpService(TestCase):
         self.assertEquals(elastic_ip_service.allocate_elastic_address.call_count, 2)
         self.assertEquals(elastic_ip_service.associate_elastic_ip_to_network_interface.call_count, 2)
         elastic_ip_service.associate_elastic_ip_to_network_interface.assert_has_calls(
-                [call(ec2_session=ec2_session, interface_id="netif0", elastic_ip=allocated_elastic_ip),
-                 call(ec2_session=ec2_session, interface_id="netif2", elastic_ip=allocated_elastic_ip)])
+                [call(ec2_session, "netif0", allocated_elastic_ip),
+                 call(ec2_session, "netif2", allocated_elastic_ip)])
         self.assertEquals(result_mock1.public_ip, allocated_elastic_ip)
         self.assertEquals(result_mock3.public_ip, allocated_elastic_ip)
         self.assertFalse(hasattr(result_mock2, 'public_ip'))  # to make sure public_ip wasnt set on result_mock2
@@ -220,3 +220,69 @@ class TestElasticIpService(TestCase):
 
         # assert
         self.assertFalse(result)
+
+    def test__create_and_associate_elastic_ip_interface_id(self):
+        interface_id = 'interface id'
+        ec2_client = Mock()
+        ec2_session = Mock()
+        expected_ip = Mock()
+        vpc_address = Mock()
+        ec2_client.allocate_address.return_value = {'PublicIp': expected_ip}
+        ec2_session.vpc_addresses.filter.return_value = [vpc_address]
+
+        ip = self.elastic_ip_service._create_and_associate_elastic_ip(
+            ec2_client, ec2_session, interface_id
+        )
+
+        self.assertEquals(ip, expected_ip)
+        ec2_client.allocate_address.assert_called_once_with(Domain='vpc')
+        ec2_session.vpc_addresses.filter.assert_called_once_with(PublicIps=[expected_ip])
+        vpc_address.associate.assert_called_once_with(
+            NetworkInterfaceId=interface_id, AllowReassociation=False
+        )
+
+    def test__create_and_associate_elastic_ip_instance(self):
+        instance = Mock()
+        ec2_client = Mock()
+        ec2_session = Mock()
+        expected_ip = Mock()
+        vpc_address = Mock()
+        ec2_client.allocate_address.return_value = {'PublicIp': expected_ip}
+        ec2_session.vpc_addresses.filter.return_value = [vpc_address]
+
+        ip = self.elastic_ip_service._create_and_associate_elastic_ip(
+            ec2_client, ec2_session, instance
+        )
+
+        self.assertEquals(ip, expected_ip)
+        ec2_client.allocate_address.assert_called_once_with(Domain='vpc')
+        ec2_session.vpc_addresses.filter.assert_called_once_with(PublicIps=[expected_ip])
+        vpc_address.associate.assert_called_once_with(
+            InstanceId=instance.id, AllowReassociation=False
+        )
+
+    def test__create_and_associate_elastic_ip_failed_first_time(self):
+        interface_id = 'interface id'
+        ec2_client = MagicMock()
+        ec2_session = Mock()
+        associate_elastic_ip_to_network_interface = Mock(
+            side_effect=[Exception, Exception, None]
+        )
+        self.elastic_ip_service.associate_elastic_ip_to_network_interface = (
+            associate_elastic_ip_to_network_interface
+        )
+        find_and_release_elastic_address = Mock()
+        self.elastic_ip_service.find_and_release_elastic_address = (
+            find_and_release_elastic_address
+        )
+        allocate_elastic_address = Mock()
+        self.elastic_ip_service.allocate_elastic_address = allocate_elastic_address
+
+        with patch('time.sleep', Mock()):
+            self.elastic_ip_service._create_and_associate_elastic_ip(
+                ec2_client, ec2_session, interface_id
+            )
+
+        self.assertEquals(allocate_elastic_address.call_count, 3)
+        self.assertEquals(find_and_release_elastic_address.call_count, 2)
+        self.assertEquals(associate_elastic_ip_to_network_interface.call_count, 3)

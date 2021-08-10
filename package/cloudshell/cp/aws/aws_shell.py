@@ -351,9 +351,9 @@ class AWSShell(object):
             private_ip_on_resource = self.model_parser.get_private_ip_from_connected_resource_details(
                 command_context)
             # Get Public IP on deployed resource
+
             public_ip_attr_name, public_ip_on_resource = \
-                self.model_parser.get_public_ip_attr_from_connected_resource_details(
-                command_context)
+                self.model_parser.get_public_ip_attr_from_connected_resource_details(command_context)
             # Get instance id
             deployed_instance_id = self.model_parser.try_get_deployed_connected_resource_instance_id(
                 command_context)

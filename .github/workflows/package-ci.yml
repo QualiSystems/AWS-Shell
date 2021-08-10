@@ -1,0 +1,74 @@
+name: package CI
+
+on:
+  push:
+    branches:
+      - "*"
+  pull_request:
+    branches:
+      - "*"
+
+jobs:
+  tests:
+    name: Run unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./package
+    strategy:
+      matrix:
+        python-version: [2.7]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install pip -U
+          pip install tox codecov
+      - name: Set TOXENV
+        run: |
+          python_version="${{ matrix.python-version }}"
+          py_version="${python_version/./}"
+          target_branch=${{ github.base_ref || github.ref }}
+          target_branch=(`[[ ${target_branch::10} == 'refs/heads' ]] && echo ${target_branch:11} || echo $target_branch`)
+          echo "target_branch =" $target_branch
+          is_master=(`[[ $target_branch == 'master' ]] && echo 'true' || echo 'false'`)
+          is_tag=${{ startsWith(github.ref, 'refs/tags') }}
+          echo "is_master =" $is_master
+          echo "is_tag =" $is_tag
+          branch=(`[[ $is_master == 'true' || $is_tag == 'true' ]] && echo 'master' || echo 'dev'`)
+          TOXENV="py$py_version-$branch"
+          echo $TOXENV
+          echo "TOXENV=$TOXENV" >> $GITHUB_ENV
+      - name: Run tox
+        run: tox
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v1
+        with:
+          fail_ci_if_error: true
+          verbose: true
+  build:
+    name: Build package
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./package
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      - name: Set up Python 2.7
+        uses: actions/setup-python@v2
+        with:
+          python-version: 2.7
+      - name: Install dependencies
+        run: |
+          python -m pip install pip -U
+          pip install tox
+      - name: Build
+        env:
+          TOXENV: build
+        run: tox
