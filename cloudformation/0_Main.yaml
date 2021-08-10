@@ -114,22 +114,22 @@ Parameters:
     ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
   EnhanceS3BucketSecurity:
     Type: String
-    Description: Enable encryption for the bucket and block public access
+    Description: Select True to enable this option to encrypt and block public access from the S3 bucket
     Default: 'False'
     AllowedValues:
       - 'True'
       - 'False'
   ServerIP:
     Type: String
-    Description: IP Address of your CloudShell Server
+    Description: The IP Address of the Quali Server
     AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
     ConstraintDescription: must be a valid IP address of the form x.x.x.x
   Username:
     Type: String
-    Description: Username for CloudShell server
+    Description: The CloudShell admin user
   Password:
     Type: String
-    Description: Password for CloudShell server
+    Description: The CloudShell admin password
     NoEcho: true
 Conditions:
   IsHighAvailabilityMode: !Equals [!Ref HighAvailabilityMode, 'True']

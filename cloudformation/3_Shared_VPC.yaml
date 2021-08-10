@@ -46,12 +46,14 @@ Parameters:
     ConstraintDescription: must be a valid IP address of the form x.x.x.x
   TransitGWid:
     Type: String
-    Description: 'ID of the transit gateway. To find the transit gateway id, open the
-    CloudFormation stack that has "VPCNAT" in its name, click the Outputs tab and copy
-    the TGWid value.'
+    Description: 'Created by the deployment of the management VPC. To find the transit
+    gateway ID, open the main CloudFormation stack , click the Outputs tab and copy the
+    TGWid value.'
   ESRoleArn:
     Type: String
-    Description: Arn of the ESRole
+    Description: 'Created by the deployment of the management VPC. To find the role ARN,
+     open the main CloudFormation stack , click the Outputs tab and copy the ESRoleArn
+     value.'
 Resources:
   SharedVPC:
     Type: 'AWS::EC2::VPC'
