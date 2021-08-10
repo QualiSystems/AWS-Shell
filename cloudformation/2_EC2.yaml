@@ -1,0 +1,348 @@
+Parameters:
+  Network:
+    Type: String
+    AllowedValues:
+      - NAT
+      - Local
+      - Public (Elastic IP)
+  QualixSN:
+    Type: String
+  ESInstanceSN1:
+    Type: String
+  ESInstanceSN2:
+    Type: String
+  QualiServerInstanceSN:
+    Type: String
+  QualiXInstanceProfile:
+    Type: String
+  ESInstanceProfile:
+    Type: String
+  QualiServerInstanceProfile:
+    Type: String
+  SG1id:
+    Type: String
+  SG2id:
+    Type: String
+  SG3id:
+    Type: String
+  ESAMI:
+    Type: String
+  QualixAMI:
+    Type: String
+  QSAMI:
+    Type: String
+  KeyPair:
+    Type: String
+  ESInstance2Profile:
+    Type: String
+  ServerIP:
+    Type: String
+  Username:
+    Type: String
+  Password:
+    Type: String
+  InstanceSize:
+    Type: String
+Conditions:
+  IsHighAvailabilityMode: !Not [!Equals [!Ref ESInstanceSN2, 'NULL']]
+  PublicNetwork: !Equals [!Ref Network, 'Public (Elastic IP)']
+  NoVPN: !Not [!Equals [!Ref QualiServerInstanceSN, 'NULL']]
+  PublicNetworkNoVPN: !And [Condition: PublicNetwork, Condition: NoVPN]
+Resources:
+  QualixInstance:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      InstanceType: !Ref InstanceSize
+      IamInstanceProfile: !Ref QualiXInstanceProfile
+      SubnetId: !Ref QualixSN
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: QualiX
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref QualixAMI
+      SecurityGroupIds:
+        - !Ref SG1id
+        - !Ref SG2id
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 4.4.4.4' >> /etc/resolv.conf
+            - >
+              curl
+              https://quali-prod-binaries.s3.amazonaws.com/guacamole-quali-install.sh
+              -s -o guacamole-quali-install.sh
+            - |
+              chmod +x guacamole-quali-install.sh
+            - ./guacamole-quali-install.sh
+  ESInstance1a:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId:
+        !If
+        - PublicNetwork
+        - !Ref 'AWS::NoValue'
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - PublicNetwork
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN1
+            GroupSet:
+              - !Ref SG1id
+        - !Ref 'AWS::NoValue'
+      IamInstanceProfile: !Ref ESInstanceProfile
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: es-shells
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !If [PublicNetworkNoVPN, !GetAtt CloudShellServerInstance.PrivateIp, !Ref ServerIP]
+            - ' '
+            - !Ref Username
+            - ' '
+            - !Ref Password
+            - ' ES-Shells-'
+            - !Ref 'AWS::Region'
+  ESInstance2a:
+    Type: 'AWS::EC2::Instance'
+    Properties:
+      SubnetId:
+        !If
+        - PublicNetwork
+        - !Ref 'AWS::NoValue'
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - PublicNetwork
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN1
+            GroupSet:
+              - !Ref SG1id
+        - !Ref 'AWS::NoValue'
+      IamInstanceProfile: !Ref ESInstance2Profile
+      KeyName: !Ref KeyPair
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !If [PublicNetworkNoVPN, !GetAtt CloudShellServerInstance.PrivateIp, !Ref ServerIP]
+            - ' '
+            - !Ref Username
+            - ' '
+            - !Ref Password
+            - ' ES-Commands-'
+            - !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: es-commands
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+  ESInstance1b:
+    Type: 'AWS::EC2::Instance'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      SubnetId:
+        !If
+        - PublicNetwork
+        - !Ref 'AWS::NoValue'
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - PublicNetwork
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN2
+            GroupSet:
+              - !Ref SG1id
+        - !Ref 'AWS::NoValue'
+      IamInstanceProfile: !Ref ESInstanceProfile
+      KeyName: !Ref KeyPair
+      Tags:
+        - Key: Name
+          Value: es-shells-b
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !If [PublicNetworkNoVPN, !GetAtt CloudShellServerInstance.PrivateIp, !Ref ServerIP]
+            - ' '
+            - !Ref Username
+            - ' '
+            - !Ref Password
+            - ' ES-Shells-B-'
+            - !Ref 'AWS::Region'
+  ESInstance2b:
+    Type: 'AWS::EC2::Instance'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      SubnetId:
+        !If
+        - PublicNetwork
+        - !Ref 'AWS::NoValue'
+        - !Ref ESInstanceSN1
+      NetworkInterfaces:
+        !If
+        - PublicNetwork
+        - - AssociatePublicIpAddress: 'true'
+            DeviceIndex: '0'
+            SubnetId: !Ref ESInstanceSN2
+            GroupSet:
+              - !Ref SG1id
+        - !Ref 'AWS::NoValue'
+      IamInstanceProfile: !Ref ESInstance2Profile
+      KeyName: !Ref KeyPair
+      ImageId: !Ref ESAMI
+      InstanceType: !Ref InstanceSize
+      UserData: !Base64
+        'Fn::Join':
+          - ''
+          - - |
+              #!/bin/bash -xe
+            - |
+              echo 'nameserver 8.8.8.8' >> /etc/resolv.conf
+            - |
+              echo 'nameserver 8.8.4.4' >> /etc/resolv.conf
+            - |
+              chattr +i /etc/resolv.conf
+            - >
+              curl
+              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              --output cloudshell_es_install_script.sh --retry 20 -s -S
+            - |
+              chmod +rwx ./cloudshell_es_install_script.sh
+            - "sed -i -e 's/\r$//' ./cloudshell_es_install_script.sh\n"
+            - './cloudshell_es_install_script.sh '
+            - !If [PublicNetworkNoVPN, !GetAtt CloudShellServerInstance.PrivateIp, !Ref ServerIP]
+            - ' '
+            - !Ref Username
+            - ' '
+            - !Ref Password
+            - ' ES-Commands-B-'
+            - !Ref 'AWS::Region'
+      Tags:
+        - Key: Name
+          Value: es-commands-b
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+  CloudShellServerInstance:
+    Type: 'AWS::EC2::Instance'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      IamInstanceProfile: !Ref QualiServerInstanceProfile
+      SubnetId: !Ref QualiServerInstanceSN
+      KeyName: !Ref KeyPair
+      ImageId: !Ref QSAMI
+      InstanceType: !Ref InstanceSize
+      BlockDeviceMappings:
+        - DeviceName: /dev/sda1
+          Ebs:
+            VolumeSize: '60'
+      SecurityGroupIds:
+        - !Ref SG3id
+      Tags:
+        - Key: Name
+          Value: cloudshell-server
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+  QualixInstanceEIP:
+    Type: 'AWS::EC2::EIP'
+    Condition: PublicNetwork
+    Properties:
+      InstanceId: !Ref QualixInstance
+      Domain: vpc
+    DependsOn: QualixInstance
+  CloudShellServerInstanceEIP:
+    Type: 'AWS::EC2::EIP'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      InstanceId: !Ref CloudShellServerInstance
+      Domain: vpc
+Description: EC2 instances - QualiX and ES
+Outputs:
+  QualixInstanceIP:
+    Description: IP of Bastion-NG Host
+    Value: !GetAtt QualixInstance.PrivateIp
+  QualixInstanceEIP:
+    Description: Qualix Instance Elastic IP
+    Value: !If [PublicNetwork, !Ref QualixInstanceEIP, 'NULL']
+  CloudShellServerEIP:
+    Value: !If [PublicNetworkNoVPN, !Ref CloudShellServerInstanceEIP, 'NULL']

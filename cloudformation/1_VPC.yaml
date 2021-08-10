@@ -1,0 +1,823 @@
+Description: 'VPC, subnets, security groups'
+Parameters:
+  Network:
+    Type: String
+    AllowedValues:
+      - NAT
+      - Local
+      - Public (Elastic IP)
+  VPNAttachment:
+    Type: String
+    AllowedValues:
+      - Transit gateway
+      - VPC gateway
+      - No VPN
+  VPCCIDR:
+    Type: String
+    Description: IP Address range for Management VPC
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 172.28.0.0/16
+    AllowedPattern: '(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  VPNAddress:
+    Type: String
+    Description: IP Address of your router
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x
+  OnPremiseCIDR:
+    Type: String
+    Description: IP Address address range of a network behind the router
+    Default: 192.168.1.0/24
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2}))?$'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  ServerIP:
+    Type: String
+    Description: IP Address of your Quali Server
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x
+  KeyPair:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Choose the Keypair for NAT instance
+  AZ1:
+    Type: String
+  AZ2:
+    Type: String
+  NatAMI:
+    Type: String
+  EnhanceS3BucketSecurity:
+    Type: String
+Conditions:
+  IsHighAvailabilityMode: !Not [!Equals [!Ref AZ2, 'NULL']]
+  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'Transit gateway']
+  ShouldUseVGW: !Equals [!Ref VPNAttachment, 'VPC gateway']
+  NoVPN: !Equals [!Ref VPNAttachment, 'No VPN']
+  UseVPN: !Not [Condition: NoVPN]
+  PublicNetwork: !Equals [!Ref Network, 'Public (Elastic IP)']
+  NatNetwork: !Equals [!Ref Network, 'NAT']
+  LocalNetwork: !Equals [!Ref Network, 'Local']
+  EsGwIsTGW: !And [Condition: LocalNetwork, Condition: ShouldUseTransitGateway]
+  EsGwIsVGW: !And [Condition: LocalNetwork, Condition: ShouldUseVGW]
+  IsEnhanceS3BucketSecurity: !Equals [!Ref EnhanceS3BucketSecurity, 'True']
+  CreateIGW: !Or [Condition: NatNetwork, Condition: PublicNetwork]
+  PublicNetworkNoVPN: !And [Condition: PublicNetwork, Condition: NoVPN]
+Resources:
+  # VPC
+  ManagementVPC:
+    Type: 'AWS::EC2::VPC'
+    Properties:
+      InstanceTenancy: default
+      EnableDnsSupport: 'true'
+      EnableDnsHostnames: 'true'
+      Tags:
+        - Key: Name
+          Value: CloudShellManagement
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      CidrBlock: !Ref VPCCIDR
+
+  # Gateways
+  ManagementIGW:
+    Type: 'AWS::EC2::InternetGateway'
+    Condition: CreateIGW
+    Properties:
+      Tags:
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+  CustomerGateway:
+    Type: 'AWS::EC2::CustomerGateway'
+    Condition: UseVPN
+    Properties:
+      Type: ipsec.1
+      BgpAsn: '64000'
+      Tags:
+        - Key: Name
+          Value: Cloudshell_CustomerGateway
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      IpAddress: !Ref VPNAddress
+  TransitGW:
+    Type: 'AWS::EC2::TransitGateway'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      AutoAcceptSharedAttachments: enable
+      Tags:
+        - Key: Name
+          Value: ManagementTransitGateway
+        - Key: Role
+          Value: ManagementTransitGW
+        - Key: CreateBy
+          Value: CloudShell
+  VPNGw:
+    Type: 'AWS::EC2::VPNGateway'
+    Condition: ShouldUseVGW
+    Properties:
+      Type: ipsec.1
+      Tags:
+        - Key: Name
+          Value: CloudShell_VPNGateway
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+
+  # Gateways attachments
+  ManagementIGWAttachement:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Condition: CreateIGW
+    Properties:
+      InternetGatewayId: !Ref ManagementIGW
+      VpcId: !Ref ManagementVPC
+  ManagementVPNGwAttachement:
+    Type: 'AWS::EC2::VPCGatewayAttachment'
+    Condition: ShouldUseVGW
+    Properties:
+      VpnGatewayId: !Ref VPNGw
+      VpcId: !Ref ManagementVPC
+  MgmtTransitGWAttachment:
+    Type: 'AWS::EC2::TransitGatewayAttachment'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      SubnetIds: !If
+        - IsHighAvailabilityMode
+        - - !Ref ESInstanceSN1
+          - !Ref ESInstanceSN2
+        - - !Ref ESInstanceSN1
+      Tags:
+        - Key: Name
+          Value: Qualix A
+        - Key: Role
+          Value: ManagementTransitGWAttachment
+        - Key: CreateBy
+          Value: CloudShell
+      TransitGatewayId: !Ref TransitGW
+      VpcId: !Ref ManagementVPC
+  TGWShare:
+    Type: 'AWS::RAM::ResourceShare'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      Name: 'TGW Share'
+      ResourceArns:
+        - !Sub 'arn:aws:ec2:${AWS::Region}:${AWS::AccountId}:transit-gateway/${TransitGW}'
+
+  # VPN Connections
+  VPNConnectionTGW:
+    Type: 'AWS::EC2::VPNConnection'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      Type: ipsec.1
+      StaticRoutesOnly: 'true'
+      Tags:
+        - Key: Name
+          Value: CloudShell_TransitGateway VPN Connection
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      CustomerGatewayId: !Ref CustomerGateway
+      TransitGatewayId: !Ref TransitGW
+  VPNConnectionVGW:
+    Type: 'AWS::EC2::VPNConnection'
+    Condition: ShouldUseVGW
+    Properties:
+      Type: ipsec.1
+      StaticRoutesOnly: 'true'
+      Tags:
+        - Key: Name
+          Value: CloudShell_VPNGateway VPN Connection
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      CustomerGatewayId: !Ref CustomerGateway
+      VpnGatewayId: !Ref VPNGw
+
+  # Subnets
+  QualixSN:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ManagementVPC
+      CidrBlock: !Select [ 2, !Cidr [ !Ref VPCCIDR, 3, 4 ] ]
+      Tags:
+        - Key: Name
+          Value: Qualix
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      AvailabilityZone: !Ref AZ1
+  ESInstanceSN1:
+    Type: 'AWS::EC2::Subnet'
+    Properties:
+      VpcId: !Ref ManagementVPC
+      CidrBlock: !Select [0, !Cidr [!Ref VPCCIDR, 1, 4]]
+      Tags:
+        - Key: Name
+          Value: ES A
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      AvailabilityZone: !Ref AZ1
+  ESInstanceSN2:
+    Type: 'AWS::EC2::Subnet'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      VpcId: !Ref ManagementVPC
+      CidrBlock: !Select [1, !Cidr [!Ref VPCCIDR, 2, 4]]
+      Tags:
+        - Key: Name
+          Value: ES B
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      AvailabilityZone: !Ref AZ2
+  NatSubnet:
+    Type: 'AWS::EC2::Subnet'
+    Condition: NatNetwork
+    Properties:
+      VpcId: !Ref ManagementVPC
+      CidrBlock: !Select [3, !Cidr [!Ref VPCCIDR, 4, 4]]
+      Tags:
+        - Key: Name
+          Value: NAT
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      MapPublicIpOnLaunch: 'true'
+      AvailabilityZone: !Ref AZ1
+  QualiServerInstanceSN:
+    Type: 'AWS::EC2::Subnet'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      VpcId: !Ref ManagementVPC
+      CidrBlock: !Select [4, !Cidr [!Ref VPCCIDR, 5, 4]]
+      Tags:
+        - Key: Name
+          Value: CloudShellServer
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      AvailabilityZone: !Ref AZ1
+
+  # SecurityGroups
+  SG1:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      Tags:
+        - Key: Name
+          Value: SG1
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+      VpcId: !Ref ManagementVPC
+      GroupDescription: SG1
+  SG2:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: SG2
+      Tags:
+        - Key: Name
+          Value: SG2
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      VpcId: !Ref ManagementVPC
+      SecurityGroupIngress:
+        !If
+        - PublicNetwork
+        - - IpProtocol: tcp
+            FromPort: '80'
+            ToPort: '80'
+            CidrIp: 0.0.0.0/0
+          - IpProtocol: tcp
+            FromPort: '443'
+            ToPort: '443'
+            CidrIp: 0.0.0.0/0
+        - - IpProtocol: tcp
+            FromPort: '80'
+            ToPort: '80'
+            CidrIp: !Ref OnPremiseCIDR
+          - IpProtocol: tcp
+            FromPort: '80'
+            ToPort: '80'
+            CidrIp: !Ref VPCCIDR
+          - IpProtocol: tcp
+            FromPort: '443'
+            ToPort: '443'
+            CidrIp: !Ref OnPremiseCIDR
+          - IpProtocol: tcp
+            FromPort: '443'
+            ToPort: '443'
+            CidrIp: !Ref VPCCIDR
+  SG3:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      GroupDescription: SG3
+      Tags:
+        - Key: Name
+          Value: SG3
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      VpcId: !Ref ManagementVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: !Ref VPCCIDR
+  SG4:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      GroupDescription: SG4, group for the vpc endpoint
+      Tags:
+        - Key: Name
+          Value: SG4
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      VpcId: !Ref ManagementVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: '80'
+          ToPort: '80'
+          CidrIp: !Ref VPCCIDR
+        - IpProtocol: tcp
+          FromPort: '443'
+          ToPort: '443'
+          CidrIp: !Ref VPCCIDR
+  NatSG:
+    Type: 'AWS::EC2::SecurityGroup'
+    Condition: NatNetwork
+    Properties:
+      GroupDescription: SG for NAT instance
+      Tags:
+        - Key: Name
+          Value: NAT_SG
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      VpcId: !Ref ManagementVPC
+      SecurityGroupIngress:
+        - IpProtocol: '-1'
+          FromPort: '0'
+          ToPort: '65535'
+          CidrIp: !Ref VPCCIDR
+
+  # RouteTables
+  QualixRT:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ManagementVPC
+      Tags:
+        - Key: Name
+          Value: Qualix_RT
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+  ESInstanceRT:
+    Type: 'AWS::EC2::RouteTable'
+    Properties:
+      VpcId: !Ref ManagementVPC
+      Tags:
+        - Key: Name
+          Value: ES_RT
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+  NatRT:
+    Type: 'AWS::EC2::RouteTable'
+    Condition: NatNetwork
+    Properties:
+      VpcId: !Ref ManagementVPC
+      Tags:
+        - Key: Name
+          Value: NAT_RT
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+  QualiServerInstanceRT:
+    Type: 'AWS::EC2::RouteTable'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      VpcId: !Ref ManagementVPC
+      Tags:
+        - Key: Name
+          Value: QualiServer_RT
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+
+  # RouteTable Associations
+  QualixRTAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref QualixSN
+      RouteTableId: !Ref QualixRT
+  ESInstRTAssociation1:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Properties:
+      SubnetId: !Ref ESInstanceSN1
+      RouteTableId: !Ref ESInstanceRT
+  ESInstRTAssociation2:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Condition: IsHighAvailabilityMode
+    Properties:
+      SubnetId: !Ref ESInstanceSN2
+      RouteTableId: !Ref ESInstanceRT
+  NatRTAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Condition: NatNetwork
+    Properties:
+      SubnetId: !Ref NatSubnet
+      RouteTableId: !Ref NatRT
+  QualiServerInstRTAssociation:
+    Type: 'AWS::EC2::SubnetRouteTableAssociation'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      SubnetId: !Ref QualiServerInstanceSN
+      RouteTableId: !Ref QualiServerInstanceRT
+
+  # Routes
+  QualixVPNRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseVGW
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref QualixRT
+      GatewayId: !Ref VPNGw
+    DependsOn: ManagementVPNGwAttachement
+  QualixTGWRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref QualixRT
+      TransitGatewayId: !Ref TransitGW
+    DependsOn: MgmtTransitGWAttachment
+  QualixWWWRouteIGW:
+    Type: 'AWS::EC2::Route'
+    Condition: PublicNetwork
+    Properties:
+      RouteTableId: !Ref QualixRT
+      GatewayId: !Ref ManagementIGW
+      DestinationCidrBlock: 0.0.0.0/0
+  QualixWWWRouteNat:
+    Type: 'AWS::EC2::Route'
+    Condition: NatNetwork
+    Properties:
+      RouteTableId: !Ref QualixRT
+      InstanceId: !Ref NatInstance
+      DestinationCidrBlock: 0.0.0.0/0
+  ESVPNRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseVGW
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref ESInstanceRT
+      GatewayId: !Ref VPNGw
+    DependsOn: ManagementVPNGwAttachement
+  ESTGWRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: ShouldUseTransitGateway
+    Properties:
+      DestinationCidrBlock: !Ref OnPremiseCIDR
+      RouteTableId: !Ref ESInstanceRT
+      TransitGatewayId: !Ref TransitGW
+    DependsOn: MgmtTransitGWAttachment
+  ESWWWRouteNat:
+    Type: 'AWS::EC2::Route'
+    Condition: NatNetwork
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      InstanceId: !Ref NatInstance
+      DestinationCidrBlock: 0.0.0.0/0
+  ESWWWRouteIGW:
+    Type: 'AWS::EC2::Route'
+    Condition: PublicNetwork
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      GatewayId: !Ref ManagementIGW
+      DestinationCidrBlock: 0.0.0.0/0
+  ESWWWRouteTGW:
+    Type: 'AWS::EC2::Route'
+    Condition: EsGwIsTGW
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      TransitGatewayId: !Ref TransitGW
+      DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: MgmtTransitGWAttachment
+  ESWWWRouteVGW:
+    Type: 'AWS::EC2::Route'
+    Condition: EsGwIsVGW
+    Properties:
+      RouteTableId: !Ref ESInstanceRT
+      GatewayId: !Ref VPNGw
+      DestinationCidrBlock: 0.0.0.0/0
+    DependsOn: ManagementVPNGwAttachement
+  NatRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: NatNetwork
+    Properties:
+      RouteTableId: !Ref NatRT
+      GatewayId: !Ref ManagementIGW
+      DestinationCidrBlock: 0.0.0.0/0
+  QSWWWRoute:
+    Type: 'AWS::EC2::Route'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      RouteTableId: !Ref QualiServerInstanceRT
+      GatewayId: !Ref ManagementIGW
+      DestinationCidrBlock: 0.0.0.0/0
+
+  # Roles
+  QualiXRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+  ESRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+  ES2Role:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+  NatRole:
+    Type: 'AWS::IAM::Role'
+    Condition: NatNetwork
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+  QualiServerRole:
+    Type: 'AWS::IAM::Role'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Path: /
+
+  # Profiles
+  QualiXInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref QualiXRole
+  ESInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref ESRole
+  ESInstance2Profile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Properties:
+      Path: /
+      Roles:
+        - !Ref ES2Role
+  NatInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Condition: NatNetwork
+    Properties:
+      Path: /
+      Roles:
+        - !Ref NatRole
+  QualiServerInstanceProfile:
+    Type: 'AWS::IAM::InstanceProfile'
+    Condition: PublicNetworkNoVPN
+    Properties:
+      Path: /
+      Roles:
+        - !Ref QualiServerRole
+
+  # Instances
+  NatInstance:
+    Type: 'AWS::EC2::Instance'
+    Condition: NatNetwork
+    Properties:
+      IamInstanceProfile: !Ref NatInstanceProfile
+      SubnetId: !Ref NatSubnet
+      KeyName: !Ref KeyPair
+      SourceDestCheck: false
+      Tags:
+        - Key: Name
+          Value: NAT
+        - Key: CreateBy
+          Value: CloudShell
+        - Key: Role
+          Value: Management
+      SecurityGroupIds:
+        - !Ref NatSG
+      ImageId: !Ref NatAMI
+      InstanceType: t2.small
+
+  # Buckets
+  S3Bucket:
+    Type: 'AWS::S3::Bucket'
+    Properties:
+      PublicAccessBlockConfiguration:
+        !If
+        - IsEnhanceS3BucketSecurity
+        - BlockPublicAcls: True
+          BlockPublicPolicy: True
+          IgnorePublicAcls: True
+          RestrictPublicBuckets: True
+        - !Ref 'AWS::NoValue'
+      BucketName: !Sub 'cloudshell-sandboxes-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        !If
+        - IsEnhanceS3BucketSecurity
+        - ServerSideEncryptionConfiguration:
+            - ServerSideEncryptionByDefault:
+                SSEAlgorithm: 'aws:kms'
+        - !Ref 'AWS::NoValue'
+      Tags:
+        - Key: Name
+          Value: SG1
+        - Key: Role
+          Value: Management
+        - Key: CreateBy
+          Value: CloudShell
+
+  # Policies
+  EC2RWPolicy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: CloudShell_EC2Access
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: 'ec2:*'
+            Resource: '*'
+      Roles:
+        - !Ref ESRole
+  S3Policy:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: CloudShell_S3Access
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: 's3:ListBucket'
+            Resource: !GetAtt S3Bucket.Arn
+          - Effect: Allow
+            Resource: !Sub '${S3Bucket.Arn}/*'
+            Action:
+              - 's3:PutObject'
+              - 's3:GetObject'
+              - 's3:DeleteObject'
+      Roles:
+        - !Ref ESRole
+
+  # VPC Endpoints
+  S3Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Properties:
+      RouteTableIds:
+        !If
+        - PublicNetworkNoVPN
+        - - !Ref ESInstanceRT
+          - !Ref QualiServerInstanceRT
+        - - !Ref ESInstanceRT
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.s3'
+      VpcId: !Ref ManagementVPC
+  StsEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: LocalNetwork
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds: !If
+        - IsHighAvailabilityMode
+        - - !Ref ESInstanceSN1
+          - !Ref ESInstanceSN2
+        - - !Ref ESInstanceSN1
+      SecurityGroupIds:
+        - !Ref SG4
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.sts'
+      VpcId: !Ref ManagementVPC
+      PrivateDnsEnabled: True
+  Ec2Endpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Condition: LocalNetwork
+    Properties:
+      VpcEndpointType: Interface
+      SubnetIds: !If
+        - IsHighAvailabilityMode
+        - - !Ref ESInstanceSN1
+          - !Ref ESInstanceSN2
+        - - !Ref ESInstanceSN1
+      SecurityGroupIds:
+        - !Ref SG4
+      ServiceName: !Sub 'com.amazonaws.${AWS::Region}.ec2'
+      VpcId: !Ref ManagementVPC
+      PrivateDnsEnabled: True
+Outputs:
+  VPCId:
+    Description: VPCId of the newly created VPC
+    Value: !Ref ManagementVPC
+  SG1id:
+    Description: SG1 ID
+    Value: !Ref SG1
+  S3Name:
+    Description: Name of S3 bucket
+    Value: !Ref S3Bucket
+  ESInstanceSN1:
+    Description: ES instance Subnet 1
+    Value: !Ref ESInstanceSN1
+  ESInstanceSN2:
+    Description: ES instance Subnet 2
+    Value: !If [IsHighAvailabilityMode, !Ref ESInstanceSN2, 'NULL']
+  QualiServerInstanceSN:
+    Value: !If [PublicNetworkNoVPN, !Ref QualiServerInstanceSN, 'NULL']
+  QualixSN:
+    Value: !Ref QualixSN
+  QualiXInstanceProfile:
+    Value: !Ref QualiXInstanceProfile
+  ESInstanceProfile:
+    Value: !Ref ESInstanceProfile
+  ESInstance2Profile:
+    Value: !Ref ESInstance2Profile
+  QualiServerInstanceProfile:
+    Value: !If [PublicNetworkNoVPN, !Ref QualiServerInstanceProfile, 'NULL']
+  SG2id:
+    Description: SG2 ID
+    Value: !Ref SG2
+  SG3id:
+    Value: !If [PublicNetworkNoVPN, !Ref SG3, 'NULL']
+  TGWid:
+    Condition: ShouldUseTransitGateway
+    Value: !Ref TransitGW
+  ESRoleArn:
+    Value: !GetAtt ESRole.Arn

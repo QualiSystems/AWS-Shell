@@ -1,0 +1,236 @@
+Description: Main Template
+Mappings:
+  AMIFromRegion:
+    us-east-1:
+      NatAMI: ami-4868ab25
+    us-east-2:
+      NatAMI: ami-92a6fef7
+    eu-west-1:
+      NatAMI: ami-a8dd45db
+    us-west-1:
+      NatAMI: ami-004b0f60
+    us-west-2:
+      NatAMI: ami-a275b1c2
+    ap-south-1:
+      NatAMI: ami-e2b9d38d
+    ap-northeast-2:
+      NatAMI: ami-d14388bf
+    ap-southeast-1:
+      NatAMI: ami-a79b49c4
+    ap-southeast-2:
+      NatAMI: ami-53371f30
+    ap-northeast-1:
+      NatAMI: ami-2443b745
+    eu-central-1:
+      NatAMI: ami-5825cd37
+    sa-east-1:
+      NatAMI: ami-9336bcff
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Parameters:
+        - Network
+        - VPNAttachment
+        - VPCCIDR
+        - KeyPair
+        - InstanceType
+        - HighAvailabilityMode
+        - VPNAddress1
+        - VPNAddress2
+        - OnPremiseCIDR
+        - EnhanceS3BucketSecurity
+        - ServerIP
+        - Username
+        - Password
+    ParameterLabels:
+      VPNAttachment:
+        default: VPN Attachment
+      VPCCIDR:
+        default: Management VPC CIDR
+      KeyPair:
+        default: Key Pair
+      InstanceType:
+        default: Instance Type
+      HighAvailabilityMode:
+        default: High Availability Mode
+      VPNAddress1:
+        default: 1st VPN Address
+      VPNAddress2:
+        default: 2nd VPN Address
+      OnPremiseCIDR:
+        default: On-premise CIDR
+      EnhanceS3BucketSecurity:
+        default: Enhanced S3 Bucket Security
+      ServerIP:
+        default: CloudShell Server IP
+      Username:
+        default: CloudShell Username
+      Password:
+        default: CloudShell Password
+Parameters:
+  Network:
+    Type: String
+    Default: NAT
+    AllowedValues:
+      - NAT
+      - Local
+      - Public (Elastic IP)
+  VPNAttachment:
+    Type: String
+    Default: VPC gateway
+    AllowedValues:
+      - Transit gateway
+      - VPC gateway
+      - No VPN
+  VPCCIDR:
+    Type: String
+    Description: IP Address range for Management VPC. not less than 25
+    MinLength: '9'
+    MaxLength: '18'
+    Default: 10.0.0.0/24
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2}))$'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  KeyPair:
+    Type: 'AWS::EC2::KeyPair::KeyName'
+    Description: Choose the Keypair for the instances
+  InstanceType:
+    Type: String
+    Description: 'The instance type to be used for the Execution Server, QuailX and
+      QServer instances. The minimum recommended instance type is c4.xlarge.'
+    Default: c4.xlarge
+  HighAvailabilityMode:
+    Type: String
+    Default: 'True'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  VPNAddress1:
+    Type: String
+    Description: 1st IP Address of your router
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x
+  VPNAddress2:
+    Type: String
+    Description: 2nd IP Address of your router
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x
+  OnPremiseCIDR:
+    Type: String
+    Description: IP Address address range of a network behind the router
+    Default: 192.168.1.0/24
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2}))?$'
+    ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x.
+  EnhanceS3BucketSecurity:
+    Type: String
+    Description: Select True to enable this option to encrypt and block public access from the S3 bucket
+    Default: 'False'
+    AllowedValues:
+      - 'True'
+      - 'False'
+  ServerIP:
+    Type: String
+    Description: The IP Address of the Quali Server
+    AllowedPattern: '^((\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3}))?$'
+    ConstraintDescription: must be a valid IP address of the form x.x.x.x
+  Username:
+    Type: String
+    Description: The CloudShell admin user
+  Password:
+    Type: String
+    Description: The CloudShell admin password
+    NoEcho: true
+Conditions:
+  IsHighAvailabilityMode: !Equals [!Ref HighAvailabilityMode, 'True']
+  PublicNetwork: !Equals [!Ref Network, 'Public (Elastic IP)']
+  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'Transit gateway']
+  PublicNetworkNoVPN: !And [Condition: PublicNetwork, !Equals [!Ref VPNAttachment, 'No VPN']]
+Resources:
+  AMILookup:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/AMI_Lookup.yaml'
+      Parameters:
+        LookupLatestWindowsServerAmi: !If [PublicNetworkNoVPN, 'True', 'False']
+        LookupLatestCentosAmi: 'True'
+  VPCNAT:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/1_VPC_2CGW.yaml'
+      Parameters:
+        Network: !Ref Network
+        VPNAttachment: !Ref VPNAttachment
+        VPCCIDR: !Ref VPCCIDR
+        VPNAddress1: !Ref VPNAddress1
+        VPNAddress2: !Ref VPNAddress2
+        OnPremiseCIDR: !Ref OnPremiseCIDR
+        ServerIP: !Ref ServerIP
+        KeyPair: !Ref KeyPair
+        AZ1: !Select
+          - '0'
+          - !GetAZs
+            Ref: 'AWS::Region'
+        AZ2: !If
+          - IsHighAvailabilityMode
+          - !Select
+            - '1'
+            - !GetAZs
+              Ref: 'AWS::Region'
+          - 'NULL'
+        NatAMI: !FindInMap
+          - AMIFromRegion
+          - !Ref 'AWS::Region'
+          - NatAMI
+        EnhanceS3BucketSecurity: !Ref EnhanceS3BucketSecurity
+  Instances:
+    Type: 'AWS::CloudFormation::Stack'
+    Properties:
+      Parameters:
+        Network: !Ref Network
+        QualixSN: !GetAtt VPCNAT.Outputs.QualixSN
+        ESInstanceSN1: !GetAtt VPCNAT.Outputs.ESInstanceSN1
+        ESInstanceSN2: !GetAtt VPCNAT.Outputs.ESInstanceSN2
+        QualiServerInstanceSN: !GetAtt VPCNAT.Outputs.QualiServerInstanceSN
+        QualiXInstanceProfile: !GetAtt VPCNAT.Outputs.QualiXInstanceProfile
+        ESInstanceProfile: !GetAtt VPCNAT.Outputs.ESInstanceProfile
+        QualiServerInstanceProfile: !GetAtt VPCNAT.Outputs.QualiServerInstanceProfile
+        SG1id: !GetAtt VPCNAT.Outputs.SG1id
+        SG2id: !GetAtt VPCNAT.Outputs.SG2id
+        SG3id: !GetAtt VPCNAT.Outputs.SG3id
+        QualixAMI: !GetAtt AMILookup.Outputs.CentosAMI
+        ESAMI: !GetAtt AMILookup.Outputs.CentosAMI
+        QSAMI: !GetAtt AMILookup.Outputs.WindowsAMI
+        KeyPair: !Ref KeyPair
+        ESInstance2Profile: !GetAtt VPCNAT.Outputs.ESInstance2Profile
+        ServerIP: !Ref ServerIP
+        Username: !Ref Username
+        Password: !Ref Password
+        InstanceSize: !Ref InstanceType
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/2_EC2.yaml'
+Outputs:
+  ManagementVPCID:
+    Description: Management VPC ID
+    Value: !GetAtt VPCNAT.Outputs.VPCId
+  SG1id:
+    Description: AWS MGMT SG ID
+    Value: !GetAtt VPCNAT.Outputs.SG1id
+  S3Name:
+    Description: Keypairs location
+    Value: !GetAtt VPCNAT.Outputs.S3Name
+  QualixInstanceIP:
+    Description: Internal IP of QualiX instance
+    Value: !GetAtt Instances.Outputs.QualixInstanceIP
+  QualixInstanceEIP:
+    Condition: PublicNetwork
+    Description: Qualix Instance Elastic IP
+    Value: !GetAtt Instances.Outputs.QualixInstanceEIP
+  CloudShellServerEIP:
+    Condition: PublicNetworkNoVPN
+    Description: CloudShell Instance Elastic IP
+    Value: !GetAtt Instances.Outputs.CloudShellServerEIP
+  TGWid:
+    Condition: ShouldUseTransitGateway
+    Description: Transit gateway ID
+    Value: !GetAtt VPCNAT.Outputs.TGWid
+  ESRoleArn:
+    Description: ES Role ARN
+    Value: !GetAtt VPCNAT.Outputs.ESRoleArn
