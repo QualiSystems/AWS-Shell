@@ -8,10 +8,9 @@ Parameters:
       - Public (Elastic IP)
   VPNAttachment:
     Type: String
-    Default: VGW
     AllowedValues:
-      - TGW
-      - VGW
+      - Transit gateway
+      - VPC gateway
       - No VPN
   VPCCIDR:
     Type: String
@@ -55,8 +54,8 @@ Parameters:
     Type: String
 Conditions:
   IsHighAvailabilityMode: !Not [!Equals [!Ref AZ2, 'NULL']]
-  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'TGW']
-  ShouldUseVGW: !Equals [!Ref VPNAttachment, 'VGW']
+  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'Transit gateway']
+  ShouldUseVGW: !Equals [!Ref VPNAttachment, 'VPC gateway']
   NoVPN: !Equals [!Ref VPNAttachment, 'No VPN']
   UseVPN: !Not [Condition: NoVPN]
   PublicNetwork: !Equals [!Ref Network, 'Public (Elastic IP)']

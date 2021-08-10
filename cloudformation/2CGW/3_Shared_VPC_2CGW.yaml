@@ -13,15 +13,15 @@ Metadata:
       VPCCIDR:
         default: Shared VPC CIDR
       DefaultSubnetCIDR:
-        default: Default subnet CIDR
+        default: Default Subnet CIDR
       VPNAddress1:
-        default: 1st VPN address
+        default: 1st VPN Address
       VPNAddress2:
-        default: 2nd VPN address
+        default: 2nd VPN Address
       TransitGWid:
         default: Transit Gateway Id
       ESRoleArn:
-        default: Execution Server Role Arn
+        default: Execution Server Role ARN
 Parameters:
   VPCCIDR:
     Type: String
@@ -56,12 +56,14 @@ Parameters:
     ConstraintDescription: must be a valid IP address of the form x.x.x.x
   TransitGWid:
     Type: String
-    Description: 'ID of the transit gateway. To find the transit gateway id, open the
-    CloudFormation stack that has "VPCNAT" in its name, click the Outputs tab and copy
-    the TGWid value.'
+    Description: 'Created by the deployment of the management VPC. To find the transit
+    gateway ID, open the main CloudFormation stack , click the Outputs tab and copy the
+    TGWid value.'
   ESRoleArn:
     Type: String
-    Description: Arn of the ESRole
+    Description: 'Created by the deployment of the management VPC. To find the role ARN,
+     open the main CloudFormation stack , click the Outputs tab and copy the ESRoleArn
+     value.'
 Resources:
   SharedVPC:
     Type: 'AWS::EC2::VPC'
