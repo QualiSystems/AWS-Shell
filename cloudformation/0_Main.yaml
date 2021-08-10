@@ -47,23 +47,23 @@ Metadata:
       VPCCIDR:
         default: Management VPC CIDR
       KeyPair:
-        default: KeyPair
+        default: Key Pair
       InstanceType:
-        default: Instance type
+        default: Instance Type
       HighAvailabilityMode:
-        default: High availability mode
+        default: High Availability Mode
       VPNAddress:
-        default: VPN address
+        default: VPN Address
       OnPremiseCIDR:
-        default: On-prem CIDR
+        default: On-premise CIDR
       EnhanceS3BucketSecurity:
-        default: Enhance S3 bucket security
+        default: Enhanced S3 Bucket Security
       ServerIP:
-        default: CloudShell server IP
+        default: CloudShell Server IP
       Username:
-        default: CloudShell username
+        default: CloudShell Username
       Password:
-        default: CloudShell password
+        default: CloudShell Password
 Parameters:
   Network:
     Type: String
@@ -74,10 +74,10 @@ Parameters:
       - Public (Elastic IP)
   VPNAttachment:
     Type: String
-    Default: VGW
+    Default: VPC gateway
     AllowedValues:
-      - TGW
-      - VGW
+      - Transit gateway
+      - VPC gateway
       - No VPN
   VPCCIDR:
     Type: String
@@ -134,7 +134,7 @@ Parameters:
 Conditions:
   IsHighAvailabilityMode: !Equals [!Ref HighAvailabilityMode, 'True']
   PublicNetwork: !Equals [!Ref Network, 'Public (Elastic IP)']
-  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'TGW']
+  ShouldUseTransitGateway: !Equals [!Ref VPNAttachment, 'Transit gateway']
   PublicNetworkNoVPN: !And [Condition: PublicNetwork, !Equals [!Ref VPNAttachment, 'No VPN']]
 Resources:
   AMILookup:

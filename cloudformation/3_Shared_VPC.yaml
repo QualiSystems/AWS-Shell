@@ -12,13 +12,13 @@ Metadata:
       VPCCIDR:
         default: Shared VPC CIDR
       DefaultSubnetCIDR:
-        default: Default subnet CIDR
+        default: Default Subnet CIDR
       VPNAddress:
-        default: VPN address
+        default: VPN Address
       TransitGWid:
         default: Transit Gateway Id
       ESRoleArn:
-        default: Execution Server Role Arn
+        default: Execution Server Role ARN
 Parameters:
   VPCCIDR:
     Type: String
