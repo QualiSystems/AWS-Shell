@@ -140,7 +140,7 @@ Resources:
   AMILookup:
     Type: 'AWS::CloudFormation::Stack'
     Properties:
-      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/AMI_Lookup.yaml'
+      TemplateURL: 'https://kyrylo-test.s3-eu-west-1.amazonaws.com/cf/AMI_lookup.yaml'
       Parameters:
         LookupLatestWindowsServerAmi: !If [PublicNetworkNoVPN, 'True', 'False']
         LookupLatestCentosAmi: 'True'
