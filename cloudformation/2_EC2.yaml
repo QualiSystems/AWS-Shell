@@ -78,7 +78,7 @@ Resources:
               echo 'nameserver 4.4.4.4' >> /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/guacamole-quali-install.sh
+              https://s3-us-west-2.amazonaws.com/qualix-ova/guacamole-quali-install.sh
               -s -o guacamole-quali-install.sh
             - |
               chmod +x guacamole-quali-install.sh
@@ -124,7 +124,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -171,7 +171,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -233,7 +233,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
@@ -281,7 +281,7 @@ Resources:
               chattr +i /etc/resolv.conf
             - >
               curl
-              https://quali-prod-binaries.s3.amazonaws.com/2021.2.0.1525-181945/ES/cloudshell_es_install_script.sh
+              https://cf-dynamic-execution-server.s3.amazonaws.com/execution-server/cloudshell_es_install_script.sh
               --output cloudshell_es_install_script.sh --retry 20 -s -S
             - |
               chmod +rwx ./cloudshell_es_install_script.sh
