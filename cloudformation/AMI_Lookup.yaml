@@ -50,7 +50,7 @@ Resources:
           - - // Map display OS names to AMI name patterns
             - 'var osNameToPattern = {'
             - '  ''Windows Server 2019 English 64-bit'': ''Windows_Server-2019*English*Full*Base*'','
-            - '   ''CentOS 7.4 Latest'': ''CentOS Linux 7 x86_64 HVM EBS ENA*'''
+            - '   ''CentOS 7.4 Latest'': ''CentOS-7*x86_64*'''
             - '};'
             - // Map display OS names to owner
             - 'var osNameToFilterData = {'
@@ -62,7 +62,7 @@ Resources:
             - '  ''CentOS 7.4 Latest'': {'
             - '                        ''owner'': ''aws-marketplace'', '
             - '                        ''filterName'': ''product-code'','
-            - '                        ''filterValue'': ''aw0evgkw8e5c1q413zgy5pjce'','
+            - '                        ''filterValue'': ''cvugziknvmxgqna9noibqnnsy'','
             - '                        }'
             - '};'
             - var aws = require('aws-sdk');
