@@ -149,7 +149,7 @@ Resources:
             - '  request.end();'
             - '}'
       Handler: index.handler
-      Runtime: nodejs12.x
+      Runtime: nodejs16.x
       Timeout: '180'
       Role: !GetAtt
         - LambdaExecutionRole
