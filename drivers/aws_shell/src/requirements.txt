@@ -3,3 +3,4 @@ cloudshell-shell-core>=3.1.0,<3.2.0
 cloudshell-cp-aws>=2.5.0,<2.6.0
 jsonpickle==0.9.3
 cloudshell-cp-core>=1.0.4,<1.1.0
+urllib3>=1.26.5 # not directly required, pinned by Snyk to avoid a vulnerability
